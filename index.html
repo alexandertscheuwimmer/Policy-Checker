@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
+<html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TAIYO Legal â Policy Checker</title>
+<title>TAIYO Legal – Policy Checker</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;background:#f5f4f0;color:#1a1a18;min-height:100vh}
@@ -20,7 +20,6 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
 .card{background:#fff;border:0.5px solid #ddd;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem}
 .card-title{font-size:13px;font-weight:500;color:#1a1a18;margin-bottom:4px}
 .card-hint{font-size:12px;color:#999;margin-bottom:10px;line-height:1.45}
-.optional-badge{font-size:11px;padding:2px 8px;background:#f0f0ec;border-radius:20px;color:#888;font-weight:400;margin-left:6px}
 .field-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:7px}
 .pill-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.1rem}
 .pill{padding:5px 14px;font-size:13px;border:0.5px solid #ccc;background:#fff;border-radius:20px;cursor:pointer;color:#555;transition:all 0.12s;user-select:none}
@@ -35,7 +34,7 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
 .drop-hint-icon{font-size:22px;margin-bottom:5px;opacity:0.25}
 .drop-hint-text{font-size:12px;color:#aaa;line-height:1.5}
 .main-textarea{min-height:175px}
-.context-textarea{min-height:110px}
+.context-textarea{min-height:120px}
 .run-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:#1a1a18;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;margin-top:1.1rem;transition:opacity 0.15s}
 .run-btn:hover{opacity:0.82}
 .run-btn:disabled{opacity:0.35;cursor:not-allowed}
@@ -43,17 +42,8 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
 .spinner.on{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 .results{margin-top:1.5rem}
-.summary-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center}
-.s-pill{display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:13px;background:#fff;border:0.5px solid #ddd}
-.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.dot-red{background:#dc2626}.dot-amber{background:#d97706}.dot-blue{background:#2563eb}.dot-green{background:#16a34a}.dot-gray{background:#9ca3af}
-.score-row{display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
-.score-card{flex:1;min-width:160px;background:#fff;border:0.5px solid #ddd;border-radius:10px;padding:1rem}
-.score-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
-.score-num{font-size:26px;font-weight:500;margin-bottom:2px}
-.score-bar-bg{height:4px;background:#eee;border-radius:2px;margin:5px 0 6px;overflow:hidden}
-.score-bar-fill{height:100%;border-radius:2px;transition:width 0.5s ease}
-.score-comment{font-size:12px;color:#555;line-height:1.5}
+.overall-tone{padding:12px 16px;background:#fff;border:0.5px solid #ddd;border-radius:10px;margin-bottom:1rem;font-size:14px;color:#1a1a18;line-height:1.5}
+.section-title{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin:1.25rem 0 0.75rem}
 .issue-card{background:#fff;border:0.5px solid #ddd;border-radius:10px;padding:1rem 1.25rem;margin-bottom:8px}
 .issue-header{display:flex;align-items:center;gap:7px;margin-bottom:9px;flex-wrap:wrap}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
@@ -68,7 +58,6 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
 .corr{font-size:13px;padding:7px 10px 7px 12px;background:#f0fdf4;border-left:3px solid #86efac;border-radius:0 6px 6px 0;margin-bottom:6px;color:#14532d;line-height:1.5}
 .policy-ref{font-size:12px;color:#bbb;margin-top:4px}
 .no-issues{padding:1.1rem 1.25rem;background:#f0fdf4;border-radius:10px;color:#166534;font-size:14px;display:flex;align-items:flex-start;gap:10px;line-height:1.5}
-.section-title{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin:1.5rem 0 0.75rem}
 .dl-card{border:0.5px solid #ddd;border-radius:10px;overflow:hidden;margin-bottom:8px;background:#fff}
 .dl-head{padding:10px 1rem;background:#fafaf8;font-size:13px;font-weight:500;border-bottom:0.5px solid #eee;display:flex;align-items:center;gap:7px;color:#1a1a18}
 .dl-row{display:flex;align-items:flex-start;gap:14px;padding:10px 1rem;border-top:0.5px solid #f0f0ec}
@@ -102,12 +91,12 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
 </head>
 <body>
 <div class="page">
-  <div class="logo">TAIYO Legal â <span>Policy Checker</span></div>
-  <h1>Dokument- und E-Mail-Pr&uuml;fung</h1>
+  <div class="logo">TAIYO Legal — <span>Policy Checker</span></div>
+  <h1>Dokument- und E-Mail-Prüfung</h1>
 
   <div class="api-setup" id="api-setup">
-    <div class="api-setup-title">&#x1F511; API-Key</div>
-    <p>Einmalig eingeben. Wird nur in diesem Browser gespeichert. Den Key erh&auml;ltst du von Dr. Scheuwimmer.</p>
+    <div class="api-setup-title">🔑 API-Key</div>
+    <p>Einmalig eingeben. Wird nur in diesem Browser gespeichert. Den Key erhältst du von Dr. Scheuwimmer.</p>
     <input type="password" class="api-input" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
     <div class="api-row">
       <button class="save-btn" onclick="saveKey()">Speichern</button>
@@ -116,54 +105,55 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
   </div>
 
   <div class="steps">
-    <div class="step"><div class="step-num">SCHRITT 1</div><div class="step-label"><strong>Ausgabesprache &amp; Typ</strong> w&auml;hlen</div></div>
-    <div class="step"><div class="step-num">SCHRITT 2</div><div class="step-label"><strong>Dokument</strong> einf&uuml;gen oder hineinziehen</div></div>
-    <div class="step"><div class="step-num">OPTIONAL</div><div class="step-label"><strong>Kontext</strong> hinzuf&uuml;gen f&uuml;r tiefere Pr&uuml;fung</div></div>
-    <div class="step"><div class="step-num">SCHRITT 3</div><div class="step-label">Auf <strong>&#x201E;Pr&uuml;fen&#x201C;</strong> klicken</div></div>
+    <div class="step"><div class="step-num">SCHRITT 1</div><div class="step-label"><strong>Ausgabesprache &amp; Typ</strong> wählen</div></div>
+    <div class="step"><div class="step-num">SCHRITT 2</div><div class="step-label"><strong>Zu prüfenden Text</strong> einfügen</div></div>
+    <div class="step"><div class="step-num">SCHRITT 3</div><div class="step-label"><strong>Kontext</strong> einfügen</div></div>
+    <div class="step"><div class="step-num">SCHRITT 4</div><div class="step-label">Auf <strong>„Prüfen“</strong> klicken</div></div>
   </div>
 
   <div class="card">
     <div class="field-label">Ausgabesprache</div>
     <div class="pill-row" id="lang-pills">
-      <div class="pill active" onclick="setPill(this,'lang','DE')">Deutsch</div>
-      <div class="pill" onclick="setPill(this,'lang','EN')">English</div>
-      <div class="pill" onclick="setPill(this,'lang','JP')">&#x65E5;&#x672C;&#x8A9E;</div>
+      <div class="pill active" onclick="setPill(this,&#39;lang&#39;,&#39;DE&#39;)">Deutsch</div>
+      <div class="pill" onclick="setPill(this,&#39;lang&#39;,&#39;EN&#39;)">English</div>
+      <div class="pill" onclick="setPill(this,&#39;lang&#39;,&#39;JP&#39;)">日本語</div>
+      <div class="pill" onclick="setPill(this,&#39;lang&#39;,&#39;KO&#39;)">한국어</div>
     </div>
     <div class="field-label">Dokumenttyp</div>
     <div class="pill-row" id="doctype-pills">
-      <div class="pill active" onclick="setPill(this,'doctype','E-Mail an Mandanten')">E-Mail an Mandanten</div>
-      <div class="pill" onclick="setPill(this,'doctype','E-Mail an Anwalt/Gericht')">E-Mail an Anwalt/Gericht</div>
-      <div class="pill" onclick="setPill(this,'doctype','Aktenvermerk')">Aktenvermerk</div>
-      <div class="pill" onclick="setPill(this,'doctype','Schriftsatz')">Schriftsatz</div>
-      <div class="pill" onclick="setPill(this,'doctype','Vertrag')">Vertrag</div>
-      <div class="pill" onclick="setPill(this,'doctype','Brief')">Brief</div>
-      <div class="pill" onclick="setPill(this,'doctype','Sonstiges')">Sonstiges</div>
+      <div class="pill active" onclick="setPill(this,&#39;doctype&#39;,&#39;E-Mail an Mandanten&#39;)">E-Mail an Mandanten</div>
+      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;E-Mail an Anwalt/Gericht&#39;)">E-Mail an Anwalt/Gericht</div>
+      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Aktenvermerk&#39;)">Aktenvermerk</div>
+      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Schriftsatz&#39;)">Schriftsatz</div>
+      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Vertrag&#39;)">Vertrag</div>
+      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Brief&#39;)">Brief</div>
+      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Sonstiges&#39;)">Sonstiges</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">&#x1F4C4; Zu pr&uuml;fendes Dokument</div>
-    <div class="card-hint">Text direkt einf&uuml;gen &mdash; oder Datei hineinziehen (.docx, .txt, .eml). Bei Outlook-E-Mails: E-Mail &ouml;ffnen &rarr; &bdquo;Datei &rarr; Speichern unter &rarr; .eml&ldquo; oder Text direkt kopieren.</div>
+    <div class="card-title">📄 Zu prüfender Text oder zu prüfendes Dokument</div>
+    <div class="card-hint">Text direkt einfügen — oder .txt/.eml-Datei hineinziehen. Word: Text mit Strg+A, Strg+C kopieren und hier einfügen.</div>
     <div class="drop-zone-wrapper">
-      <textarea class="drop-zone main-textarea" id="main-input" placeholder="Text hier einf&uuml;gen &hellip;" oninput="updateHint('main')"></textarea>
-      <div class="drop-hint" id="main-hint"><div class="drop-hint-icon">&#x1F4C2;</div><div class="drop-hint-text">Datei hier hineinziehen<br>.docx &middot; .txt &middot; .eml</div></div>
+      <textarea class="drop-zone main-textarea" id="main-input" placeholder="Text hier einfügen …" oninput="updateHint(&#39;main&#39;)"></textarea>
+      <div class="drop-hint" id="main-hint"><div class="drop-hint-icon">📂</div><div class="drop-hint-text">Datei hier hineinziehen<br>.txt · .eml</div></div>
     </div>
     <div class="file-info" id="main-file-info"></div>
   </div>
 
   <div class="card">
-    <div class="card-title">&#x1F4AC; Kontext <span class="optional-badge">optional</span></div>
-    <div class="card-hint">Schriftsatz der Gegenseite, Gerichtsauftrag, bisherige Korrespondenz &mdash; oder Hinweise zum Empf&auml;nger (z.B. &bdquo;Mandant ist Jurist&ldquo; oder &bdquo;Mandant ist bildungsfern&ldquo;). Das Tool pr&uuml;ft dann ob offene Fragen beantwortet wurden und was fehlt.</div>
+    <div class="card-title">💬 Kontext</div>
+    <div class="card-hint">Zum Beispiel Hinweise zum Empfänger (z.B. „Mandant ist Jurist“ oder „Mandant ist bildungsfern“), Schriftsatz der Gegenseite, Auftrag des Gerichts, bisherige Korrespondenz.</div>
     <div class="drop-zone-wrapper">
-      <textarea class="drop-zone context-textarea" id="context-input" placeholder="Kontext hier einf&uuml;gen (optional) &hellip;" oninput="updateHint('context')"></textarea>
-      <div class="drop-hint" id="context-hint"><div class="drop-hint-icon">&#x1F4C2;</div><div class="drop-hint-text">Datei hier hineinziehen<br>.docx &middot; .txt &middot; .eml</div></div>
+      <textarea class="drop-zone context-textarea" id="context-input" placeholder="Kontext hier einfügen …" oninput="updateHint(&#39;context&#39;)"></textarea>
+      <div class="drop-hint" id="context-hint"><div class="drop-hint-icon">📂</div><div class="drop-hint-text">Datei hier hineinziehen<br>.txt · .eml</div></div>
     </div>
     <div class="file-info" id="context-file-info"></div>
   </div>
 
   <button class="run-btn" id="run-btn" onclick="runCheck()">
     <div class="spinner" id="spinner"></div>
-    <span id="btn-label">Pr&uuml;fen</span>
+    <span id="btn-label">Prüfen</span>
   </button>
 
   <div id="results"></div>
@@ -173,11 +163,14 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
 var state={lang:'DE',doctype:'E-Mail an Mandanten'};
 
 function saveKey(){
-  var k=document.getElementById('api-key-input').value.trim();
-  if(!k||k.indexOf('gespeichert')>-1){document.getElementById('key-status').textContent='Bitte Key eingeben.';return;}
+  var inp=document.getElementById('api-key-input');
+  var k=inp.value.trim();
+  if(!k||k.indexOf('gespeichert')>-1||k.indexOf('\u2026')>-1){
+    document.getElementById('key-status').textContent='Bitte Key eingeben.';return;
+  }
   localStorage.setItem('taiyo_key',k);
   document.getElementById('key-status').innerHTML='<span class="key-ok">\u2713 Gespeichert</span>';
-  document.getElementById('api-key-input').value='sk-ant-\u2026 (gespeichert)';
+  inp.value='sk-ant-\u2026 (gespeichert)';
 }
 function getKey(){return localStorage.getItem('taiyo_key')||'';}
 
@@ -214,54 +207,61 @@ function setupDrop(taId,hintId,infoId){
     var files=e.dataTransfer.files;
     if(!files||files.length===0)return;
     var file=files[0];var name=file.name.toLowerCase();
-    info.style.display='block';info.textContent='Wird geladen: '+file.name+' \u2026';
+    info.style.display='block';
     if(name.endsWith('.docx')||name.endsWith('.pdf')){
-      info.style.display='block';
-      info.textContent='ℹ Word/PDF: Bitte Text mit Strg+A → Strg+C kopieren und hier einfügen.';
-      return;
-    } else if(name.endsWith('.pdfXXX')){
-      info.textContent='\u2139 PDF: Bitte Text kopieren und einf\u00FCgen.';
-    } else {
-      var r2=new FileReader();
-      r2.onload=function(ev){ta.value=ev.target.result;info.textContent='\u2713 Geladen: '+file.name;updateHint(taId==='main-input'?'main':'context');};
-      r2.onerror=function(){info.textContent='\u26A0 Bitte Text kopieren.';};
-      r2.readAsText(file,'UTF-8');
+      info.textContent='\u2139 Word/PDF: Bitte Text mit Strg+A \u2192 Strg+C kopieren und einf\u00FCgen.';return;
     }
+    var r=new FileReader();
+    r.onload=function(ev){ta.value=ev.target.result;info.textContent='\u2713 Geladen: '+file.name;updateHint(taId==='main-input'?'main':'context');};
+    r.onerror=function(){info.textContent='\u26A0 Bitte Text kopieren.';};
+    r.readAsText(file,'UTF-8');
   });
 }
 
 var POLICY=`TAIYO Legal Policy:
 
 VERSTAENDLICHKEIT (Punkte 10.2, 10.5, 10.7, 10.9, 13.5, 13.9, 13.10):
-- Saetze: maximal 15 Woerter; nur eine Aussage pro Satz.
-- KUERZER IST BESSER (Punkt 13.5): Unnoetige Laenge ist ein Fehler. Konkrete Kurzversion vorschlagen.
-- SO-WHAT-AUSSAGEN sind ein schwerer Fehler (Punkt 13.5): Korrekt aber nutzlos. Strenger Ton (aber hoeflich).
-- STAND-ALONE (Punkt 10.7): Verstaendlich ohne jeden Kontext. Aktiv pruefen: Wuerde jemand ohne Vorkenntnis verstehen worum es geht, was der Stand ist, was von ihm erwartet wird?
-- GEWICHTUNG (Punkt 11.5): Wichtiges im Mittelpunkt. Unproblematisches kurz halten. Problematisches darf mehr Raum einnehmen. Nichts Wichtiges darf untergehen.
-- Fachbegriffe erklaeren; in fremdsprachigen Texten deutschen Begriff in Klammer kursiv.
+- Saetze maximal 15 Woerter; nur eine Aussage pro Satz.
+- KUERZER IST BESSER (13.5): Unnoetige Laenge ist ein Fehler. Unnoetige Woerter, Saetze, Abschnitte streichen.
+- SO-WHAT-AUSSAGEN sind ein schwerer Fehler (13.5): korrekt aber nutzlos fuer den Empfaenger.
+- STAND-ALONE (10.7): Verstaendlich ohne jeden Vorkontext. Wer das Dokument zum ersten Mal sieht muss verstehen: worum geht es, was ist der Stand, was wird von ihm erwartet?
+- GEWICHTUNG (11.5): Unwichtiges kurz halten. Wichtiges darf mehr Raum einnehmen. Nichts Wichtiges darf untergehen oder vergraben werden.
 - Keine Floskeln: "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen" verboten.
 - Verweise praezisieren: nicht "Wie gesagt" sondern "Wie in unserem E-Mail vom TT.MM.JJJJ".
+- Fachbegriffe erklaeren wenn Empfaenger kein Jurist ist.
 
-BELEGE (Punkt 14.3): Wichtige Aussagen in Klammer belegen. Grund: Wer die Fundstelle angeben muss, macht seltener Fehler.
+BELEGE (14.3): Wichtige Aussagen in Klammer belegen - Qualitaetswerkzeug, nicht nur Stil.
 
 FORMATIERUNG: Datum TT.MM.JJJJ. Lateinische Begriffe kursiv. Keine leeren Absaetze.
 
-E-MAIL (Punkt 11): Anrede; Name am Ende; Signatur; Betreff nicht generisch; Anwaelte: "Kollege/Kollegin" + "kollegialen Gruessen"; Scheuwimmer cc bei Risiko/Honorarnote.
+E-MAIL (Punkt 11): Anrede; Name am Ende; Signatur; Betreff nicht generisch (Klientenname oder GZ); Anwaelte: "Kollege/Kollegin" + "kollegialen Gruessen"; Scheuwimmer cc bei Risiko/Honorarnote.
 
 VOLLSTAENDIGKEIT:
-E-Mail Mandant: GZ; naechster Schritt; Kosten-Hinweis; Frist; wann naechste Nachricht.
-E-Mail Anwalt: GZ beider Seiten; kollegiale Anrede + Schlussformel.
+E-Mail an Mandanten: GZ; naechster Schritt; Kosten-Hinweis wenn relevant; Frist wenn vorhanden; wann naechste Nachricht.
+E-Mail an Anwalt: GZ beider Seiten; kollegiale Anrede + Schlussformel.
 Aktenvermerk: Datum; Verfasser; Klient; Inhalt; Ergebnis; naechste Schritte + Verantwortlicher; Zusammenfassung.
-Schriftsatz: Gericht; GZ; Parteien; Antrag; Begruendung mit Belegen; Unterschrift.
+Schriftsatz: Gericht; GZ; Parteien; klarer Antrag; Begruendung mit Belegen; Unterschrift.
 Vertrag: Parteien vollstaendig; Gegenstand; Verguetung; Laufzeit; Rechtswahl; Unterschriften.
 
-URGENZ (Punkte 7.4, 7.8, 15.2): Nach JEDEM E-Mail sofort Urgenz kalendieren.
-Intervalle: Mandant beauftragt/will beauftragen: 1-2 Wochen. Mandant unklar: 1-2 Monate. Mandant abgesagt: 6-12 Monate. Gegner/Behoerde: gemaess Frist. Intern: 1 Werktag.
-Termine in Kalender ALLER Teammitglieder.`;
+URGENZ (7.4, 7.8, 15.2): Nach JEDEM abgeschickten E-Mail sofort Urgenz kalendieren.
+Urgenz-Intervalle:
+  Mandant beauftragt/will beauftragen: 1-2 Wochen
+  Mandant unklar/keine Antwort: 1-2 Monate
+  Mandant hat abgesagt: 6-12 Monate (Reaktivierung)
+  Gegner/Behoerde: gemaess gesetzlicher Frist, spaetestens 1 Woche nach Fristende
+  Intern: 1 Werktag
+Termine in Kalender ALLER Teammitglieder (7.8, 15.2). Berichte an Mandanten mind. alle 14 Tage (13.8).`;
+
+var LANG_INSTR={
+  'DE':'Antworte auf Deutsch. Uebersetze das Dokument falls noetig.',
+  'EN':'Reply in English. Translate the document content if needed.',
+  'JP':'\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u5FC5\u8981\u306A\u5834\u5408\u306F\u6587\u66F8\u3092\u7FFB\u8A33\u3057\u3066\u304F\u3060\u3055\u3044\u3002',
+  'KO':'\ud55c\uad6d\uc5b4\ub85c \ub2f5\ubcc0\ud558\uc138\uc694. \ud544\uc694\ud55c \uacbd\uc6b0 \ubb38\uc11c\ub97c \ubc88\uc5ed\ud574 \uc8fc\uc138\uc694.'
+};
 
 async function callAPI(sys,usr){
   var k=getKey();
-  if(!k)throw new Error('Kein API-Key gespeichert. Bitte oben eintragen.');
+  if(!k)throw new Error('Kein API-Key gespeichert. Bitte oben eintragen und speichern.');
   var r=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{
@@ -279,7 +279,7 @@ async function callAPI(sys,usr){
 
 async function runCheck(){
   var text=document.getElementById('main-input').value.trim();
-  if(!text){alert('Bitte zuerst ein Dokument einf\u00FCgen.');return;}
+  if(!text){alert('Bitte zuerst einen Text einf\u00FCgen.');return;}
   var ctx=document.getElementById('context-input').value.trim();
   var btn=document.getElementById('run-btn');
   var sp=document.getElementById('spinner');
@@ -288,28 +288,51 @@ async function runCheck(){
   document.getElementById('results').innerHTML='';
   try{
     var today=new Date().toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'});
+    var langInstr=LANG_INSTR[state.lang]||LANG_INSTR['DE'];
+    var isSimple=(state.doctype==='E-Mail an Mandanten'||state.doctype==='E-Mail an Anwalt/Gericht'||state.doctype==='Brief');
+    var maxIssues=isSimple?5:10;
     var ctxSection=ctx?'\n\nKONTEXT:\n'+ctx:'';
-    var langInstr={
-      'DE':'Antworte auf Deutsch. Uebersetze das Dokument falls noetig.',
-      'EN':'Reply in English. Translate the document if necessary.',
-      'JP':'\u65E5\u672C\u8A9E\u3067\u56DE\u7B54\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u5FC5\u8981\u306B\u5FDC\u3058\u3066\u6587\u66F8\u3092\u7FFB\u8A33\u3057\u3066\u304F\u3060\u3055\u3044\u3002'
-    }[state.lang]||'Antworte auf Deutsch.';
 
-    var sys=POLICY+'\n\nAusgabesprache: '+langInstr+'\n\nHEUTE: '+today+`
+    var sys=POLICY+'\n\nHEUTE: '+today+'\nAusgabesprache: '+langInstr+`
 
 FEEDBACK-REGELN:
-1. TON: Aufmunternd und konstruktiv. "Honest mistakes": wohlwollend. So-What und offensichtliche Verst\u00F6\u00DFe: etwas strenger aber hoeflich.
-2. FORMAT: Klar was das Problem ist und wie es besser geht. Policy-Punkt NUR in Klammer am Ende.
-3. FEHLENDE INHALTE: In 50% der Faelle ist das Problem was FEHLT. Aktiv pruefen. Formulierungsvorschlag liefern.
-4. KONTEXT: Wenn Kontext vorhanden: Unbeantwortete Fragen? Nicht aufgegriffene Zusagen? Widersprueche?
-5. BELEGE: Als Qualitaetswerkzeug erklaeren, nicht als Stilfrage.
-6. SPRACHE: Gesamtes Feedback in der gewaehlten Ausgabesprache. Dokument falls noetig uebersetzen.
+1. TON: Aufmunternd und konstruktiv. Bei normalen Fehlern wohlwollend. Bei So-What-Aussagen und offensichtlichen Verstoessen etwas strenger - aber immer hoeflich.
+2. LAENGE: Maximal `+maxIssues+` Befunde. Das Feedback darf nie laenger sein als das Dokument selbst. Nur echte, wichtige Befunde.
+3. FORMAT: Klipp und klar was das Problem ist und wie es besser geht. Policy-Punkt nur in Klammer am Ende - nie als Einstieg.
+4. KEINE SCORES: Keine Zahlen-Bewertungen. Stattdessen: wenn etwas nicht koh\u00E4rent ist, sag es direkt und wie es koh\u00E4renter w\u00E4re. Wenn etwas nicht plausibel ist, sag warum. Wenn etwas unverst\u00E4ndlich ist, zeig die bessere Version.
+5. FEHLENDE INHALTE: Nur benennen was fehlt - z.B. "Hier fehlt noch eine Antwort auf die Frage nach den Kosten." Nicht ausformulieren.
+6. KONTEXT: Wenn Kontext vorhanden: unbeantwortete Fragen und Widersprueche benennen.
+7. SPRACHE: Gesamtes Feedback in der gew\u00E4hlten Ausgabesprache.
 
-Antworte AUSSCHLIESSLICH mit reinem JSON ohne Markdown-Formatierung.
+Antworte AUSSCHLIESSLICH mit reinem JSON ohne Markdown.
 
-{"overall_tone":"Aufmunternder Eroeffnungssatz max 20 Woerter.","summary":{"critical":0,"warning":0,"info":0},"coherence":{"score":0,"comment":""},"plausibility":{"score":0,"comment":""},"readability":{"score":0,"comment":""},"context_gaps":[],"issues":[{"severity":"critical|warning|info","category":"Verstaendlichkeit|Kuerze|So-What|Stand-alone|Gewichtung|Fehlender Inhalt|Beleg fehlt|Stil|Koh\u00E4renz|Plausibilit\u00E4t|E-Mail|Juristik|Kontext","feedback":"","original":"","corrected":"","policy_ref":""}],"deadlines":[{"date_iso":"YYYY-MM-DD oder null","date_display":"","title":"","description":"","type":"Urgenz|Frist|Bericht|Vortermin","priority":"hoch|mittel|niedrig","all_team":true,"basis":""}]}
+{
+  "overall_tone": "Aufmunternder Eroeffnungssatz max 15 Woerter.",
+  "issues": [
+    {
+      "severity": "critical|warning|info",
+      "category": "Verst\u00E4ndlichkeit|K\u00FCrze|So-What|Stand-alone|Gewichtung|Fehlender Inhalt|Beleg fehlt|Stil|Koh\u00E4renz|Plausibilit\u00E4t|E-Mail|Juristik|Kontext",
+      "feedback": "Direkt und konkret. Was ist das Problem und wie wird es besser?",
+      "original": "Betroffener Originaltext max 80 Zeichen oder leer",
+      "corrected": "Bessere Version ODER bei fehlendem Inhalt: was fehlt (kurz)",
+      "policy_ref": "Punkt X.X"
+    }
+  ],
+  "deadlines": [
+    {
+      "date_iso": "YYYY-MM-DD oder null",
+      "date_display": "TT.MM.JJJJ oder z.B. 'ca. 1-2 Wochen ab heute'",
+      "title": "Kurztitel max 60 Zeichen",
+      "description": "Was genau tun? Max 1 Satz.",
+      "type": "Urgenz|Frist|Bericht|Vortermin",
+      "priority": "hoch|mittel|niedrig",
+      "all_team": true,
+      "basis": "Policy-Punkt"
+    }
+  ]
+}
 
-Max 12 issues. Nur echte Befunde. IMMER mindestens eine Urgenz wenn Dokument an jemanden gerichtet ist.`;
+IMMER mindestens eine Urgenz in deadlines wenn Dokument an jemanden gerichtet ist.`;
 
     var usr='Ausgabesprache: '+state.lang+'\nDokumenttyp: '+state.doctype+ctxSection+'\n\nDOKUMENT:\n'+text;
     var raw=await callAPI(sys,usr);
@@ -330,40 +353,29 @@ Max 12 issues. Nur echte Befunde. IMMER mindestens eine Urgenz wenn Dokument an 
 
 function render(d){
   var el=document.getElementById('results');var h='';
-  if(d.overall_tone){h+='<div style="padding:12px 16px;background:#fff;border:0.5px solid #ddd;border-radius:10px;margin-bottom:1rem;font-size:14px;color:#1a1a18;line-height:1.5">'+esc(d.overall_tone)+'</div>';}
-  h+='<div class="summary-bar">';
-  h+='<div class="s-pill"><div class="dot dot-red"></div><strong>'+d.summary.critical+'</strong>&nbsp;Kritisch</div>';
-  h+='<div class="s-pill"><div class="dot dot-amber"></div><strong>'+d.summary.warning+'</strong>&nbsp;Warnung</div>';
-  h+='<div class="s-pill"><div class="dot dot-blue"></div><strong>'+d.summary.info+'</strong>&nbsp;Hinweis</div>';
-  if(d.deadlines&&d.deadlines.length>0)h+='<div class="s-pill"><div class="dot dot-green"></div><strong>'+d.deadlines.length+'</strong>&nbsp;Termine</div>';
-  h+='</div>';
-  h+='<div class="score-row">';
-  h+=sCard('Koh\u00E4renz',d.coherence.score,d.coherence.comment);
-  h+=sCard('Plausibilit\u00E4t',d.plausibility.score,d.plausibility.comment);
-  h+=sCard('Verst\u00E4ndlichkeit',d.readability.score,d.readability.comment);
-  h+='</div>';
-  if(d.context_gaps&&d.context_gaps.length>0){
-    h+='<div class="section-title">Offene Punkte aus dem Kontext</div>';
-    h+='<div style="background:#fff;border:0.5px solid #ddd;border-radius:10px;padding:1rem 1.25rem;margin-bottom:8px">';
-    d.context_gaps.forEach(function(g){h+='<div style="display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid #f0f0ec;font-size:13px;color:#555;line-height:1.5"><span style="color:#d97706;flex-shrink:0">&#x25B6;</span>'+esc(g)+'</div>';});
-    h+='</div>';
+
+  if(d.overall_tone){
+    h+='<div class="overall-tone">'+esc(d.overall_tone)+'</div>';
   }
-  if(!d.issues||d.issues.length===0){
-    h+='<div class="no-issues"><span style="font-size:18px">&#x1F44D;</span><span>Sehr gut! Keine Policy-Verst\u00F6\u00DFe gefunden.</span></div>';
-  } else {
+
+  if(d.issues&&d.issues.length>0){
     var ord={critical:0,warning:1,info:2};
     var sorted=[].concat(d.issues).sort(function(a,b){return ord[a.severity]-ord[b.severity];});
     sorted.forEach(function(iss){
       var sc=iss.severity==='critical'?'red':iss.severity==='warning'?'amber':'blue';
       var sl=iss.severity==='critical'?'Kritisch':iss.severity==='warning'?'Warnung':'Hinweis';
-      h+='<div class="issue-card"><div class="issue-header"><span class="badge badge-'+sc+'">'+sl+'</span><span class="badge '+getCatBadge(iss.category)+'">'+esc(iss.category)+'</span></div>';
+      h+='<div class="issue-card">';
+      h+='<div class="issue-header"><span class="badge badge-'+sc+'">'+sl+'</span><span class="badge '+getCatBadge(iss.category)+'">'+esc(iss.category)+'</span></div>';
       h+='<div class="feedback-main">'+esc(iss.feedback)+'</div>';
       if(iss.original)h+='<div class="orig">'+esc(iss.original)+'</div>';
       if(iss.corrected)h+='<div class="corr">\u2713\u00A0'+esc(iss.corrected)+'</div>';
       if(iss.policy_ref)h+='<div class="policy-ref">('+esc(iss.policy_ref)+')</div>';
       h+='</div>';
     });
+  } else {
+    h+='<div class="no-issues"><span style="font-size:18px">&#x1F44D;</span><span>Keine Policy-Verst\u00F6\u00DFe gefunden.</span></div>';
   }
+
   if(d.deadlines&&d.deadlines.length>0){
     h+='<div class="section-title">Termine &amp; Urgenz</div>';
     h+='<div class="dl-card"><div class="dl-head">&#x1F4C5;&nbsp;'+d.deadlines.length+' Termin'+(d.deadlines.length!==1?'e':'')+' &mdash; in Kalender <strong>aller Teammitglieder</strong> eintragen</div>';
@@ -379,23 +391,23 @@ function render(d){
     });
     h+='</div>';
     window._lastDeadlines=dls;
-    h+='<div class="ics-wrap"><div class="ics-wrap-text"><div class="ics-wrap-title">&#x23F0; Jetzt sofort in Outlook eintragen!</div><div class="ics-wrap-sub">.ics-Datei herunterladen und per Doppelklick in Outlook importieren. Alle Termine werden automatisch eingef\u00FCgt.</div></div><button class="ics-btn" onclick="dlICS()">&#x21E9;&nbsp;In Outlook importieren</button></div>';
+    h+='<div class="ics-wrap"><div class="ics-wrap-text"><div class="ics-wrap-title">&#x23F0; Jetzt sofort in Outlook eintragen!</div><div class="ics-wrap-sub">.ics-Datei herunterladen und per Doppelklick in Outlook importieren.</div></div><button class="ics-btn" onclick="dlICS()">&#x21E9;&nbsp;In Outlook importieren</button></div>';
   }
+
   el.innerHTML=h;
 }
 
 function getCatBadge(cat){
-  if(cat==='Fehlender Inhalt')return'badge-purple';
-  if(cat==='Verst\u00E4ndlichkeit'||cat==='K\u00FCrze'||cat==='Stand-alone')return'badge-amber';
-  if(cat==='So-What'||cat==='Gewichtung')return'badge-red';
-  if(cat==='Beleg fehlt')return'badge-blue';
-  if(cat==='Kontext')return'badge-green';
+  if(!cat)return'badge-gray';
+  var c=cat.toLowerCase();
+  if(c.indexOf('fehlend')>=0)return'badge-purple';
+  if(c.indexOf('verst')>=0||c.indexOf('k\u00FCrze')>=0||c.indexOf('stand')>=0)return'badge-amber';
+  if(c.indexOf('so-what')>=0||c.indexOf('gewicht')>=0)return'badge-red';
+  if(c.indexOf('beleg')>=0)return'badge-blue';
+  if(c.indexOf('kontext')>=0)return'badge-green';
   return'badge-gray';
 }
-function sCard(label,score,comment){
-  var col=score>=70?'#16a34a':score>=40?'#d97706':'#dc2626';
-  return'<div class="score-card"><div class="score-label">'+label+'</div><div class="score-num">'+score+'<span style="font-size:13px;color:#aaa">/100</span></div><div class="score-bar-bg"><div class="score-bar-fill" style="width:'+score+'%;background:'+col+'"></div></div><div class="score-comment">'+esc(comment)+'</div></div>';
-}
+
 function dlICS(){
   var dls=window._lastDeadlines||[];
   var now=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
@@ -404,7 +416,7 @@ function dlICS(){
   dls.forEach(function(dl,i){
     if(!dl.date_iso)return;
     var d=dl.date_iso.replace(/-/g,'');
-    ics+='BEGIN:VEVENT\r\nUID:taiyo-'+d+'-'+i+'@taiyolegal.at\r\nDTSTAMP:'+now+'\r\nDTSTART;VALUE=DATE:'+d+'\r\nDTEND;VALUE=DATE:'+d+'\r\nSUMMARY:[TAIYO] '+sICS(dl.title)+'\r\nDESCRIPTION:'+sICS((dl.description||'')+(dl.all_team?' | Alle Teammitglieder!':'')+' | '+(dl.basis||''))+'\r\nPRIORITY:'+(dl.priority==='hoch'?1:dl.priority==='mittel'?5:9)+'\r\nBEGIN:VALARM\r\nTRIGGER:'+(dl.priority==='hoch'?'-P1D':'-P3D')+'\r\nACTION:DISPLAY\r\nDESCRIPTION:Erinnerung: '+sICS(dl.title)+'\r\nEND:VALARM\r\nEND:VEVENT\r\n';
+    ics+='BEGIN:VEVENT\r\nUID:taiyo-'+d+'-'+i+'@taiyolegal.at\r\nDTSTAMP:'+now+'\r\nDTSTART;VALUE=DATE:'+d+'\r\nDTEND;VALUE=DATE:'+d+'\r\nSUMMARY:[TAIYO] '+sICS(dl.title)+'\r\nDESCRIPTION:'+sICS((dl.description||'')+'(dl.all_team?' | Alle Teammitglieder!':'')+' | '+(dl.basis||''))+'\r\nPRIORITY:'+(dl.priority==='hoch'?1:dl.priority==='mittel'?5:9)+'\r\nBEGIN:VALARM\r\nTRIGGER:'+(dl.priority==='hoch'?'-P1D':'-P3D')+'\r\nACTION:DISPLAY\r\nDESCRIPTION:Erinnerung: '+sICS(dl.title)+'\r\nEND:VALARM\r\nEND:VEVENT\r\n';
     n++;
   });
   ics+='END:VCALENDAR';
@@ -418,5 +430,6 @@ function dlICS(){
 function sICS(s){return(s||'').replace(/\r?\n/g,'\\n').replace(/[,;]/g,'\\$&');}
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
-</body>
-</html>
+
+
+</body></html>
