@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<!-- saved from url=(0075)file:///C:/Users/RADrAlexanderTScheuw/Downloads/TAIYO_PolicyChecker_v5.html -->
-<html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="de">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TAIYO Legal – Policy Checker</title>
+<title>TAIYO Legal â Policy Checker</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;background:#f5f4f0;color:#1a1a18;min-height:100vh}
@@ -102,12 +102,12 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
 </head>
 <body>
 <div class="page">
-  <div class="logo">TAIYO Legal — <span>Policy Checker</span></div>
-  <h1>Dokument- und E-Mail-Prüfung</h1>
+  <div class="logo">TAIYO Legal â <span>Policy Checker</span></div>
+  <h1>Dokument- und E-Mail-Pr&uuml;fung</h1>
 
   <div class="api-setup" id="api-setup">
-    <div class="api-setup-title">🔑 API-Key</div>
-    <p>Einmalig eingeben. Wird nur in diesem Browser gespeichert. Den Key erhältst du von Dr. Scheuwimmer.</p>
+    <div class="api-setup-title">&#x1F511; API-Key</div>
+    <p>Einmalig eingeben. Wird nur in diesem Browser gespeichert. Den Key erh&auml;ltst du von Dr. Scheuwimmer.</p>
     <input type="password" class="api-input" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
     <div class="api-row">
       <button class="save-btn" onclick="saveKey()">Speichern</button>
@@ -116,60 +116,59 @@ h1{font-size:21px;font-weight:500;margin-bottom:2rem}
   </div>
 
   <div class="steps">
-    <div class="step"><div class="step-num">SCHRITT 1</div><div class="step-label"><strong>Ausgabesprache &amp; Typ</strong> wählen</div></div>
-    <div class="step"><div class="step-num">SCHRITT 2</div><div class="step-label"><strong>Dokument</strong> einfügen oder hineinziehen</div></div>
-    <div class="step"><div class="step-num">OPTIONAL</div><div class="step-label"><strong>Kontext</strong> hinzufügen für tiefere Prüfung</div></div>
-    <div class="step"><div class="step-num">SCHRITT 3</div><div class="step-label">Auf <strong>„Prüfen“</strong> klicken</div></div>
+    <div class="step"><div class="step-num">SCHRITT 1</div><div class="step-label"><strong>Ausgabesprache &amp; Typ</strong> w&auml;hlen</div></div>
+    <div class="step"><div class="step-num">SCHRITT 2</div><div class="step-label"><strong>Dokument</strong> einf&uuml;gen oder hineinziehen</div></div>
+    <div class="step"><div class="step-num">OPTIONAL</div><div class="step-label"><strong>Kontext</strong> hinzuf&uuml;gen f&uuml;r tiefere Pr&uuml;fung</div></div>
+    <div class="step"><div class="step-num">SCHRITT 3</div><div class="step-label">Auf <strong>&#x201E;Pr&uuml;fen&#x201C;</strong> klicken</div></div>
   </div>
 
   <div class="card">
     <div class="field-label">Ausgabesprache</div>
     <div class="pill-row" id="lang-pills">
-      <div class="pill active" onclick="setPill(this,&#39;lang&#39;,&#39;DE&#39;)">Deutsch</div>
-      <div class="pill" onclick="setPill(this,&#39;lang&#39;,&#39;EN&#39;)">English</div>
-      <div class="pill" onclick="setPill(this,&#39;lang&#39;,&#39;JP&#39;)">日本語</div>
+      <div class="pill active" onclick="setPill(this,'lang','DE')">Deutsch</div>
+      <div class="pill" onclick="setPill(this,'lang','EN')">English</div>
+      <div class="pill" onclick="setPill(this,'lang','JP')">&#x65E5;&#x672C;&#x8A9E;</div>
     </div>
     <div class="field-label">Dokumenttyp</div>
     <div class="pill-row" id="doctype-pills">
-      <div class="pill active" onclick="setPill(this,&#39;doctype&#39;,&#39;E-Mail an Mandanten&#39;)">E-Mail an Mandanten</div>
-      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;E-Mail an Anwalt/Gericht&#39;)">E-Mail an Anwalt/Gericht</div>
-      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Aktenvermerk&#39;)">Aktenvermerk</div>
-      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Schriftsatz&#39;)">Schriftsatz</div>
-      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Vertrag&#39;)">Vertrag</div>
-      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Brief&#39;)">Brief</div>
-      <div class="pill" onclick="setPill(this,&#39;doctype&#39;,&#39;Sonstiges&#39;)">Sonstiges</div>
+      <div class="pill active" onclick="setPill(this,'doctype','E-Mail an Mandanten')">E-Mail an Mandanten</div>
+      <div class="pill" onclick="setPill(this,'doctype','E-Mail an Anwalt/Gericht')">E-Mail an Anwalt/Gericht</div>
+      <div class="pill" onclick="setPill(this,'doctype','Aktenvermerk')">Aktenvermerk</div>
+      <div class="pill" onclick="setPill(this,'doctype','Schriftsatz')">Schriftsatz</div>
+      <div class="pill" onclick="setPill(this,'doctype','Vertrag')">Vertrag</div>
+      <div class="pill" onclick="setPill(this,'doctype','Brief')">Brief</div>
+      <div class="pill" onclick="setPill(this,'doctype','Sonstiges')">Sonstiges</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">📄 Zu prüfendes Dokument</div>
-    <div class="card-hint">Text direkt einfügen — oder Datei hineinziehen (.docx, .txt, .eml). Bei Outlook-E-Mails: E-Mail öffnen → „Datei → Speichern unter → .eml“ oder Text direkt kopieren.</div>
+    <div class="card-title">&#x1F4C4; Zu pr&uuml;fendes Dokument</div>
+    <div class="card-hint">Text direkt einf&uuml;gen &mdash; oder Datei hineinziehen (.docx, .txt, .eml). Bei Outlook-E-Mails: E-Mail &ouml;ffnen &rarr; &bdquo;Datei &rarr; Speichern unter &rarr; .eml&ldquo; oder Text direkt kopieren.</div>
     <div class="drop-zone-wrapper">
-      <textarea class="drop-zone main-textarea" id="main-input" placeholder="Text hier einfügen …" oninput="updateHint(&#39;main&#39;)"></textarea>
-      <div class="drop-hint" id="main-hint"><div class="drop-hint-icon">📂</div><div class="drop-hint-text">Datei hier hineinziehen<br>.docx · .txt · .eml</div></div>
+      <textarea class="drop-zone main-textarea" id="main-input" placeholder="Text hier einf&uuml;gen &hellip;" oninput="updateHint('main')"></textarea>
+      <div class="drop-hint" id="main-hint"><div class="drop-hint-icon">&#x1F4C2;</div><div class="drop-hint-text">Datei hier hineinziehen<br>.docx &middot; .txt &middot; .eml</div></div>
     </div>
     <div class="file-info" id="main-file-info"></div>
   </div>
 
   <div class="card">
-    <div class="card-title">💬 Kontext <span class="optional-badge">optional</span></div>
-    <div class="card-hint">Schriftsatz der Gegenseite, Gerichtsauftrag, bisherige Korrespondenz — oder Hinweise zum Empfänger (z.B. „Mandant ist Jurist“ oder „Mandant ist bildungsfern“). Das Tool prüft dann ob offene Fragen beantwortet wurden und was fehlt.</div>
+    <div class="card-title">&#x1F4AC; Kontext <span class="optional-badge">optional</span></div>
+    <div class="card-hint">Schriftsatz der Gegenseite, Gerichtsauftrag, bisherige Korrespondenz &mdash; oder Hinweise zum Empf&auml;nger (z.B. &bdquo;Mandant ist Jurist&ldquo; oder &bdquo;Mandant ist bildungsfern&ldquo;). Das Tool pr&uuml;ft dann ob offene Fragen beantwortet wurden und was fehlt.</div>
     <div class="drop-zone-wrapper">
-      <textarea class="drop-zone context-textarea" id="context-input" placeholder="Kontext hier einfügen (optional) …" oninput="updateHint(&#39;context&#39;)"></textarea>
-      <div class="drop-hint" id="context-hint"><div class="drop-hint-icon">📂</div><div class="drop-hint-text">Datei hier hineinziehen<br>.docx · .txt · .eml</div></div>
+      <textarea class="drop-zone context-textarea" id="context-input" placeholder="Kontext hier einf&uuml;gen (optional) &hellip;" oninput="updateHint('context')"></textarea>
+      <div class="drop-hint" id="context-hint"><div class="drop-hint-icon">&#x1F4C2;</div><div class="drop-hint-text">Datei hier hineinziehen<br>.docx &middot; .txt &middot; .eml</div></div>
     </div>
     <div class="file-info" id="context-file-info"></div>
   </div>
 
   <button class="run-btn" id="run-btn" onclick="runCheck()">
     <div class="spinner" id="spinner"></div>
-    <span id="btn-label">Prüfen</span>
+    <span id="btn-label">Pr&uuml;fen</span>
   </button>
 
   <div id="results"></div>
 </div>
 
-<script src="./TAIYO Legal – Policy Checker_files/mammoth.browser.min.js.Download"></script>
 <script>
 var state={lang:'DE',doctype:'E-Mail an Mandanten'};
 
@@ -216,15 +215,11 @@ function setupDrop(taId,hintId,infoId){
     if(!files||files.length===0)return;
     var file=files[0];var name=file.name.toLowerCase();
     info.style.display='block';info.textContent='Wird geladen: '+file.name+' \u2026';
-    if(name.endsWith('.docx')){
-      var r=new FileReader();
-      r.onload=function(ev){
-        mammoth.extractRawText({arrayBuffer:ev.target.result}).then(function(res){
-          ta.value=res.value;info.textContent='\u2713 Geladen: '+file.name;
-          updateHint(taId==='main-input'?'main':'context');
-        }).catch(function(){info.textContent='\u26A0 Bitte Text kopieren.';});
-      };r.readAsArrayBuffer(file);
-    } else if(name.endsWith('.pdf')){
+    if(name.endsWith('.docx')||name.endsWith('.pdf')){
+      info.style.display='block';
+      info.textContent='ℹ Word/PDF: Bitte Text mit Strg+A → Strg+C kopieren und hier einfügen.';
+      return;
+    } else if(name.endsWith('.pdfXXX')){
       info.textContent='\u2139 PDF: Bitte Text kopieren und einf\u00FCgen.';
     } else {
       var r2=new FileReader();
@@ -423,6 +418,5 @@ function dlICS(){
 function sICS(s){return(s||'').replace(/\r?\n/g,'\\n').replace(/[,;]/g,'\\$&');}
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
-
-
-</body></html>
+</body>
+</html>
