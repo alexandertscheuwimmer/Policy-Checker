@@ -416,7 +416,7 @@ function dlICS(){
   dls.forEach(function(dl,i){
     if(!dl.date_iso)return;
     var d=dl.date_iso.replace(/-/g,'');
-    ics+='BEGIN:VEVENT\r\nUID:taiyo-'+d+'-'+i+'@taiyolegal.at\r\nDTSTAMP:'+now+'\r\nDTSTART;VALUE=DATE:'+d+'\r\nDTEND;VALUE=DATE:'+d+'\r\nSUMMARY:[TAIYO] '+sICS(dl.title)+'\r\nDESCRIPTION:'+sICS((dl.description||'')+'(dl.all_team?' | Alle Teammitglieder!':'')+' | '+(dl.basis||''))+'\r\nPRIORITY:'+(dl.priority==='hoch'?1:dl.priority==='mittel'?5:9)+'\r\nBEGIN:VALARM\r\nTRIGGER:'+(dl.priority==='hoch'?'-P1D':'-P3D')+'\r\nACTION:DISPLAY\r\nDESCRIPTION:Erinnerung: '+sICS(dl.title)+'\r\nEND:VALARM\r\nEND:VEVENT\r\n';
+    ics+='BEGIN:VEVENT\r\nUID:taiyo-'+d+'-'+i+'@taiyolegal.at\r\nDTSTAMP:'+now+'\r\nDTSTART;VALUE=DATE:'+d+'\r\nDTEND;VALUE=DATE:'+d+'\r\nSUMMARY:[TAIYO] '+sICS(dl.title)+'\r\nDESCRIPTION:'+sICS((dl.description||'')+(dl.all_team?' | Alle Teammitglieder!':'')+' | '+(dl.basis||''))+'\r\nPRIORITY:'+(dl.priority==='hoch'?1:dl.priority==='mittel'?5:9)+'\r\nBEGIN:VALARM\r\nTRIGGER:'+(dl.priority==='hoch'?'-P1D':'-P3D')+'\r\nACTION:DISPLAY\r\nDESCRIPTION:Erinnerung: '+sICS(dl.title)+'\r\nEND:VALARM\r\nEND:VEVENT\r\n';
     n++;
   });
   ics+='END:VCALENDAR';
