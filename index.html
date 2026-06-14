@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
+<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -243,8 +243,8 @@ mammothScript.onload=function(){mammothLoaded=true;};
 document.head.appendChild(mammothScript);
 
 // ── API Key ──
-(function(){var k=localStorage.getItem('taiyo_api_key');if(k){document.getElementById('api-key').value=k;document.getElementById('key-status').className='key-status ok';document.getElementById('key-status').textContent='✓ Key gespeichert';}})();
-function saveKey(){var k=document.getElementById('api-key').value.trim();if(!k){return;}localStorage.setItem('taiyo_api_key',k);document.getElementById('key-status').className='key-status ok';document.getElementById('key-status').textContent='✓ Gespeichert';}
+(function(){var k=localStorage.getItem('taiyo_api_key');if(k){document.getElementById('api-key').value=k;document.getElementById('key-status').className='key-status ok';document.getElementById('key-status').textContent='\u2713 Key gespeichert';}})();
+function saveKey(){var k=document.getElementById('api-key').value.trim().replace(/[^\x20-\x7E]/g,'');if(!k){return;}localStorage.setItem('taiyo_api_key',k);document.getElementById('key-status').className='key-status ok';document.getElementById('key-status').textContent='\u2713 Gespeichert';}
 
 // ── Pills ──
 document.querySelectorAll('.pill[data-group]').forEach(function(p){
@@ -358,16 +358,13 @@ async function runCheck(){
   var userMsg='Bitte prüfe das folgende Dokument gemäß den Anweisungen.\n\nDOKUMENT:\n'+p.docText;
 
   try{
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:2000,
-        system:systemPrompt,
-        messages:[{role:'user',content:userMsg}]
-      })
-    });
+    var safeKey=key.replace(/[^\x20-\x7E]/g,'');
+    var headers=new Headers();
+    headers.append('Content-Type','application/json');
+    headers.append('x-api-key',safeKey);
+    headers.append('anthropic-version','2023-06-01');
+    var bodyObj={model:'claude-sonnet-4-6',max_tokens:2000,system:systemPrompt,messages:[{role:'user',content:userMsg}]};
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:headers,body:JSON.stringify(bodyObj)});
     var data=await resp.json();
     if(data.error){rb.textContent='Fehler: '+data.error.message;}
     else{rb.textContent=data.content[0].text;}
@@ -498,12 +495,4 @@ function getDtypeRules(dtype){
   if(dtype.indexOf('Sonstiges E-Mail')>=0){
     return `Sonstiges E-Mail:
 – Betreff klar und aussagekräftig.
-– Zweck des E-Mails im ersten Satz erkennbar.
-– Nächste Schritte klar definiert.`;
-  }
-  return `– Dokumenttyp: ${dtype}. Wende allgemeine Policy-Regeln an.`;
-}
-</script>
-
-
-</body></html>
+– Zweck des E-Mails im ersten Satz erkennb
