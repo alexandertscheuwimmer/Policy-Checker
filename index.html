@@ -440,6 +440,12 @@ async function runCheck(){
 }
 
 function buildSystemPrompt(p){
+  // Volle Fundstelle (Gericht/Datum/GZ) nur bei Schriftsatz und Legal Opinion/Memo noetig.
+  // In E-Mails und internen Aktenvermerken genuegt ein bloesser Rechtssatz.
+  var volleFundstelleNoetig=(p.dtype.indexOf('Schriftsatz')>=0)||(p.dtype.indexOf('Legal Opinion')>=0)||(p.dtype.indexOf('Memo')>=0);
+  var zitatRegel=volleFundstelleNoetig
+    ? 'Bei diesem Dokumenttyp ('+p.dtype+') ist die volle Fundstelle erforderlich: Gericht, Datum und Geschäftszahl, zum Beispiel "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t". Ein bloßer Rechtssatz genügt hier NICHT.'
+    : 'Bei diesem Dokumenttyp ('+p.dtype+') genügt ein bloßer Rechtssatz als Beleg, zum Beispiel "RS0069706". Eine volle Fundstelle (Gericht/Datum/Geschäftszahl) ist NICHT erforderlich. Flagge NICHT, dass Datum oder Geschäftszahl fehlen. Flagge NICHT das Zitierformat nach Punkt 14.4.';
   var wichtigExtra=p.wichtig?`
 
 WICHTIG-MODUS AKTIV: Vertiefende juristische Prüfung.
@@ -486,7 +492,7 @@ PUNKT 14 - JURISTISCHE KLIENTENARBEIT:
 14.1: Möglichst nur juristische Argumente. Hierarchie: Höchstgerichtliche Judikatur (inkl. EuGH) > Literatur/sonstige Judikatur > andere. RECHTSSÄTZE: In E-Mails und internen Aktenvermerken genügt ein bloßer Rechtssatz als Beleg, zum Beispiel "RS0069706". Eine Leitentscheidung oder konkrete Geschäftszahl ist dort NICHT zusätzlich erforderlich. Flagge dort NICHT, dass die Fundstelle fehlt. Nur in Schriftsätzen sowie Legal Opinions/Memos genügt der bloße Rechtssatz nicht - dort ist zusätzlich die konkrete Entscheidung erforderlich (Gericht, Datum, Geschäftszahl), zum Beispiel "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t".
 14.2: Anwaelte mit "Herr/Frau Kollege/Kollegin" ansprechen. Schlussformel "mit freundlichen kollegialen Gruessen".
 14.3: Alle wichtigen Aussagen separat und nach der jeweiligen Aussage in Klammer belegen - nur ausnahmsweise als Teil der Aussage. Gesetzestelle, Judikatur und Datum sind Belege. Praezise sein.
-14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl"; z.B. "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t".
+14.4: Judikaturzitierformat (NUR relevant wo volle Fundstelle noetig): "Gericht vom Datum zu GZ Geschäftszahl", zum Beispiel "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t". ${zitatRegel}
 14.5: Auf Englisch: Paragraph = Sec; Abs = para; Z = no; Gesetz = Act; Gesetzbuch = Code; f/ff = et seq.
 14.6: Lateinische Begriffe kursiv - ausser gaengige (p.a., e.g., via, ca, etc).
 14.7: Mit Gerichten und Behoerden im Zweifel via Schriftsatz kommunizieren.
@@ -505,14 +511,14 @@ BALANCE (sehr wichtig): Konzentriere dich auf die groben Schnitzer. Zu den grobe
 - Einleitung und Schluss bei E-Mails: NICHT kritisieren. Policy 10.8 verlangt kurze Einleitung (auch laengere wie "In Bezugnahme auf die Angelegenheit betreffend XXX haben wir ein Update fuer Sie" sind OK) und hoeflichen Schluss (auch "Wir bedanken uns im Voraus vielmals!" ist OK). NUR im Hauptteil gilt Floskelverbot.
 - Unklare Verweise im Hauptteil ("Wie gesagt", "wie erwaehnt"): Befund (Punkt 10.5).
 - Fehlende Belege bei wichtigen juristischen Aussagen: Befund (Punkt 14.3).
-- Judikaturzitierformat pruefen (Punkt 14.4): "Gericht vom TT.MM.JJJJ zu GZ X".
+- Judikaturzitierformat (Punkt 14.4): ${zitatRegel}
 - Falsches Datumformat (nicht TT.MM.JJJJ): Befund (Punkt 10.1).
 - Dokumenttyp-spezifische Regeln: ${getDtypeRules(p.dtype)}
 - Vorschlaege in Spalte 3 muessen selbst policy-konform sein:
   * Saetze maximal 15 Woerter (zaehle die Woerter!)
   * Eine Aussage pro Satz
   * Keine Floskeln
-  * Judikatur gemaess Punkt 14.4 der Policy zitieren: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt"
+  * Judikatur nur dort im vollen Format zitieren, wo es noetig ist (siehe Zitatregel oben). In E-Mails und Aktenvermerken genuegt der Rechtssatz.
   * Gesetzestellen in Klammer nach der Aussage: (§ X Abs Y ABGB)
   * Konkret und direkt
   * Kein "- siehe aber Punkte 2.6, 2.4 der Policy" nach jedem Vorschlag (steht nur in der Spaltenüberschrift)
@@ -610,7 +616,7 @@ SPALTE 2 (Problem) UND SPALTE 3 (Vorschlag) - BEIDE muessen selbst policy-konfor
 - ${p.dtype.indexOf('E-Mail')>=0?'Das gepruefte Schriftstueck ist ein E-Mail. Verwende "E-Mail", nicht "Schreiben" oder "Dokument".':'Verwende "Dokument" passend zum Dokumenttyp.'}
 
 NUR SPALTE 3 zusaetzlich:
-- Judikatur nach Punkt 14.4 der Policy: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt".
+- Judikatur im Vorschlag: ${zitatRegel}
 - ALLE Belege (Gesetzesstellen, Judikatur, Rechtssätze) stehen NACH der Aussage in runder Klammer, nie als Teil der Aussage. RICHTIG: "Der Anspruch ist verjährt (§ 1480 ABGB)." FALSCH: "Der Anspruch ist nach § 1480 ABGB verjährt." Gilt auch für Paragraphen.
 - Kein "- siehe aber Punkte 2.6, 2.4 der Policy" anhaengen (steht nur in der Spaltenüberschrift).
 
@@ -621,6 +627,7 @@ SPRACHE:
 
 function buildSelfCheckPrompt(p){
   var istEmail=p.dtype.indexOf('E-Mail')>=0;
+  var volleFundstelleNoetig=(p.dtype.indexOf('Schriftsatz')>=0)||(p.dtype.indexOf('Legal Opinion')>=0)||(p.dtype.indexOf('Memo')>=0);
   return `Du bist ein strenger Lektor fuer die Kanzlei TAIYO Legal. Du erhaeltst einen Review-Output im Tag-Format (===MODUL_A=== etc.).
 Deine Aufgabe: Pruefe JEDE ZEILE auf Verstoesse gegen die folgenden Regeln und korrigiere sie. Gib NUR den korrigierten Output zurueck, exakt im selben Tag-Format, ohne Kommentar.
 
@@ -640,7 +647,9 @@ REGELN FUER SPALTE 2 (Problem, nach erstem TRENNER) UND SPALTE 3 (Vorschlag, nac
 
 7. VERFAHRENSBEGRIFFE PRAEZISE: Ersetze das allgemeine Wort "Verfahren" durch die genaue Art, sofern erkennbar: "streitiges Verfahren", "Ausserstreitverfahren", "Verwaltungsverfahren", "Strafverfahren" oder "Verwaltungsstrafverfahren". Nur wenn keine dieser Arten gemeint ist, bleibt "Verfahren".
 
-8. JUDIKATUR-FORMAT (nur Spalte 3): Zitate im Format "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt". (Punkt 14.4 der Policy)
+8. JUDIKATUR-FORMAT: ${volleFundstelleNoetig
+    ? 'Bei diesem Dokumenttyp ist die volle Fundstelle noetig (Gericht, Datum, Geschäftszahl). Zitate im Format "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt" (Punkt 14.4 der Policy).'
+    : 'Bei diesem Dokumenttyp (E-Mail oder interner Aktenvermerk) genuegt ein bloesser Rechtssatz wie "RS0069706". ENTFERNE jeden Befund, der bemaengelt, dass Datum oder Geschäftszahl fehlen oder dass das Zitierformat nach Punkt 14.4 nicht eingehalten ist. Das ist bei diesem Dokumenttyp KEIN Fehler.'}
 
 8b. BELEGE IN KLAMMER: Alle Belege (Gesetzesstellen wie "§ 1480 ABGB", Judikatur, Rechtssätze) stehen NACH der Aussage in runder Klammer, nie als Teil der Aussage. FALSCH: "ist nach § 1480 ABGB verjährt". RICHTIG: "ist verjährt (§ 1480 ABGB)".
 
