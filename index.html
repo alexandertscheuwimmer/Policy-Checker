@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
+<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -380,7 +380,9 @@ async function runCheck(){
     var resp=await fetch('/api',{method:'POST',headers:headers,body:JSON.stringify(bodyObj)});
     var data=await resp.json();
     if(data.error){rb.textContent='Fehler: '+data.error.message;}
-    else{renderResult(data.content[0].text,rb);}
+    else{window._lastRaw=data.content[0].text;renderResult(data.content[0].text,rb);
+      var dbg=document.getElementById('debug-raw');
+      if(dbg){dbg.textContent='RAW OUTPUT:\n'+data.content[0].text;dbg.style.display='block';}}
   }catch(e){rb.textContent='Verbindungsfehler: '+e.message;}
 
   btn.disabled=false;btn.textContent='Dokument prüfen →';
