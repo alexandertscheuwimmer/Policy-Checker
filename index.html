@@ -494,7 +494,7 @@ Strenge priorisieren: Gibt es gravierende Verstoesse (Saetze ueber 30 Woerter, "
 - Judikaturzitierformat pruefen (Punkt 14.4): "Gericht vom TT.MM.JJJJ zu GZ X".
 - Falsches Datumformat (nicht TT.MM.JJJJ): Befund (Punkt 10.1).
 - Dokumenttyp-spezifische Regeln: ${getDtypeRules(p.dtype)}
-- Vorschlaege in Spalte 3 muessen selbst policy-konform sein: Saetze max 15 Woerter, eine Aussage pro Satz, keine Floskeln, konkret und direkt. Jeder Vorschlag endet mit: " - siehe aber Punkte 2.6, 2.4 der Policy".
+- Vorschlaege in Spalte 3 muessen selbst policy-konform sein: Saetze max 15 Woerter, eine Aussage pro Satz, keine Floskeln, konkret und direkt.
 
 2. Vollstaendigkeit und Uebersehenes (Hauptproblem - 70% der Faelle):
 Der ReviewAssistant recherchiert eigenstaendig und denkt juristisch mit. Er beschraenkt sich NICHT auf den vorhandenen Text.
@@ -505,8 +505,8 @@ Schritt 3: Pruefe die vier Kriterien (Punkt 13.10 der Policy): Umfassend? Pro-ak
 Inhaltliche Fehler im engeren Sinn: Nur bei Wichtig-Modus oder offensichtlichen Fehlern.
 Rechtsgebiet(e): ${p.rgs}${p.ausRecht?' + Auslaendisches Recht: '+p.ausRecht:''}
 Rechtsschutz: ${rsHinweis}
-Ton: sachlich, freundlich, kurz. Nie "Es fehlt jede/r/s ..." sondern "Es fehlt ein/e ...".
-Policy-Referenzen: "Punkt X.Y der Policy". Bei mehreren: "Punkte X.Y, Z.W der Policy".
+Ton: sachlich, freundlich, kurz. Nie "Es fehlt jede/r/s ..." sondern "Es fehlt eine ..." oder "Es fehlt ein ...". Nie absolutierende Sprache.
+Policy-Referenzen: IMMER "Punkte X.Y der Policy" (immer Plural "Punkte", auch bei einem einzigen Punkt). Beispiel: "Punkte 10.9 der Policy" oder "Punkte 10.9, 14.3 der Policy".
 
 3. Fristenscanner (ALLE Termine - auch implizite):
 - Gerichts-/Behoerdenfrist: konkretes Datum aus Schriftstueck.
@@ -542,6 +542,8 @@ Regeln fuer den Output:
 - Modul B: Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist.
 - Modul B: Eigenstaendig denken - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
 - Modul C: Alle Termine mit konkretem Datum (TT.MM.JJJJ). Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
+- Kein Doppelpunkt am Anfang von Spalte 2 oder Spalte 3. Direkt mit Inhalt beginnen.
+- Wenn Dokumenttyp ein E-Mail ist (${p.dtype.indexOf('E-Mail')>=0?'JA - schreibe "dieses E-Mail" statt "dieses Dokument"':'NEIN - schreibe "dieses Dokument"'}).
 - Ausgabesprache: ${p.lang}.
 - WICHTIG zur Sprache: Wenn die Ausgabesprache (${p.lang}) NICHT die Sprache des zu pruefenden Dokuments ist, dann: (a) Gib das Feedback in der Ausgabesprache. (b) Uebersetze in Spalte 3 (Vorschlag) den verbesserten Text in die Ausgabesprache.`;
 }
@@ -628,14 +630,14 @@ function renderTable(title,section,sep){
   }
   var lines=section.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l.indexOf(sep)>-1;});
   if(!lines.length){return html+'<div class="res-none">Kein Befund.</div></div>';}
-  html+='<table class="res-table"><thead><tr><th style="width:26%">Textausschnitt</th><th style="width:24%">Problem</th><th>Vorschlag</th></tr></thead><tbody>';
+  html+='<table class="res-table"><thead><tr><th style="width:26%">Textausschnitt</th><th style="width:24%">Problem</th><th>Vorschlag – siehe aber Punkte 2.6, 2.4 der Policy</th></tr></thead><tbody>';
   lines.forEach(function(line){
     // Remove leading "ZEILE:" prefix
     line=line.replace(/^ZEILE:\s*/i,'');
     var parts=line.split(sep);
     var col1=parts[0]?parts[0].trim():'';
-    var col2=parts[1]?parts[1].trim():'';
-    var col3=parts[2]?parts[2].trim():'';
+    var col2=parts[1]?parts[1].trim().replace(/^:\s*/,''):'';
+    var col3=parts[2]?parts[2].trim().replace(/^:\s*/,'').replace(/\s*-\s*siehe aber Punkte 2\.6,\s*2\.4 der Policy\.?$/i,''):'';
     html+='<tr><td style="color:#888;font-style:italic">'+esc(col1)+'</td><td>'+esc(col2)+'</td><td class="td-fix">'+esc(col3)+'</td></tr>';
   });
   html+='</tbody></table></div>';
