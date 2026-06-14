@@ -167,6 +167,10 @@ textarea{resize:vertical;line-height:1.55}
       <div class="pill" data-group="rg-multi">Strafrecht</div>
       <div class="pill" data-group="rg-multi">(Sonstiges) Verwaltungsrecht</div>
     </div>
+    <div style="margin-top:.75rem;padding-top:.75rem;border-top:1px solid #f0f0ec">
+      <label class="field-label" style="margin-bottom:.4rem">Ausländisches Recht <span style="font-size:11px;color:#aaa;font-weight:400">optional</span></label>
+      <input type="text" id="auslaendisches-recht" placeholder="z.B. japanisches Gesellschaftsrecht, chinesisches Familienrecht …" style="font-size:13px">
+    </div>
   </div>
 
   <!-- 3: Kontext -->
@@ -201,9 +205,15 @@ textarea{resize:vertical;line-height:1.55}
         </div>
       </div>
     </div>
+    <div style="margin-top:.6rem">
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#555;cursor:pointer">
+        <input type="checkbox" id="rechtsschutz-cb" style="accent-color:#1F3865;width:14px;height:14px">
+        Rechtsschutzversicherung vorhanden
+      </label>
+    </div>
     <div class="divider"></div>
     <div class="field">
-      <label class="field-label">Historie<span class="req">*</span> <span style="font-size:11px;color:#aaa;font-weight:400">– bisherige Korrespondenz einfügen oder hochladen</span></label>
+      <label class="field-label">Historie <span style="font-size:11px;color:#aaa;font-weight:400">optional – bisherige Korrespondenz einfügen oder hochladen</span></label>
       <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center">
         <div class="drop-zone" id="hist-drop" style="min-height:90px" ondragover="dzOver(event,&#39;hist-drop&#39;)" ondragleave="dzLeave(&#39;hist-drop&#39;)" ondrop="dzDrop(event,&#39;hist-files&#39;,&#39;hist-drop&#39;,&#39;hist-list&#39;)">
           <input type="file" id="hist-files" multiple="" accept=".docx,.pdf,.txt,.eml" style="z-index:1" onchange="onHistFiles(this)">
@@ -220,12 +230,7 @@ textarea{resize:vertical;line-height:1.55}
       <label class="field-label">Zusätzlicher Kontext <span style="font-size:11px;color:#aaa;font-weight:400">optional</span></label>
       <textarea id="zusatz" style="min-height:54px" placeholder="z.B. Mandant ist nervös, bitte sachlichen Ton. Verjährungsfrist läuft am 30.06.2026 ab."></textarea>
     </div>
-    <div class="field" style="margin-top:.5rem">
-      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#555;cursor:pointer">
-        <input type="checkbox" id="rechtsschutz-cb" style="accent-color:#1F3865;width:14px;height:14px">
-        Rechtsschutzversicherung vorhanden
-      </label>
-    </div>
+
   </div>
 
   <!-- 4: Zu prüfendes Dokument -->
@@ -258,7 +263,7 @@ textarea{resize:vertical;line-height:1.55}
     <label class="wichtig-label" id="wichtig-label">
       <input type="checkbox" id="wichtig-cb" onchange="this.closest(&#39;.wichtig-label&#39;).classList.toggle(&#39;active&#39;,this.checked)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-      Wichtig <span class="wichtig-sub">– vertiefende juristische Analyse, hoher Aufwand</span>
+      Wichtig <span class="wichtig-sub">– vertiefende Analyse, höhere Kosten</span>
     </label>
   </div>
 
@@ -359,6 +364,7 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function buildPrompt(){
   var dtype=document.querySelector('.pill.active[data-group="dtype"]');dtype=dtype?dtype.textContent.trim():'';
   var rgs=[];document.querySelectorAll('.pill.active[data-group="rg-multi"]').forEach(function(p){rgs.push(p.textContent.trim());});
+  var ausRecht=document.getElementById('auslaendisches-recht');ausRecht=ausRecht?ausRecht.value.trim():'';
   var mandant=document.getElementById('mandant-name').value.trim();
   var personTypeCb=document.getElementById('person-type-cb');var personType=personTypeCb?(personTypeCb.checked?'jur':'nat'):'';
   var herkunftCb=document.getElementById('herkunft-cb');var herkunft=herkunftCb?(herkunftCb.checked?'ausl':'inl'):'';
@@ -378,7 +384,7 @@ function buildPrompt(){
 
   var rechtsschutz=document.getElementById('rechtsschutz-cb');rechtsschutz=rechtsschutz&&rechtsschutz.checked;
   return {
-    dtype:dtype,rgs:rgs.join(', ')||'nicht angegeben',
+    dtype:dtype,rgs:rgs.join(', ')||'nicht angegeben',ausRecht:ausRecht,
     mandant:mandant,personLabel:personLabel,herkunftLabel:herkunftLabel,
     empf:empf,rolle:rolle,
     historie:historie,zusatz:zusatz,
@@ -391,7 +397,7 @@ async function runCheck(){
   var key=localStorage.getItem('taiyo_api_key')||document.getElementById('api-key').value.trim();
   if(!key){alert('Bitte zuerst den API-Key speichern.');return;}
   var p=buildPrompt();
-  if(!p.mandant||(!p.historie&&!p.docText)){alert('Bitte Mandant, Historie und zu prüfendes Dokument ausfüllen.');return;}
+  if(!p.mandant||!p.docText){alert('Bitte Mandant und zu prüfendes Dokument ausfüllen.');return;}
 
   var btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>&nbsp; Wird geprüft …';
@@ -433,7 +439,7 @@ Prüfe ob alle relevanten Normen und Judikatur berücksichtigt wurden.`:'';
 
 KONTEXT:
 - Dokumenttyp: ${p.dtype}
-- Rechtsgebiet(e): ${p.rgs}
+- Rechtsgebiet(e): ${p.rgs}${p.ausRecht?' + Auslaendisches Recht: '+p.ausRecht:''}
 - Mandant: ${p.mandant}${p.personLabel?' ('+p.personLabel+')':''}${p.herkunftLabel?', '+p.herkunftLabel:''}
 - Empfaenger: ${p.empf}${p.rolle?' - Rolle: '+p.rolle:''}
 - Historie:
@@ -488,17 +494,19 @@ Strenge priorisieren: Gibt es gravierende Verstoesse (Saetze ueber 30 Woerter, "
 - Judikaturzitierformat pruefen (Punkt 14.4): "Gericht vom TT.MM.JJJJ zu GZ X".
 - Falsches Datumformat (nicht TT.MM.JJJJ): Befund (Punkt 10.1).
 - Dokumenttyp-spezifische Regeln: ${getDtypeRules(p.dtype)}
-- Vorschlaege in Spalte 3 muessen selbst policy-konform sein: Saetze max 15 Woerter, eine Aussage pro Satz, keine Floskeln, konkret und direkt.
+- Vorschlaege in Spalte 3 muessen selbst policy-konform sein: Saetze max 15 Woerter, eine Aussage pro Satz, keine Floskeln, konkret und direkt. Jeder Vorschlag endet mit: " - siehe aber Punkte 2.6, 2.4 der Policy".
 
 2. Vollstaendigkeit und Uebersehenes (Hauptproblem - 70% der Faelle):
-- "Uebersehen" heisst: kommt im Dokument GAR NICHT vor. Nicht: ungenuegend formuliert.
-- Eigenstaendig denken: Welche Rechtsfragen, Normen, Risiken gehoeren zu diesem Sachverhalt und fehlen voellig?
-- Vorkorrespondenz pruefen: Gibt es (auch implizit) gestellte Fragen die unbeantwortet sind?
-- Vier Kriterien pruefen (Punkt 13.10): Umfassend? Pro-aktiv? Gruendlich? Praktisch?
-- Rechtsgebiet(e): ${p.rgs} - einschlaegige Normen und Judikatur pruefen ob sie erwaehnt werden.
-- Inhaltliche Fehler (30%): Nur bei Wichtig-Modus oder offensichtlichen Fehlern.
-- Ton in Spalte 2 ("Problem"): sachlich aber freundlich. Nicht "Es fehlt JEDER Hinweis" sondern "Es fehlt ein Hinweis". Kurz halten.
-- Rechtsschutz: ${rsHinweis}
+Der ReviewAssistant recherchiert eigenstaendig und denkt juristisch mit. Er beschraenkt sich NICHT auf den vorhandenen Text.
+Schritt 1: Was gehoert zum Sachverhalt und fehlt voellig? Pruefe Normen, Judikatur, Risiken, Gegenargumente anhand des Rechtsgebiets.
+Schritt 2: Gibt es in der Vorkorrespondenz (auch implizit) unbeantworte Fragen oder Themen?
+Schritt 3: Pruefe die vier Kriterien (Punkt 13.10 der Policy): Umfassend? Pro-aktiv? Gruendlich? Praktisch?
+"Uebersehen" = kommt GAR NICHT vor. Nicht: ungenuegend formuliert.
+Inhaltliche Fehler im engeren Sinn: Nur bei Wichtig-Modus oder offensichtlichen Fehlern.
+Rechtsgebiet(e): ${p.rgs}${p.ausRecht?' + Auslaendisches Recht: '+p.ausRecht:''}
+Rechtsschutz: ${rsHinweis}
+Ton: sachlich, freundlich, kurz. Nie "Es fehlt jede/r/s ..." sondern "Es fehlt ein/e ...".
+Policy-Referenzen: "Punkt X.Y der Policy". Bei mehreren: "Punkte X.Y, Z.W der Policy".
 
 3. Fristenscanner (ALLE Termine - auch implizite):
 - Gerichts-/Behoerdenfrist: konkretes Datum aus Schriftstueck.
@@ -534,7 +542,8 @@ Regeln fuer den Output:
 - Modul B: Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist.
 - Modul B: Eigenstaendig denken - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
 - Modul C: Alle Termine mit konkretem Datum (TT.MM.JJJJ). Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
-- Ausgabesprache: ${p.lang}.`;
+- Ausgabesprache: ${p.lang}.
+- WICHTIG zur Sprache: Wenn die Ausgabesprache (${p.lang}) NICHT die Sprache des zu pruefenden Dokuments ist, dann: (a) Gib das Feedback in der Ausgabesprache. (b) Uebersetze in Spalte 3 (Vorschlag) den verbesserten Text in die Ausgabesprache.`;
 }
 
 function getDtypeRules(dtype){
