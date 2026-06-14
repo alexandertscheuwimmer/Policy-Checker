@@ -99,9 +99,18 @@ textarea{resize:vertical;line-height:1.55}
 <script src="./TAIYO ReviewAssistant_files/mammoth.browser.min.js.Download"></script></head>
 <body>
 <div class="wrap">
-  <div class="header">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F3865" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-    <div class="logo">TAIYO <span>ReviewAssistant</span></div>
+  <div class="header" style="justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F3865" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      <div class="logo">TAIYO <span>ReviewAssistant</span></div>
+    </div>
+    <div style="background:#1F3865;border-radius:6px;padding:4px 10px;display:flex;align-items:center;gap:5px">
+      <span style="color:#fff;font-size:13px;font-weight:700;letter-spacing:.5px;font-family:serif">太陽</span>
+      <div style="display:flex;flex-direction:column;line-height:1.1">
+        <span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:2px">TAIYO</span>
+        <span style="color:#fff;font-size:8px;letter-spacing:3px;opacity:.85">LEGAL</span>
+      </div>
+    </div>
   </div>
 
   <!-- API Key -->
@@ -181,7 +190,7 @@ textarea{resize:vertical;line-height:1.55}
       <div class="field">
         <div class="empf-header">
           <label class="field-label">Empfänger<span class="req">*</span></label>
-          <label class="ident-label" id="ident-label">
+          <label class="ident-label enabled" id="ident-label">
             <input type="checkbox" id="ident-cb" onchange="toggleIdent(this)">
             Ident mit Mandanten
           </label>
@@ -204,12 +213,18 @@ textarea{resize:vertical;line-height:1.55}
           <div class="file-list" id="hist-list"></div>
         </div>
         <div style="font-size:12px;color:#bbb;text-align:center">oder</div>
-        <textarea id="historie" style="min-height:90px" placeholder="E-Mail-Verlauf oder Schriftwechsel hier einfügen (Regelfall) – oder kurze Sachverhaltsdarstellung …"></textarea>
+        <textarea id="historie" style="min-height:90px;height:100%;box-sizing:border-box" placeholder="E-Mail-Verlauf oder Schriftwechsel hier einfügen (Regelfall) – oder kurze Sachverhaltsdarstellung …"></textarea>
       </div>
     </div>
     <div class="field">
       <label class="field-label">Zusätzlicher Kontext <span style="font-size:11px;color:#aaa;font-weight:400">optional</span></label>
       <textarea id="zusatz" style="min-height:54px" placeholder="z.B. Mandant ist nervös, bitte sachlichen Ton. Verjährungsfrist läuft am 30.06.2026 ab."></textarea>
+    </div>
+    <div class="field" style="margin-top:.5rem">
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:#555;cursor:pointer">
+        <input type="checkbox" id="rechtsschutz-cb" style="accent-color:#1F3865;width:14px;height:14px">
+        Rechtsschutzversicherung vorhanden
+      </label>
     </div>
   </div>
 
@@ -270,7 +285,7 @@ mammothScript.onload=function(){mammothLoaded=true;};
 document.head.appendChild(mammothScript);
 
 // ── API Key ──
-(function(){var k=localStorage.getItem('taiyo_api_key');if(k){document.getElementById('api-key').value=k;document.getElementById('key-status').className='key-status ok';document.getElementById('key-status').textContent='\u2713 Key gespeichert';}})();
+(function(){var k=localStorage.getItem('taiyo_api_key');if(k){document.getElementById('api-key').value=k;document.getElementById('key-status').className='key-status ok';document.getElementById('key-status').textContent='\u2713 Key gespeichert';}var lbl=document.getElementById('ident-label');if(lbl)lbl.classList.add('enabled');})();
 function saveKey(){var k=document.getElementById('api-key').value.trim().replace(/[^\x20-\x7E]/g,'');if(!k){return;}localStorage.setItem('taiyo_api_key',k);document.getElementById('key-status').className='key-status ok';document.getElementById('key-status').textContent='\u2713 Gespeichert';}
 
 // ── Pills ──
@@ -361,12 +376,13 @@ function buildPrompt(){
   var personLabel=personType==='nat'?'Natürliche Person':personType==='jur'?'Juristische Person':'';
   var herkunftLabel=herkunft==='inl'?'Inländer':herkunft==='ausl'?'Ausländer':'';
 
+  var rechtsschutz=document.getElementById('rechtsschutz-cb');rechtsschutz=rechtsschutz&&rechtsschutz.checked;
   return {
     dtype:dtype,rgs:rgs.join(', ')||'nicht angegeben',
     mandant:mandant,personLabel:personLabel,herkunftLabel:herkunftLabel,
     empf:empf,rolle:rolle,
     historie:historie,zusatz:zusatz,
-    docText:docText,lang:lang,wichtig:wichtig
+    docText:docText,lang:lang,wichtig:wichtig,rechtsschutz:rechtsschutz
   };
 }
 
@@ -411,6 +427,8 @@ Prüfe zusätzlich auf inhaltliche Fehler (falsche Rechtsansichten, falsche Subs
 Prüfe Argumentation auf Lücken, Widersprüche, unzureichende Begründungen.
 Prüfe ob alle relevanten Normen und Judikatur berücksichtigt wurden.`:'';
 
+  var rsHinweis=p.rechtsschutz?' Rechtsschutzversicherung ist vorhanden - bei Fristen und Kosten beachten (Deckungsanfrage, Beratungspauschale gemaess Policy 17.3).':
+    ' Keine Rechtsschutzversicherung angegeben.';
   return `Du bist der TAIYO ReviewAssistant - ein internes Qualitaetspruefungstool der Wiener Kanzlei TAIYO Legal - Rechtsanwalts GmbH.
 
 KONTEXT:
@@ -421,6 +439,7 @@ KONTEXT:
 - Historie:
 ${p.historie||'(keine angegeben)'}
 ${p.zusatz?'- Zusaetzlicher Kontext: '+p.zusatz:''}
+- Rechtsschutz: ${rsHinweis}
 ${wichtigExtra}
 
 VOLLSTAENDIGE TAIYO POLICY - ALLE PUNKTE PRUEFEN:
@@ -457,35 +476,39 @@ PUNKT 15 - TEAM-VERANTWORTLICHKEIT:
 
 PRUEF-SCHWERPUNKTE:
 
-1. Policy & Stil (IMMER pruefen):
-- Satzlaenge ZAEHLEN: ueber 20 Woerter = Befund zwingend. Label: 21-30 "Zu langer Satz", 31-45 "Viel zu langer Satz", ueber 45 "Absurd langer Satz".
-- Zwei Aussagen pro Satz: nur kritisieren wenn Satz dadurch ueber 20 Woerter ODER Aussagen thematisch unzusammenhaengend.
-- "So-What-Aussagen" (Begriff immer in Anfuehrungszeichen): korrekte Aussagen ohne Konsequenz. Schwerer Fehler.
-- Stand-alone-Pflicht pruefen: Wuerde jemand ohne Vorkenntnis verstehen worum es geht?
-- Floskeln verboten - AUSNAHME: erste und letzte Zeile bei E-Mails (Policy 10.8 verlangt Einleitung und hoeflichen Schluss). Alle anderen Floskeln = Befund.
-- Unklare Verweise ("Wie gesagt", "wie erwaehnt") = Befund.
-- Fehlende Belege bei wichtigen juristischen Aussagen = Befund (Punkt 14.3).
-- Judikaturzitierungen auf Format pruefen (Punkt 14.4).
-- Falsches Datumformat oder Waehrungsformat = Befund (Punkt 10.1).
-- Gliederung gemaess Punkt 10.2 pruefen.
-- Dokumenttyp-spezifische Regeln beachten: ${getDtypeRules(p.dtype)}
+1. Policy & Stil:
+Strenge priorisieren: Gibt es gravierende Verstoesse (Saetze ueber 30 Woerter, "So-What-Aussagen", fehlende Belege bei wichtigen Aussagen, Stand-alone-Verletzung), dann nur diese melden und laessliche Suenden (Satz mit 18 Woertern, leicht umstaendliche Formulierung) WEGLASSEN.
+- Satzlaenge ZAEHLEN: 21-30 Woerter = "Zu langer Satz" (Punkt 10.9). 31-45 = "Viel zu langer Satz". Ueber 45 = "Absurd langer Satz". Saetze bis 20 Woerter nie kritisieren.
+- Zwei Aussagen pro Satz: nur Befund wenn Satz dadurch ueber 20 Woerter ODER Aussagen thematisch unzusammenhaengend.
+- "So-What-Aussagen" (Begriff immer in Anfuehrungszeichen): korrekte Aussagen ohne Konsequenz fuer den Empfaenger. Schwerer Fehler (Punkt 13.5).
+- Stand-alone: Wuerde jemand ohne Vorkenntnis verstehen worum es geht? Fehlende Kontextualisierung = Befund (Punkt 10.7).
+- Einleitung und Schluss bei E-Mails: NICHT kritisieren. Policy 10.8 verlangt kurze Einleitung (auch laengere wie "In Bezugnahme auf die Angelegenheit betreffend XXX haben wir ein Update fuer Sie" sind OK) und hoeflichen Schluss (auch "Wir bedanken uns im Voraus vielmals!" ist OK). NUR im Hauptteil gilt Floskelverbot.
+- Unklare Verweise im Hauptteil ("Wie gesagt", "wie erwaehnt"): Befund (Punkt 10.5).
+- Fehlende Belege bei wichtigen juristischen Aussagen: Befund (Punkt 14.3).
+- Judikaturzitierformat pruefen (Punkt 14.4): "Gericht vom TT.MM.JJJJ zu GZ X".
+- Falsches Datumformat (nicht TT.MM.JJJJ): Befund (Punkt 10.1).
+- Dokumenttyp-spezifische Regeln: ${getDtypeRules(p.dtype)}
+- Vorschlaege in Spalte 3 muessen selbst policy-konform sein: Saetze max 15 Woerter, eine Aussage pro Satz, keine Floskeln, konkret und direkt.
 
 2. Vollstaendigkeit und Uebersehenes (Hauptproblem - 70% der Faelle):
-- "Uebersehen" = kommt GAR NICHT vor, nicht: ungenuegend formuliert.
-- Eigenstaendig denken: Welche Rechtsfragen, Normen (Punkt 14.1), Gegenargumente gehoeren zu diesem Sachverhalt und fehlen voellig?
-- Vorkorrespondenz pruefen: Gibt es (auch implizit) gestellte Fragen die noch unbeantwortet sind?
-- Pruefen ob alle Kriterien aus Punkt 13.10 erfuellt: Umfassend? Pro-aktiv? Gruendlich? Praktisch?
-- Rechtsgebiet(e): ${p.rgs} - einschlaegige Normen und Judikatur pruefen.
-- Inhaltliche Fehler (30% der Faelle): Nur bei Wichtig-Modus oder offensichtlichen Fehlern anmerken.
+- "Uebersehen" heisst: kommt im Dokument GAR NICHT vor. Nicht: ungenuegend formuliert.
+- Eigenstaendig denken: Welche Rechtsfragen, Normen, Risiken gehoeren zu diesem Sachverhalt und fehlen voellig?
+- Vorkorrespondenz pruefen: Gibt es (auch implizit) gestellte Fragen die unbeantwortet sind?
+- Vier Kriterien pruefen (Punkt 13.10): Umfassend? Pro-aktiv? Gruendlich? Praktisch?
+- Rechtsgebiet(e): ${p.rgs} - einschlaegige Normen und Judikatur pruefen ob sie erwaehnt werden.
+- Inhaltliche Fehler (30%): Nur bei Wichtig-Modus oder offensichtlichen Fehlern.
+- Ton in Spalte 2 ("Problem"): sachlich aber freundlich. Nicht "Es fehlt JEDER Hinweis" sondern "Es fehlt ein Hinweis". Kurz halten.
+- Rechtsschutz: ${rsHinweis}
 
 3. Fristenscanner (ALLE Termine - auch implizite):
 - Gerichts-/Behoerdenfrist: konkretes Datum aus Schriftstueck.
 - Urgenz beim Gegner: 2 Wochen ab heute.
 - Urgenz beim Mandanten: dringend 1-2 Werktage, standard 1 Woche, nicht eilig 2 Wochen.
 - Urgenz beim Interessenten: beauftragt 1-2 Wochen, keine Antwort 1-2 Monate, Absage 6-12 Monate.
-- Berichte an Klienten: mindestens alle 14 Tage (Punkt 13.8) - Frist kalendieren.
+- Berichte an Klienten: mindestens alle 14 Tage (Punkt 13.8).
+- Rechtsschutzversicherung vorhanden: Deckungsanfrage als eigener Termin (Punkt 17.3).
 - IMMER konkretes Datum (TT.MM.JJJJ). Nie "binnen X Wochen". Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
-- Alle Termine in Kalender ALLER Teammitglieder eintragen (Punkt 7.8 und 15.2 der Policy).
+- Alle Termine in Kalender ALLER Teammitglieder (Punkt 7.8 / 15.2).
 
 AUSGABEFORMAT:
 Antworte mit exakt diesen drei Bloecken. Davor und danach kein Text.
