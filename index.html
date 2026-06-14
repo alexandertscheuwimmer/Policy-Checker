@@ -413,13 +413,27 @@ async function runCheck(){
     headers.append('Content-Type','application/json');
     headers.append('x-api-key',safeKey);
     headers.append('anthropic-version','2023-06-01');
-    var bodyObj={model:'claude-sonnet-4-6',max_tokens:4000,system:systemPrompt,messages:[{role:'user',content:userMsg}]};
+    var model=p.wichtig?'claude-opus-4-8':'claude-sonnet-4-6';
+    var bodyObj={model:model,max_tokens:4000,system:systemPrompt,messages:[{role:'user',content:userMsg}]};
     var resp=await fetch('/api',{method:'POST',headers:headers,body:JSON.stringify(bodyObj)});
     var data=await resp.json();
-    if(data.error){rb.textContent='Fehler: '+data.error.message;}
-    else{window._lastRaw=data.content[0].text;renderResult(data.content[0].text,rb);
-      var dbg=document.getElementById('debug-raw');
-      if(dbg){dbg.textContent='RAW OUTPUT:\n'+data.content[0].text;dbg.style.display='block';}}
+    if(data.error){rb.textContent='Fehler: '+data.error.message;btn.disabled=false;btn.textContent='Dokument prüfen →';return;}
+    var raw=data.content[0].text;
+
+    // ── Self-correction pass: verify cols 2+3 are policy-compliant ──
+    btn.innerHTML='<span class="spinner"></span>&nbsp; Policy-Kontrolle …';
+    var checkPrompt=buildSelfCheckPrompt(p);
+    var checkMsg='Hier ist ein Review-Output. Pruefe und korrigiere ihn streng nach den Regeln. Gib NUR den korrigierten Output zurueck, exakt im selben Tag-Format.\n\n'+raw;
+    var body2={model:model,max_tokens:4000,system:checkPrompt,messages:[{role:'user',content:checkMsg}]};
+    try{
+      var resp2=await fetch('/api',{method:'POST',headers:headers,body:JSON.stringify(body2)});
+      var data2=await resp2.json();
+      if(!data2.error&&data2.content&&data2.content[0]){raw=data2.content[0].text;}
+    }catch(e2){/* fall back to first-pass output */}
+
+    window._lastRaw=raw;renderResult(raw,rb);
+    var dbg=document.getElementById('debug-raw');
+    if(dbg){dbg.textContent='RAW OUTPUT:\n'+raw;dbg.style.display='block';}
   }catch(e){rb.textContent='Verbindungsfehler: '+e.message;}
 
   btn.disabled=false;btn.textContent='Dokument prüfen →';
@@ -483,7 +497,7 @@ PUNKT 15 - TEAM-VERANTWORTLICHKEIT:
 PRUEF-SCHWERPUNKTE:
 
 1. Policy & Stil:
-Strenge priorisieren: Gibt es gravierende Verstoesse (Saetze ueber 30 Woerter, "So-What-Aussagen", fehlende Belege bei wichtigen Aussagen, Stand-alone-Verletzung), dann nur diese melden und laessliche Suenden (Satz mit 18 Woertern, leicht umstaendliche Formulierung) WEGLASSEN.
+BALANCE (sehr wichtig): Konzentriere dich auf die groben Schnitzer. Zu den groben Schnitzern zaehlen: Saetze ueber 30 Woerter, "So-What-Aussagen", fehlende Belege bei wichtigen Aussagen, Stand-alone-Verletzung, unklare Verweise. Gibt es solche groben Schnitzer, dann melde NUR diese. Laessliche Suenden (Satz mit 16-20 Woertern, leicht umstaendliche aber verstaendliche Formulierung, kleine Stiluneinheitlichkeit) dann WEGLASSEN. Erst wenn es keine groben Schnitzer gibt, die kleineren erwaehnen. Der Mitarbeiter soll nicht mit Kleinigkeiten ueberschuettet werden.
 - Satzlaenge ZAEHLEN: 21-30 Woerter = "Zu langer Satz" (Punkt 10.9). 31-45 = "Viel zu langer Satz". Ueber 45 = "Absurd langer Satz". Saetze bis 20 Woerter nie kritisieren.
 - Zwei Aussagen pro Satz: nur Befund wenn Satz dadurch ueber 20 Woerter ODER Aussagen thematisch unzusammenhaengend.
 - "So-What-Aussagen" (Begriff immer in Anfuehrungszeichen): korrekte Aussagen ohne Konsequenz fuer den Empfaenger. Schwerer Fehler (Punkt 13.5).
@@ -503,24 +517,35 @@ Strenge priorisieren: Gibt es gravierende Verstoesse (Saetze ueber 30 Woerter, "
   * Konkret und direkt - kein "koennte" oder "wuerde"
   * Kein "- siehe aber Punkte 2.6, 2.4 der Policy" nach jedem Vorschlag (steht nur in der Spaltenüberschrift)
 
-2. Vollstaendigkeit und Uebersehenes (Hauptproblem - 70% der Faelle):
-Der ReviewAssistant recherchiert eigenstaendig und denkt juristisch mit. Er beschraenkt sich NICHT auf den vorhandenen Text.
-Schritt 1: Eigenstaendige juristische Recherche zum Sachverhalt. Pruefe die Anwendbarkeit ALLER einschlaegigen Gesetze:
-  - Bei bestandrechtlichen Fragen: ABGB, MRG, WGG, KSchG, WEG, RichtWG, HeizKG
-  - Bei arbeitsrechtlichen Fragen: AngG, ABGB, ArbVG, MSchG, VKG, AVRAG, GlBG
-  - Bei gesellschaftsrechtlichen Fragen: GmbHG, AktG, UGB, SpaltG, EU-Vorschriften
-  - Bei fremdenrechtlichen Fragen: NAG, FPG, AsylG, AuslBG
-  - Allgemein: Pruefe ob EU-Recht (Richtlinien, Verordnungen) anwendbar ist
-  - Auslaendisches Recht: ${p.ausRecht?p.ausRecht+' pruefen':' nicht angegeben'}
-  Fuer jedes Gesetz: Ist es anwendbar? Wenn ja, wurde es im Dokument erwaehnt?
-Schritt 2: Gibt es in der Vorkorrespondenz (auch implizit) unbeantworte Fragen oder Themen?
-Schritt 3: Pruefe die vier Kriterien (Punkt 13.10 der Policy): Umfassend? Pro-aktiv? Gruendlich? Praktisch?
-"Uebersehen" = kommt GAR NICHT vor. Nicht: ungenuegend formuliert.
-Inhaltliche Fehler im engeren Sinn: Nur bei Wichtig-Modus oder offensichtlichen Fehlern.
-Rechtsgebiet(e): ${p.rgs}${p.ausRecht?' + Auslaendisches Recht: '+p.ausRecht:''}
+2. Vollstaendigkeit und Uebersehenes - DAS IST DER WICHTIGSTE TEIL (70% aller Probleme):
+Die Mitarbeiter machen selten echte inhaltliche Fehler. Das Hauptproblem ist Uebersehenes.
+Du darfst dich NICHT auf den vorhandenen Text beschraenken. Du musst eigenstaendig juristisch recherchieren und mitdenken.
+
+Schritt 1 - Sachverhalt erfassen: Worum geht es rechtlich? Leite das aus Dokumenttyp, Rechtsgebiet, Historie und Kontext ab.
+
+Schritt 2 - Anwendbare Gesetze durchgehen: Liste im Kopf ALLE Gesetze auf, die fuer diesen Sachverhalt einschlaegig sein koennten. Pruefe fuer jedes einzeln die Anwendbarkeit. Beispiele:
+  - Bestandrecht: ABGB, MRG, WGG, KSchG, WEG, RichtWG, HeizKG
+  - Arbeitsrecht: AngG, ABGB, ArbVG, MSchG, VKG, AVRAG, GlBG, GewO
+  - Gesellschaftsrecht: GmbHG, AktG, UGB, SpaltG, EU-Vorschriften
+  - Fremdenrecht: NAG, FPG, AsylG, AuslBG
+  - Schadenersatz/Gewaehrleistung: ABGB, KSchG, PHG
+  - Familienrecht: ABGB, EheG, AussStrG
+  - Diese Liste ist NICHT abschliessend. Denke an alle einschlaegigen Gesetze des jeweiligen Rechtsgebiets.
+  - EU-Recht: Sind Richtlinien oder Verordnungen anwendbar?
+  - Auslaendisches Recht: ${p.ausRecht?p.ausRecht+' - pruefen':'nicht angegeben'}
+  Fuer jede einschlaegige Norm: Wurde sie im Dokument beruecksichtigt? Wenn nein und sie ist relevant: das ist ein Befund fuer Modul B.
+
+Schritt 3 - Einschlaegige Judikatur: Gibt es hoechstgerichtliche Rechtsprechung zum Thema, die fehlt? (Punkt 14.1 der Policy)
+
+Schritt 4 - Vorkorrespondenz: Gibt es darin (auch nur implizit) gestellte Fragen, die das Dokument nicht beantwortet?
+
+Schritt 5 - Risiken und Gegenargumente: Welche Risiken, Fristen, Kostenfolgen oder Gegenargumente wurden nicht angesprochen?
+
+Schritt 6 - Vier Kriterien (Punkt 13.10 der Policy): Umfassend? Pro-aktiv? Gruendlich? Praktisch?
+
+"Uebersehen" heisst: kommt im Dokument GAR NICHT vor. Nicht: ungenuegend formuliert. Reine Formulierungsschwaechen gehoeren in Modul A, nicht hierher.
+Echte inhaltliche Fehler (falsche Rechtsansicht): nur bei Wichtig-Modus oder wenn offensichtlich.
 Rechtsschutz: ${rsHinweis}
-Ton: sachlich, freundlich, kurz. VERBOTEN: "Es fehlt jede/r/s ...", "Es fehlt jeder ...", "keinerlei", "jede Einschaetzung", "jeder Hinweis". STATTDESSEN immer: "Es fehlt eine ...", "Es fehlt ein Hinweis, ob ...", "Es fehlt eine Einschaetzung, ob ...". Freundlich und praezise formulieren.
-Policy-Referenzen: Ein Punkt = "Punkt X.Y der Policy" (Singular). Mehrere Punkte = "Punkte X.Y, Z.W der Policy" (Plural).
 
 3. Fristenscanner (ALLE Termine - auch implizite):
 - Gerichts-/Behoerdenfrist: konkretes Datum aus Schriftstueck.
@@ -551,34 +576,61 @@ Regeln fuer den Output:
 - Kein Markdown, keine Sterne, keine Rauten. Nur Plaintext innerhalb der Tags.
 - KEIN_BEFUND schreiben wenn ein Modul nichts zu beanstanden hat - niemals leere Tags.
 - Maximal 5 ZEILE-Eintraege in Modul A, maximal 5 in Modul B.
-- Nur schwere Verstoesse in Modul A. Kleinigkeiten weglassen wenn schon 3+ Befunde vorhanden.
-- Modul A: Spalte 3 (Verbesserter Text) ist die wichtigste - immer konkret ausformulieren.
-- Modul B: Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist.
-- Modul B: Eigenstaendig denken - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
-
-SPALTE 2 (Problem) - STRENGE REGELN:
-- Maximal 15 Woerter pro Satz. Woerter zaehlen!
-- Nur eine Aussage pro Satz.
-- Kein Doppelpunkt am Anfang.
-- Kein "jede/r/s", kein "keinerlei". Stattdessen "ein/e".
-- Nur Policy-Punkt angeben, keine lange Erklaerung: z.B. "Beleg fehlt (Punkt 14.3 der Policy)"
-- Ein Punkt = "Punkt X.Y der Policy". Mehrere = "Punkte X.Y, Z.W der Policy".
-
-SPALTE 3 (Vorschlag) - STRENGE REGELN:
-- Maximal 15 Woerter pro Satz. Woerter zaehlen! Lieber zwei kurze Saetze als ein langer.
-- Nur eine Aussage pro Satz.
-- Kein Doppelpunkt am Anfang.
-- Policy-konform: keine Floskeln, konkret, direkt.
-- Judikatur nach Punkt 14.4 der Policy: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt"
-- Gesetzestellen nach der Aussage in Klammer: (§ X Abs Y ABGB)
-- Kein "koennte", "wuerde", "eventuell". Direkte Aussagen.
-- Kein "- siehe aber Punkte 2.6, 2.4 der Policy" (steht nur in der Spaltenüberschrift).
+- BALANCE: Nur schwere Verstoesse in Modul A. Gibt es schwere Verstoesse, dann laessliche Suenden (Satz mit 16-20 Woertern, leicht umstaendlich) ganz WEGLASSEN. Nur wenn keine schweren Verstoesse vorliegen, die kleineren erwaehnen.
+- Modul A: Spalte 3 (Vorschlag) ist die wichtigste - immer konkret ausformulieren.
+- Modul B ist der Schwerpunkt (70% der Probleme): Was wurde UEBERSEHEN? Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist. Eigenstaendig juristisch recherchieren - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
 - Modul C: Alle Termine mit konkretem Datum (TT.MM.JJJJ). Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
-- Kein Doppelpunkt am Anfang von Spalte 2 oder Spalte 3.
-- Einheitlich "Klient" verwenden - nie "Mandant". Direkt mit Inhalt beginnen.
-- Wenn Dokumenttyp ein E-Mail ist (${p.dtype.indexOf('E-Mail')>=0?'JA - schreibe "dieses E-Mail" statt "dieses Dokument"':'NEIN - schreibe "dieses Dokument"'}).
+
+SPALTE 2 (Problem) UND SPALTE 3 (Vorschlag) - BEIDE muessen selbst policy-konform sein:
+- Maximal 15 Woerter pro Satz. Woerter zaehlen! Lieber zwei kurze Saetze als einen langen.
+- Nur eine Aussage pro Satz.
+- Keine Abkuerzungen ausschreiben (nicht "z.B." sondern "zum Beispiel"). Ausnahme: Gesetze (ABGB) und Judikaturzitate.
+- Kein Doppelpunkt am Anfang.
+- Policy-Referenzen immer in runder Klammer: "(Punkt 10.9 der Policy)" oder "(Punkte 10.9, 14.3 der Policy)". Singular bei einem Punkt, Plural bei mehreren.
+- Keine Absolutierung: nicht "jede/r/s", nicht "keinerlei". Stattdessen "eine"/"ein".
+- Statt "Verfahren" praezise: "streitiges Verfahren", "Ausserstreitverfahren", "Verwaltungsverfahren", "Strafverfahren" oder "Verwaltungsstrafverfahren" - sofern erkennbar.
+- Einheitlich "Klient" - nie "Mandant".
+- ${p.dtype.indexOf('E-Mail')>=0?'Das geprueffte Schriftstueck ist ein E-Mail. Verwende "E-Mail", nicht "Schreiben" oder "Dokument".':'Verwende "Dokument" passend zum Dokumenttyp.'}
+
+NUR SPALTE 3 zusaetzlich:
+- Judikatur nach Punkt 14.4 der Policy: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt".
+- Gesetzestellen nach der Aussage in Klammer: (Paragraph X Absatz Y ABGB).
+- Keine Konjunktive: kein "koennte", "wuerde", "eventuell". Direkte Aussagen.
+- Kein "- siehe aber Punkte 2.6, 2.4 der Policy" anhaengen (steht nur in der Spaltenüberschrift).
+
+SPRACHE:
 - Ausgabesprache: ${p.lang}.
-- WICHTIG zur Sprache: Wenn die Ausgabesprache (${p.lang}) NICHT die Sprache des zu pruefenden Dokuments ist, dann: (a) Gib das Feedback in der Ausgabesprache. (b) Uebersetze in Spalte 3 (Vorschlag) den verbesserten Text in die Ausgabesprache.`;
+- Wenn die Ausgabesprache nicht die Dokumentsprache ist: Feedback in der Ausgabesprache geben und in Spalte 3 den Vorschlag in die Ausgabesprache uebersetzen.`;
+}
+
+function buildSelfCheckPrompt(p){
+  var istEmail=p.dtype.indexOf('E-Mail')>=0;
+  return `Du bist ein strenger Lektor fuer die Kanzlei TAIYO Legal. Du erhaeltst einen Review-Output im Tag-Format (===MODUL_A=== etc.).
+Deine Aufgabe: Pruefe JEDE ZEILE auf Verstoesse gegen die folgenden Regeln und korrigiere sie. Gib NUR den korrigierten Output zurueck, exakt im selben Tag-Format, ohne Kommentar.
+
+REGELN FUER SPALTE 2 (Problem, nach erstem TRENNER) UND SPALTE 3 (Vorschlag, nach zweitem TRENNER):
+
+1. SATZLAENGE: Jeder Satz maximal 15 Woerter. Zaehle die Woerter jedes Satzes. Ist ein Satz laenger, teile ihn in zwei kurze Saetze oder kuerze ihn. (Punkt 10.9 der Policy)
+
+2. KEINE ABKUERZUNGEN: Schreibe alles aus. Nicht "z.B." sondern "zum Beispiel". Nicht "bzgl." sondern "bezueglich". Nicht "ggf." sondern "gegebenenfalls". Nicht "etc." sondern "und so weiter". AUSNAHME: Gesetzesabkuerzungen (ABGB, MRG) und Judikaturzitate bleiben. (Punkt 10.9 der Policy)
+
+3. POLICY-REFERENZEN IN KLAMMER: Jede Referenz auf die Policy steht in runder Klammer. Ein Punkt: "(Punkt 10.9 der Policy)". Mehrere Punkte: "(Punkte 10.9, 14.3 der Policy)". Singular "Punkt" bei einem, Plural "Punkte" bei mehreren.
+
+4. KEINE ABSOLUTIERUNGEN: Nicht "jede", "jeder", "jedes", "keinerlei". Stattdessen "eine", "ein". Beispiel: nicht "Es fehlt jede Einschaetzung" sondern "Es fehlt eine Einschaetzung".
+
+5. KEIN DOPPELPUNKT am Anfang einer Spalte.
+
+6. ${istEmail?'Das geprueffte Schriftstueck ist ein E-MAIL. Verwende das Wort "E-Mail", nicht "Schreiben" oder "Dokument".':'Verwende "Dokument" oder "Schreiben" passend zum Dokumenttyp.'}
+
+7. VERFAHRENSBEGRIFFE PRAEZISE: Ersetze das allgemeine Wort "Verfahren" durch die genaue Art, sofern erkennbar: "streitiges Verfahren", "Ausserstreitverfahren", "Verwaltungsverfahren", "Strafverfahren" oder "Verwaltungsstrafverfahren". Nur wenn keine dieser Arten gemeint ist, bleibt "Verfahren".
+
+8. JUDIKATUR-FORMAT (nur Spalte 3): Zitate im Format "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt". (Punkt 14.4 der Policy)
+
+9. KEINE KONJUNKTIVE in Spalte 3: kein "koennte", "wuerde", "eventuell". Direkte Aussagen.
+
+10. EINHEITLICH "Klient" - nie "Mandant".
+
+WICHTIG: Aendere NICHT Spalte 1 (Originaltext). Aendere NICHT die Tag-Struktur. Aendere NICHT Modul C ausser bei Abkuerzungen oder Verfahrensbegriffen. Behalte die Anzahl der ZEILE-Eintraege bei. Entferne keine Befunde. Wenn ein Modul KEIN_BEFUND enthaelt, lass das so.`;
 }
 
 function getDtypeRules(dtype){
@@ -656,6 +708,14 @@ function extractSection(raw,tag){
   return m?m[1].trim():'';
 }
 
+function countWords(s){return s.split(/\s+/).filter(function(w){return w.length>0;}).length;}
+function hasLongSentence(text){
+  if(!text)return false;
+  var sentences=text.split(/[.!?]+\s+/);
+  for(var i=0;i<sentences.length;i++){if(countWords(sentences[i])>15)return true;}
+  return false;
+}
+
 function renderTable(title,section,sep){
   var html='<div class="res-section"><div class="res-head">'+esc(title)+'</div>';
   if(!section||section==='KEIN_BEFUND'||section.trim()===''){
@@ -670,8 +730,9 @@ function renderTable(title,section,sep){
     var parts=line.split(sep);
     var col1=parts[0]?parts[0].trim():'';
     var col2=parts[1]?parts[1].trim().replace(/^:\s*/,''):'';
-    var col3=parts[2]?parts[2].trim().replace(/^:\s*/,''):'';
-    html+='<tr><td style="color:#888;font-style:italic">'+esc(col1)+'</td><td>'+esc(col2)+'</td><td class="td-fix">'+esc(col3)+'</td></tr>';
+    var col3=parts[2]?parts[2].trim().replace(/^:\s*/,'').replace(/\s*[-\u2013]\s*siehe aber Punkte\s*2\.6,?\s*2\.4 der Policy\.?$/i,''):'';
+    var warn3=hasLongSentence(col3)?' title="Hinweis: Satz ueber 15 Woerter (Punkt 10.9 der Policy)" style="border-left:2px solid #e0a030;padding-left:6px"':'';
+    html+='<tr><td style="color:#888;font-style:italic">'+esc(col1)+'</td><td>'+esc(col2)+'</td><td class="td-fix"'+warn3+'>'+esc(col3)+'</td></tr>';
   });
   html+='</tbody></table></div>';
   return html;
