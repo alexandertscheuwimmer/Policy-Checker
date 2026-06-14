@@ -483,7 +483,7 @@ PUNKT 13 - KLIENTENARBEIT ALLGEMEIN:
 13.10: Leistungen vor Freigabe auf vier Kriterien pruefen: (1) Umfassend - nie nur einen Aspekt behandeln; (2) Pro-aktiv - Gesetzesaenderungen etc. antizipieren; (3) Gruendlich - auch implizit beantwortete Fragen beantworten, letzte Korrespondenz lesen; (4) Praktisch - konkretes Problem loesen, nicht interpretierbar, Theorie und bloses Aufzeigen von Problemen interessiert nie.
 
 PUNKT 14 - JURISTISCHE KLIENTENARBEIT:
-14.1: Möglichst nur juristische Argumente. Hierarchie: Höchstgerichtliche Judikatur (inkl. EuGH) > Literatur/sonstige Judikatur > andere. WICHTIG zu Rechtssätzen: In E-Mails und internen Aktenvermerken sind bloße Rechtssätze als Beleg völlig ausreichend - eine Leitentscheidung ist dort NICHT zusätzlich erforderlich. Nur in Schriftsätzen sowie Legal Opinions/Memos dürfen Rechtssätze nicht allein als juristischer Beleg dienen - dort ist die konkrete Fundstelle (Gericht, Datum, Geschäftszahl) erforderlich.
+14.1: Möglichst nur juristische Argumente. Hierarchie: Höchstgerichtliche Judikatur (inkl. EuGH) > Literatur/sonstige Judikatur > andere. RECHTSSÄTZE: In E-Mails und internen Aktenvermerken genügt ein bloßer Rechtssatz als Beleg, zum Beispiel "RS0069706". Eine Leitentscheidung oder konkrete Geschäftszahl ist dort NICHT zusätzlich erforderlich. Flagge dort NICHT, dass die Fundstelle fehlt. Nur in Schriftsätzen sowie Legal Opinions/Memos genügt der bloße Rechtssatz nicht - dort ist zusätzlich die konkrete Entscheidung erforderlich (Gericht, Datum, Geschäftszahl), zum Beispiel "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t".
 14.2: Anwaelte mit "Herr/Frau Kollege/Kollegin" ansprechen. Schlussformel "mit freundlichen kollegialen Gruessen".
 14.3: Alle wichtigen Aussagen separat und nach der jeweiligen Aussage in Klammer belegen - nur ausnahmsweise als Teil der Aussage. Gesetzestelle, Judikatur und Datum sind Belege. Praezise sein.
 14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl"; z.B. "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t".
@@ -547,6 +547,8 @@ Schritt 3 - Anwendbare Gesetze durchgehen: Liste im Kopf ALLE Gesetze auf, die f
 
 Schritt 4 - Einschlaegige Judikatur: Gibt es hoechstgerichtliche Rechtsprechung zum Thema, die fehlt? (Punkt 14.1 der Policy)
 
+Schritt 4b - Zitate ueberpruefen: Pruefe JEDEN im Text zitierten Rechtssatz und JEDE zitierte Judikatur einzeln. Sagt die Fundstelle wirklich das aus, was der Text ihr zuschreibt? Wenn ein Zitat die behauptete Aussage nicht oder nicht ganz traegt: Befund.
+
 Schritt 5 - Vorkorrespondenz: Gibt es darin (auch nur implizit) gestellte Fragen, die das Dokument nicht beantwortet?
 
 Schritt 6 - Risiken und Gegenargumente: Welche Risiken, Fristen, Kostenfolgen oder Gegenargumente wurden nicht angesprochen? Bei Verjährung: nur flaggen, wenn ein realistisches Verjährungsrisiko besteht. Pruefe die einschlaegige Verjährungsfrist und den Fristenlauf konkret. Ist das Risiko sehr gering, nicht flaggen.
@@ -591,7 +593,7 @@ Regeln fuer den Output:
 - Modul B ist der Schwerpunkt (70% der Probleme): Was wurde UEBERSEHEN? Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist. Eigenstaendig juristisch recherchieren - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
 - Modul C: Alle Termine mit konkretem Datum (TT.MM.JJJJ). Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
 
-SPALTE 2 (Problem): Formuliere loesungsorientiert. Sage was gefordert ist, nicht (nur) was falsch ist. Beispiel: statt "Konjunktiv ist laut Policy nicht zulaessig" besser "Direkte Aussagen sind gefordert (Punkt X.Y der Policy)". Die Policy-Referenz in Klammer ist gut.
+SPALTE 2 (Problem): Formuliere loesungsorientiert. Sage was gefordert ist, nicht (nur) was falsch ist. Beispiel: statt "Der Satz ist zu lang" besser "Kurze Saetze mit hoechstens 15 Woertern sind gefordert (Punkt 10.9 der Policy)". Die Policy-Referenz steht in Klammer nach der Aussage.
 
 SPALTE 2 (Problem) UND SPALTE 3 (Vorschlag) - BEIDE muessen selbst policy-konform sein:
 - Maximal 15 Woerter pro Satz. Woerter zaehlen! Lieber zwei kurze Saetze als einen langen.
@@ -609,7 +611,7 @@ SPALTE 2 (Problem) UND SPALTE 3 (Vorschlag) - BEIDE muessen selbst policy-konfor
 
 NUR SPALTE 3 zusaetzlich:
 - Judikatur nach Punkt 14.4 der Policy: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt".
-- Gesetzestellen nach der Aussage in Klammer: (§ X Abs Y ABGB).
+- ALLE Belege (Gesetzesstellen, Judikatur, Rechtssätze) stehen NACH der Aussage in runder Klammer, nie als Teil der Aussage. RICHTIG: "Der Anspruch ist verjährt (§ 1480 ABGB)." FALSCH: "Der Anspruch ist nach § 1480 ABGB verjährt." Gilt auch für Paragraphen.
 - Kein "- siehe aber Punkte 2.6, 2.4 der Policy" anhaengen (steht nur in der Spaltenüberschrift).
 
 SPRACHE:
@@ -640,13 +642,15 @@ REGELN FUER SPALTE 2 (Problem, nach erstem TRENNER) UND SPALTE 3 (Vorschlag, nac
 
 8. JUDIKATUR-FORMAT (nur Spalte 3): Zitate im Format "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt". (Punkt 14.4 der Policy)
 
+8b. BELEGE IN KLAMMER: Alle Belege (Gesetzesstellen wie "§ 1480 ABGB", Judikatur, Rechtssätze) stehen NACH der Aussage in runder Klammer, nie als Teil der Aussage. FALSCH: "ist nach § 1480 ABGB verjährt". RICHTIG: "ist verjährt (§ 1480 ABGB)".
+
 9. EINHEITLICH "Klient" - nie "Mandant".
 
 10. UMLAUTE (sehr wichtig): Im deutschen Text IMMER korrekte Umlaute schreiben: "ä" statt "ae", "ö" statt "oe", "ü" statt "ue", "ß" statt "ss". Pruefe JEDES Wort. Beispiele: "moeglich" wird "möglich", "fuer" wird "für", "Schriftsaetze" wird "Schriftsätze".
 
 11. PARAGRAPHENZEICHEN: Im Deutschen immer "§" verwenden, nie das Wort "Paragraph". Mehrzahl "§§".
 
-12. LOESUNGSORIENTIERT: Spalte 2 soll sagen was gefordert ist, nicht nur was falsch ist. Beispiel: statt "Konjunktiv ist nicht zulaessig" besser "Direkte Aussagen sind gefordert (Punkt 13.5 der Policy)". Konjunktive sind NICHT verboten - flagge sie nicht.
+12. LOESUNGSORIENTIERT: Spalte 2 soll sagen was gefordert ist, nicht nur was falsch ist. Beispiel: statt "Der Satz ist zu lang" besser "Kurze Saetze sind gefordert (Punkt 10.9 der Policy)".
 
 WICHTIG: Aendere NICHT Spalte 1 (Originaltext). Aendere NICHT die Tag-Struktur. Aendere NICHT Modul C ausser bei Abkuerzungen oder Verfahrensbegriffen. Behalte die Anzahl der ZEILE-Eintraege bei. Entferne keine Befunde. Wenn ein Modul KEIN_BEFUND enthaelt, lass das so.`;
 }
