@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
+<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -451,43 +451,30 @@ OUTPUT-REGELN - STRIKT EINHALTEN:
 
 7. Kein einleitender Text. Beginne sofort mit Modul A: und der Tabelle.
 
-8. Sprache des Feedbacks: ${p.lang}.
+8. Sprache: ${p.lang}.
 
-AUSGABEFORMAT: Antworte AUSSCHLIESSLICH mit validem JSON. Kein Text davor oder danach. Kein Markdown. Keine Erklaerungen. Nur das JSON-Objekt.
+AUSGABEFORMAT: Antworte mit drei Abschnitten, exakt in diesem Format. Kein Markdown. Keine Sterne. Keine Rauten. Keine eckigen Klammern.
 
-JSON-Struktur:
-{
-  "modul_a": {
-    "befunde": [
-      {
-        "original": "wörtlicher Textausschnitt aus dem Dokument (max 2 Saetze)",
-        "problem": "Was ist falsch (Punkt X.Y der Policy)",
-        "verbesserung": "Konkret ausformulierter verbesserter Text"
-      }
-    ]
-  },
-  "modul_b": {
-    "befunde": [
-      {
-        "original": "betroffene Stelle oder leere Stelle im Dokument",
-        "problem": "Was fehlt oder ist falsch",
-        "verbesserung": "Konkret was hinzugefuegt oder geaendert werden soll"
-      }
-    ]
-  },
-  "modul_c": {
-    "termine": [
-      {
-        "bezeichnung": "Kurze Beschreibung des Termins",
-        "typ": "Gerichtsfrist / Urgenz Gegner / Urgenz Mandant / Urgenz Interessent",
-        "datum": "TT.MM.JJJJ oder Zeitangabe"
-      }
-    ]
-  }
-}
+===MODUL_A===
+ZEILE: [wörtlicher Textausschnitt, max 15 Wörter] TRENNER [Problem + Punkt X.Y der Policy] TRENNER [Verbesserter Text]
+ZEILE: [wörtlicher Textausschnitt, max 15 Wörter] TRENNER [Problem + Punkt X.Y der Policy] TRENNER [Verbesserter Text]
+===MODUL_A_ENDE===
 
-Wenn ein Modul keine Befunde hat: leeres Array [].
-Maximal 5 Eintraege pro Modul. Nur die wichtigsten Punkte. Kleinere Verstoesse weglassen.`;
+===MODUL_B===
+ZEILE: [betroffene Stelle] TRENNER [Was fehlt, mit Policy-Punkt] TRENNER [Was konkret ergänzt werden soll]
+===MODUL_B_ENDE===
+
+===MODUL_C===
+TERMIN: [Bezeichnung] | [Typ] | [Datum]
+===MODUL_C_ENDE===
+
+Regeln:
+- Maximal 5 Zeilen pro Modul A und B. Nur schwere Verstoesse. Leichte Verstoesse weglassen.
+- Feedback darf nicht laenger sein als der zu pruefende Text.
+- Modul A und B: Schwerpunkt liegt auf Spalte 3 (Verbesserter Text). Das ist das Wichtigste.
+- Modul B Schwerpunkt: Was wurde uebersehen oder nicht mitgedacht? (70% der Faelle). Erst danach: inhaltliche Fehler (30%).
+- Modul C: Alle Termine und Follow-ups. Auch implizite (z.B. Urgenz beim Mandanten wenn eine Rueckmeldung erwartet wird).
+- Wenn ein Modul keine Befunde hat: schreibe nur KEIN_BEFUND zwischen den Tags.`;
 }
 
 function getDtypeRules(dtype){
@@ -549,62 +536,61 @@ function stripMd(s){
 }
 
 function renderResult(raw, container){
-  // Ask model for JSON, but if it returns markdown, parse it gracefully
-  var text = raw;
-  // Try JSON parse first
-  var jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
-  if(jsonMatch) text = jsonMatch[1];
-  try{
-    var data = JSON.parse(text);
-    renderJSON(data, container);
-    return;
-  }catch(e){}
-  // Fallback: render as cleaned plaintext
-  renderPlain(raw, container);
+  var html='';
+  var modA=extractSection(raw,'MODUL_A');
+  var modB=extractSection(raw,'MODUL_B');
+  var modC=extractSection(raw,'MODUL_C');
+  html+=renderTable('Policy & Stil',modA,'TRENNER');
+  html+=renderTable('Inhaltliche Vollständigkeit + Übersehenes',modB,'TRENNER');
+  html+=renderTermine(modC);
+  container.innerHTML=html;
 }
 
-function renderJSON(data, container){
-  var html = '';
-  if(data.modul_a && data.modul_a.befunde && data.modul_a.befunde.length){
-    html += '<div class="res-section"><div class="res-head">Modul A &ndash; Policy &amp; Stil</div>';
-    html += '<table class="res-table"><thead><tr><th>Textausschnitt</th><th>Problem</th><th>Verbesserter Text</th></tr></thead><tbody>';
-    data.modul_a.befunde.forEach(function(b,i){
-      html += '<tr><td>'+esc(b.original||'')+'</td><td>'+esc(b.problem||'')+'</td><td class="td-fix">'+esc(b.verbesserung||'')+'</td></tr>';
-    });
-    html += '</tbody></table></div>';
-  } else {
-    html += '<div class="res-section"><div class="res-head">Modul A &ndash; Policy &amp; Stil</div><div class="res-none">Kein Befund.</div></div>';
-  }
-  if(data.modul_b && data.modul_b.befunde && data.modul_b.befunde.length){
-    html += '<div class="res-section"><div class="res-head">Modul B &ndash; Inhaltliche Vollst&auml;ndigkeit</div>';
-    html += '<table class="res-table"><thead><tr><th>Textausschnitt</th><th>Problem</th><th>Verbesserter Text</th></tr></thead><tbody>';
-    data.modul_b.befunde.forEach(function(b){
-      html += '<tr><td>'+esc(b.original||'')+'</td><td>'+esc(b.problem||'')+'</td><td class="td-fix">'+esc(b.verbesserung||'')+'</td></tr>';
-    });
-    html += '</tbody></table></div>';
-  } else {
-    html += '<div class="res-section"><div class="res-head">Modul B &ndash; Inhaltliche Vollst&auml;ndigkeit</div><div class="res-none">Kein Befund.</div></div>';
-  }
-  if(data.modul_c && data.modul_c.termine && data.modul_c.termine.length){
-    html += '<div class="res-section"><div class="res-head">Modul C &ndash; Termine &amp; Fristen</div><ol class="res-list">';
-    data.modul_c.termine.forEach(function(t){
-      html += '<li>'+esc(t.bezeichnung||'')+' &ndash; '+esc(t.typ||'')+' &ndash; Kalendereintrag bis '+esc(t.datum||'')+'</li>';
-    });
-    html += '</ol><div class="res-hint">Alle Termine in Kalender aller Teammitglieder eintragen (Punkt 7.8 / 15.2 der Policy).</div></div>';
-  } else {
-    html += '<div class="res-section"><div class="res-head">Modul C &ndash; Termine &amp; Fristen</div><div class="res-none">Kein Befund.</div></div>';
-  }
-  container.innerHTML = html;
+function extractSection(raw,tag){
+  var re=new RegExp('==='+tag+'===([\\s\\S]*?)==='+tag+'_ENDE===');
+  var m=raw.match(re);
+  return m?m[1].trim():'';
 }
 
-function renderPlain(raw, container){
-  // Clean markdown and display as plain text
-  var clean = raw
-    .replace(/^#{1,6}\s+/gm,'')
-    .replace(/\*\*([^*]+)\*\*/g,'$1')
-    .replace(/\*([^*]+)\*/g,'$1')
-    .replace(/`([^`]+)`/g,'$1');
-  container.textContent = clean;
+function renderTable(title,section,sep){
+  var html='<div class="res-section"><div class="res-head">'+esc(title)+'</div>';
+  if(!section||section==='KEIN_BEFUND'||section.trim()===''){
+    return html+'<div class="res-none">Kein Befund.</div></div>';
+  }
+  var lines=section.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l.indexOf(sep)>-1;});
+  if(!lines.length){return html+'<div class="res-none">Kein Befund.</div></div>';}
+  html+='<table class="res-table"><thead><tr><th style="width:26%">Textausschnitt</th><th style="width:24%">Problem</th><th>Verbesserter Text</th></tr></thead><tbody>';
+  lines.forEach(function(line){
+    // Remove leading "ZEILE:" prefix
+    line=line.replace(/^ZEILE:\s*/i,'');
+    var parts=line.split(sep);
+    var col1=parts[0]?parts[0].trim():'';
+    var col2=parts[1]?parts[1].trim():'';
+    var col3=parts[2]?parts[2].trim():'';
+    html+='<tr><td style="color:#888;font-style:italic">'+esc(col1)+'</td><td>'+esc(col2)+'</td><td class="td-fix">'+esc(col3)+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  return html;
+}
+
+function renderTermine(section){
+  var html='<div class="res-section"><div class="res-head">Termine &amp; Fristen</div>';
+  if(!section||section==='KEIN_BEFUND'||section.trim()===''){
+    return html+'<div class="res-none">Kein Befund.</div></div>';
+  }
+  var lines=section.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l.length>2;});
+  html+='<ol class="res-list">';
+  lines.forEach(function(line){
+    line=line.replace(/^TERMIN:\s*/i,'');
+    var parts=line.split('|');
+    var bez=parts[0]?parts[0].trim():'';
+    var typ=parts[1]?parts[1].trim():'';
+    var dat=parts[2]?parts[2].trim():'';
+    var txt=bez+(typ?' – '+typ:'')+(dat?' – bis '+dat:'');
+    html+='<li>'+esc(txt)+'</li>';
+  });
+  html+='</ol><div class="res-hint">Alle Termine in Kalender aller Teammitglieder eintragen (Punkt 7.8 / 15.2 der Policy).</div></div>';
+  return html;
 }
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
