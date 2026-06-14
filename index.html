@@ -483,7 +483,7 @@ PUNKT 13 - KLIENTENARBEIT ALLGEMEIN:
 13.10: Leistungen vor Freigabe auf vier Kriterien pruefen: (1) Umfassend - nie nur einen Aspekt behandeln; (2) Pro-aktiv - Gesetzesaenderungen etc. antizipieren; (3) Gruendlich - auch implizit beantwortete Fragen beantworten, letzte Korrespondenz lesen; (4) Praktisch - konkretes Problem loesen, nicht interpretierbar, Theorie und bloses Aufzeigen von Problemen interessiert nie.
 
 PUNKT 14 - JURISTISCHE KLIENTENARBEIT:
-14.1: Moeglichst nur juristische Argumente. Hierarchie: Hoechstgerichtliche Judikatur (inkl. EuGH) > Literatur/sonstige Judikatur > andere.
+14.1: Möglichst nur juristische Argumente. Hierarchie: Höchstgerichtliche Judikatur (inkl. EuGH) > Literatur/sonstige Judikatur > andere. WICHTIG: In E-Mails und internen Aktenvermerken dürfen bloße Rechtssätze genügen. Nur in Schriftsätzen sowie Legal Opinions/Memos reicht ein bloßer Rechtssatz nicht - dort ist die vollständige Fundstelle erforderlich.
 14.2: Anwaelte mit "Herr/Frau Kollege/Kollegin" ansprechen. Schlussformel "mit freundlichen kollegialen Gruessen".
 14.3: Alle wichtigen Aussagen separat und nach der jeweiligen Aussage in Klammer belegen - nur ausnahmsweise als Teil der Aussage. Gesetzestelle, Judikatur und Datum sind Belege. Praezise sein.
 14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl"; z.B. "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t".
@@ -539,7 +539,7 @@ Schritt 3 - Einschlaegige Judikatur: Gibt es hoechstgerichtliche Rechtsprechung 
 
 Schritt 4 - Vorkorrespondenz: Gibt es darin (auch nur implizit) gestellte Fragen, die das Dokument nicht beantwortet?
 
-Schritt 5 - Risiken und Gegenargumente: Welche Risiken, Fristen, Kostenfolgen oder Gegenargumente wurden nicht angesprochen?
+Schritt 5 - Risiken und Gegenargumente: Welche Risiken, Fristen, Kostenfolgen oder Gegenargumente wurden nicht angesprochen? Bei Verjährung: nur flaggen, wenn ein realistisches Verjährungsrisiko besteht. Pruefe die einschlaegige Verjährungsfrist und den Fristenlauf konkret. Ist das Risiko sehr gering, nicht flaggen.
 
 Schritt 6 - Vier Kriterien (Punkt 13.10 der Policy): Umfassend? Pro-aktiv? Gruendlich? Praktisch?
 
@@ -581,6 +581,8 @@ Regeln fuer den Output:
 - Modul B ist der Schwerpunkt (70% der Probleme): Was wurde UEBERSEHEN? Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist. Eigenstaendig juristisch recherchieren - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
 - Modul C: Alle Termine mit konkretem Datum (TT.MM.JJJJ). Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
 
+SPALTE 2 (Problem): Formuliere loesungsorientiert. Sage was gefordert ist, nicht (nur) was falsch ist. Beispiel: statt "Konjunktiv ist laut Policy nicht zulaessig" besser "Direkte Aussagen sind gefordert (Punkt X.Y der Policy)". Die Policy-Referenz in Klammer ist gut.
+
 SPALTE 2 (Problem) UND SPALTE 3 (Vorschlag) - BEIDE muessen selbst policy-konform sein:
 - Maximal 15 Woerter pro Satz. Woerter zaehlen! Lieber zwei kurze Saetze als einen langen.
 - Nur eine Aussage pro Satz.
@@ -590,11 +592,13 @@ SPALTE 2 (Problem) UND SPALTE 3 (Vorschlag) - BEIDE muessen selbst policy-konfor
 - Keine Absolutierung: nicht "jede/r/s", nicht "keinerlei". Stattdessen "eine"/"ein".
 - Statt "Verfahren" praezise: "streitiges Verfahren", "Ausserstreitverfahren", "Verwaltungsverfahren", "Strafverfahren" oder "Verwaltungsstrafverfahren" - sofern erkennbar.
 - Einheitlich "Klient" - nie "Mandant".
-- ${p.dtype.indexOf('E-Mail')>=0?'Das geprueffte Schriftstueck ist ein E-Mail. Verwende "E-Mail", nicht "Schreiben" oder "Dokument".':'Verwende "Dokument" passend zum Dokumenttyp.'}
+- Im Deutschen korrekte Umlaute verwenden: "ä", "ö", "ü", "ß" - nicht "ae", "oe", "ue", "ss".
+- Im Deutschen immer das Zeichen "§" verwenden, nie das Wort "Paragraph". Mehrzahl: "§§".
+- ${p.dtype.indexOf('E-Mail')>=0?'Das gepruefte Schriftstueck ist ein E-Mail. Verwende "E-Mail", nicht "Schreiben" oder "Dokument".':'Verwende "Dokument" passend zum Dokumenttyp.'}
 
 NUR SPALTE 3 zusaetzlich:
 - Judikatur nach Punkt 14.4 der Policy: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt".
-- Gesetzestellen nach der Aussage in Klammer: (Paragraph X Absatz Y ABGB).
+- Gesetzestellen nach der Aussage in Klammer: (§ X Abs Y ABGB).
 - Keine Konjunktive: kein "koennte", "wuerde", "eventuell". Direkte Aussagen.
 - Kein "- siehe aber Punkte 2.6, 2.4 der Policy" anhaengen (steht nur in der Spaltenüberschrift).
 
@@ -629,6 +633,12 @@ REGELN FUER SPALTE 2 (Problem, nach erstem TRENNER) UND SPALTE 3 (Vorschlag, nac
 9. KEINE KONJUNKTIVE in Spalte 3: kein "koennte", "wuerde", "eventuell". Direkte Aussagen.
 
 10. EINHEITLICH "Klient" - nie "Mandant".
+
+11. UMLAUTE: Im Deutschen korrekte Umlaute "ä", "ö", "ü", "ß" verwenden - nicht "ae", "oe", "ue", "ss".
+
+12. PARAGRAPHENZEICHEN: Im Deutschen immer "§" verwenden, nie das Wort "Paragraph". Mehrzahl "§§".
+
+13. LOESUNGSORIENTIERT: Spalte 2 soll sagen was gefordert ist, nicht nur was falsch ist. Beispiel: statt "Konjunktiv ist nicht zulaessig" besser "Direkte Aussagen sind gefordert (Punkt X.Y der Policy)".
 
 WICHTIG: Aendere NICHT Spalte 1 (Originaltext). Aendere NICHT die Tag-Struktur. Aendere NICHT Modul C ausser bei Abkuerzungen oder Verfahrensbegriffen. Behalte die Anzahl der ZEILE-Eintraege bei. Entferne keine Befunde. Wenn ein Modul KEIN_BEFUND enthaelt, lass das so.`;
 }
@@ -708,14 +718,6 @@ function extractSection(raw,tag){
   return m?m[1].trim():'';
 }
 
-function countWords(s){return s.split(/\s+/).filter(function(w){return w.length>0;}).length;}
-function hasLongSentence(text){
-  if(!text)return false;
-  var sentences=text.split(/[.!?]+\s+/);
-  for(var i=0;i<sentences.length;i++){if(countWords(sentences[i])>15)return true;}
-  return false;
-}
-
 function renderTable(title,section,sep){
   var html='<div class="res-section"><div class="res-head">'+esc(title)+'</div>';
   if(!section||section==='KEIN_BEFUND'||section.trim()===''){
@@ -731,8 +733,7 @@ function renderTable(title,section,sep){
     var col1=parts[0]?parts[0].trim():'';
     var col2=parts[1]?parts[1].trim().replace(/^:\s*/,''):'';
     var col3=parts[2]?parts[2].trim().replace(/^:\s*/,'').replace(/\s*[-\u2013]\s*siehe aber Punkte\s*2\.6,?\s*2\.4 der Policy\.?$/i,''):'';
-    var warn3=hasLongSentence(col3)?' title="Hinweis: Satz ueber 15 Woerter (Punkt 10.9 der Policy)" style="border-left:2px solid #e0a030;padding-left:6px"':'';
-    html+='<tr><td style="color:#888;font-style:italic">'+esc(col1)+'</td><td>'+esc(col2)+'</td><td class="td-fix"'+warn3+'>'+esc(col3)+'</td></tr>';
+    html+='<tr><td style="color:#888;font-style:italic">'+esc(col1)+'</td><td>'+esc(col2)+'</td><td class="td-fix">'+esc(col3)+'</td></tr>';
   });
   html+='</tbody></table></div>';
   return html;
