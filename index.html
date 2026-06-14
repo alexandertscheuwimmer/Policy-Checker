@@ -406,32 +406,68 @@ ${p.historie||'(keine angegeben)'}
 ${p.zusatz?'- Zusaetzlicher Kontext: '+p.zusatz:''}
 ${wichtigExtra}
 
-PRUEFREGELN:
+VOLLSTAENDIGE TAIYO POLICY - ALLE PUNKTE PRUEFEN:
 
-Policy und Stil - IMMER pruefen, nie ueberspringen:
-- Satzlaenge MESSEN: Woerter zaehlen. Ueber 20 Woerter = Befund zwingend. Label: 21-30 "Zu langer Satz", 31-45 "Viel zu langer Satz", ueber 45 "Absurd langer Satz". Nur wenn bereits 5 Befunde vorhanden: Saetze mit 21-22 Woertern durchgehen lassen. (Punkt 10.9 der Policy)
-- Zwei Aussagen pro Satz: Befund nur wenn der Satz dadurch ueber 20 Woerter wird ODER die Aussagen thematisch nichts miteinander zu tun haben.
-- "So-What-Aussagen" (Begriff immer in Anfuehrungszeichen): korrekte Aussagen ohne Konsequenz fuer den Empfaenger. Schwerer Fehler, immer anmerken. (Punkt 13.5 der Policy)
-- Unnoetige Laenge: Passagen die ohne Informationsverlust gekuerzt werden koennen. Immer anmerken mit konkretem Kuerzungsvorschlag. (Punkt 13.5 der Policy)
-- Standalone-Pflicht: Wuerde jemand ohne Vorkenntnis verstehen worum es geht? Fehlende Kontextualisierung immer anmerken. (Punkt 10.7 der Policy)
-- Floskeln verboten - AUSNAHME: erste und letzte Zeile bei E-Mails. Einleitung (z.B. "In der Angelegenheit XXX") und Schluss (z.B. "stehe ich fuer Rueckfragen gerne zur Verfuegung") sind von der Policy explizit verlangt. Diese NICHT kritisieren. Alle anderen Floskeln anmerken. (Punkt 10.8 / 13.9 der Policy)
-- Unklare Verweise ("Wie gesagt", "wie erwaehnt"): immer anmerken. (Punkt 10.5 der Policy)
-- Fehlende Belege bei wichtigen Aussagen: immer anmerken. (Punkt 14.3 der Policy)
-- Falsches Datumformat oder Waehrungsformat: immer anmerken. (Punkt 10.1 der Policy)
-${getDtypeRules(p.dtype)}
+PUNKT 10 - DOKUMENTE ALLGEMEIN (inkl. E-Mails):
+10.1: Schriftgroesse 11,5 (E-Mails 12), Blocksatz (E-Mails linksbuendig), Abstand nach 12pt (E-Mails 0pt). Datum TT.MM.JJJJ im Text, JJJJ-MM-TT in Dateinamen.
+10.2: Wenig Zeilenumbrueche. Keine Einzel-Satz-Absaetze. Gliederung: chronologisch; separate Absaetze/Punkte (1., 1.1., 1.1.1.) oder gefuellte Punkte. Wenig unterstreichen/fett. Nichts highlighten.
+10.5: Konkret verweisen: nicht "Wie gesagt" sondern "Wie im E-Mail vom TT.MM.JJJJ gesagt". Nicht "gemaess Engagement Letter" sondern "gemaess Punkt X unseres Engagement Letters vom TT.MM.JJJJ".
+10.7: Dokumente als Stand-alone verfassen - auch interne und Urgenzen. Antworten so geben, dass man die Frage nicht lesen muss. In E-Mails die Angelegenheit erwaehnen.
+10.8: Im Zweifel fuer erhaltene Schreiben danken, kurz einleiten ("In Sachen XXX passierte YYY.") und am Ende "fuer Rueckfragen gerne zur Verfuegung stehen". Hoeflich und positiv formulieren.
+10.9: Stets moeglichst leicht-verstaendlich schreiben. Keine Abkuerzungen ohne Erklaerung. Maximal 15 Woerter pro Satz (Toleranz bis 20). Moeglichst nur eine Aussage pro Satz. Laengere Texte gliedern. Moeglichst Floskeln meiden (AUSNAHME: Einleitung und Schluss bei E-Mails). Nie mehrere Begriffe fuer dieselbe Sache. Nie fuer unterschiedliche Sachen denselben Begriff.
 
-Vollstaendigkeit und Uebersehenes - eigenstaendig denken:
-- "Uebersehen" bedeutet: etwas kommt im Dokument GAR NICHT vor. Nicht: ungenuegend formuliert.
-- Denke eigenstaendig ueber den Sachverhalt nach. Welche Rechtsfragen, Normen, Gegenargumente oder Risiken gehoeren dazu - und fehlen voellig im Dokument?
-- Gibt es in der Vorkorrespondenz (auch implizit) gestellte Fragen die noch unbeantwortet sind?
-- Pruefe ob alle typischen Punkte fuer diesen Dokumenttyp und dieses Rechtsgebiet vorhanden sind.
-- Rechtsgebiet(e): ${p.rgs}. Pruefe welche Normen und Judikatur einschlaegig waeren und ob sie erwaehnt werden.
-- Hinweis: 70% der Probleme sind Uebersehenes, 30% sind inhaltliche Fehler. Beide pruefen.
+PUNKT 11 - E-MAILS SPEZIFISCH:
+11.3: E-Mails als html. Attachments als pdf. Kein Attachment ueber 2MB. Nur interne E-Mails duerfen formlos sein. Alle E-Mails mit Signatur - auch Dankes-E-Mails. Dankes-E-Mails mit Prioritaet "niedrig".
+11.5: E-Mails sollen einfach und kurz sein. Komplexes gehoert in Attachments. E-Mail-Laenge soll Aufschluss ueber Wichtigkeit geben. Betreff kurz, nicht generisch.
 
-Fristenscanner:
-- Identifiziere ALLE Termine, Fristen und Follow-ups - auch implizite.
-- Klassifiziere: (a) Gerichts- oder Behoerdenfrist; (b) Urgenz beim Gegner: 2 Wochen; (c) Urgenz beim Mandanten: dringend 1-2 Werktage, standard 1 Woche, nicht eilig 2 Wochen; (d) Urgenz beim Interessenten: beauftragt 1-2 Wochen, keine Antwort 1-2 Monate, Absage 6-12 Monate.
-- WICHTIG: Immer konkretes Datum angeben (TT.MM.JJJJ). Nie "binnen X Wochen". Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
+PUNKT 13 - KLIENTENARBEIT ALLGEMEIN:
+13.5: Nie "So-What"-Auskuenfte (richtig aber nutzlos) erteilen! Stets das Ziel des Klienten identifizieren. Gut nachdenken wofuer der Klient zahlt. "Juristisch korrekt" alleine reicht nicht!
+13.8: Klienten wissen lassen, dass wir etwas und was wir tun - mindestens alle 14 Tage. Alles was wir fuer Klienten unterschreiben oder bei Gericht einbringen, dem Klienten zeigen - vorab. Auf Kosten, Risiken und Nachteile explizit hinweisen.
+13.9: Service-orientiert arbeiten. Dem Klienten abnehmen was geht. Theorie auf Minimum reduzieren. Optionen samt Vor- und Nachteile darlegen. Nichts ist unmoeglich - hoechstens zu teuer.
+13.10: Leistungen vor Freigabe auf vier Kriterien pruefen: (1) Umfassend - nie nur einen Aspekt behandeln; (2) Pro-aktiv - Gesetzesaenderungen etc. antizipieren; (3) Gruendlich - auch implizit beantwortete Fragen beantworten, letzte Korrespondenz lesen; (4) Praktisch - konkretes Problem loesen, nicht interpretierbar, Theorie und bloses Aufzeigen von Problemen interessiert nie.
+
+PUNKT 14 - JURISTISCHE KLIENTENARBEIT:
+14.1: Moeglichst nur juristische Argumente. Hierarchie: Hoechstgerichtliche Judikatur (inkl. EuGH) > Literatur/sonstige Judikatur > andere.
+14.2: Anwaelte mit "Herr/Frau Kollege/Kollegin" ansprechen. Schlussformel "mit freundlichen kollegialen Gruessen".
+14.3: Alle wichtigen Aussagen separat und nach der jeweiligen Aussage in Klammer belegen - nur ausnahmsweise als Teil der Aussage. Gesetzestelle, Judikatur und Datum sind Belege. Praezise sein.
+14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl"; z.B. "OGH vom 17.01.2018 zu GZ 6 Ob 162/17t".
+14.5: Auf Englisch: Paragraph = Sec; Abs = para; Z = no; Gesetz = Act; Gesetzbuch = Code; f/ff = et seq.
+14.6: Lateinische Begriffe kursiv - ausser gaengige (p.a., e.g., via, ca, etc).
+14.7: Mit Gerichten und Behoerden im Zweifel via Schriftsatz kommunizieren.
+
+PUNKT 15 - TEAM-VERANTWORTLICHKEIT:
+15.2: Alle Teammitglieder bei allen externen E-Mails cc. Alle Termine im Kalender aller Teammitglieder.
+
+PRUEF-SCHWERPUNKTE:
+
+1. Policy & Stil (IMMER pruefen):
+- Satzlaenge ZAEHLEN: ueber 20 Woerter = Befund zwingend. Label: 21-30 "Zu langer Satz", 31-45 "Viel zu langer Satz", ueber 45 "Absurd langer Satz".
+- Zwei Aussagen pro Satz: nur kritisieren wenn Satz dadurch ueber 20 Woerter ODER Aussagen thematisch unzusammenhaengend.
+- "So-What-Aussagen" (Begriff immer in Anfuehrungszeichen): korrekte Aussagen ohne Konsequenz. Schwerer Fehler.
+- Stand-alone-Pflicht pruefen: Wuerde jemand ohne Vorkenntnis verstehen worum es geht?
+- Floskeln verboten - AUSNAHME: erste und letzte Zeile bei E-Mails (Policy 10.8 verlangt Einleitung und hoeflichen Schluss). Alle anderen Floskeln = Befund.
+- Unklare Verweise ("Wie gesagt", "wie erwaehnt") = Befund.
+- Fehlende Belege bei wichtigen juristischen Aussagen = Befund (Punkt 14.3).
+- Judikaturzitierungen auf Format pruefen (Punkt 14.4).
+- Falsches Datumformat oder Waehrungsformat = Befund (Punkt 10.1).
+- Gliederung gemaess Punkt 10.2 pruefen.
+- Dokumenttyp-spezifische Regeln beachten: ${getDtypeRules(p.dtype)}
+
+2. Vollstaendigkeit und Uebersehenes (Hauptproblem - 70% der Faelle):
+- "Uebersehen" = kommt GAR NICHT vor, nicht: ungenuegend formuliert.
+- Eigenstaendig denken: Welche Rechtsfragen, Normen (Punkt 14.1), Gegenargumente gehoeren zu diesem Sachverhalt und fehlen voellig?
+- Vorkorrespondenz pruefen: Gibt es (auch implizit) gestellte Fragen die noch unbeantwortet sind?
+- Pruefen ob alle Kriterien aus Punkt 13.10 erfuellt: Umfassend? Pro-aktiv? Gruendlich? Praktisch?
+- Rechtsgebiet(e): ${p.rgs} - einschlaegige Normen und Judikatur pruefen.
+- Inhaltliche Fehler (30% der Faelle): Nur bei Wichtig-Modus oder offensichtlichen Fehlern anmerken.
+
+3. Fristenscanner (ALLE Termine - auch implizite):
+- Gerichts-/Behoerdenfrist: konkretes Datum aus Schriftstueck.
+- Urgenz beim Gegner: 2 Wochen ab heute.
+- Urgenz beim Mandanten: dringend 1-2 Werktage, standard 1 Woche, nicht eilig 2 Wochen.
+- Urgenz beim Interessenten: beauftragt 1-2 Wochen, keine Antwort 1-2 Monate, Absage 6-12 Monate.
+- Berichte an Klienten: mindestens alle 14 Tage (Punkt 13.8) - Frist kalendieren.
+- IMMER konkretes Datum (TT.MM.JJJJ). Nie "binnen X Wochen". Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
 - Alle Termine in Kalender ALLER Teammitglieder eintragen (Punkt 7.8 und 15.2 der Policy).
 
 OUTPUT-REGELN - STRIKT EINHALTEN:
