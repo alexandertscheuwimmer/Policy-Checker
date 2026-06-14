@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
+<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -178,7 +178,7 @@ textarea{resize:vertical;line-height:1.55}
     <div class="step-header"><span class="step-num">3</span><span class="step-title">Kontext <span style="font-size:11.5px;color:#d44;font-weight:400">* Pflichtfeld</span></span></div>
     <div class="two-col">
       <div class="field">
-        <label class="field-label">Mandant<span class="req">*</span></label>
+        <label class="field-label">Klient<span class="req">*</span></label>
         <input type="text" id="mandant-name" placeholder="z.B. Tanaka GmbH">
         <div class="toggle-row" style="margin-top:.55rem">
           <span class="toggle-lbl" id="lbl-nat">Natürliche Person</span>
@@ -196,12 +196,12 @@ textarea{resize:vertical;line-height:1.55}
           <label class="field-label">Empfänger<span class="req">*</span></label>
           <label class="ident-label enabled" id="ident-label">
             <input type="checkbox" id="ident-cb" onchange="toggleIdent(this)">
-            Ident mit Mandanten
+            Ident mit Klienten
           </label>
         </div>
         <input type="text" id="empf-name" placeholder="z.B. RA Dr. Müller">
         <div id="rolle-wrap" style="margin-top:.45rem">
-          <input type="text" id="rolle-input" placeholder="Rolle beim Mandanten (z.B. GF, Prokurist …)" style="font-size:12.5px">
+          <input type="text" id="rolle-input" placeholder="Rolle beim Klienten (z.B. GF, Prokurist …)" style="font-size:12.5px">
         </div>
       </div>
     </div>
@@ -311,7 +311,7 @@ function onPersonType(r){
 }
 function toggleIdent(cb){
   var n=document.getElementById('empf-name');var r=document.getElementById('rolle-wrap');
-  if(cb.checked){n.value='';n.placeholder='(ident mit Mandanten)';n.disabled=true;r.style.display='none';}
+  if(cb.checked){n.value='';n.placeholder='(ident mit Klienten)';n.disabled=true;r.style.display='none';}
   else{n.placeholder='z.B. RA Dr. Müller';n.disabled=false;r.style.display='';}
 }
 
@@ -440,7 +440,7 @@ Prüfe ob alle relevanten Normen und Judikatur berücksichtigt wurden.`:'';
 KONTEXT:
 - Dokumenttyp: ${p.dtype}
 - Rechtsgebiet(e): ${p.rgs}${p.ausRecht?' + Auslaendisches Recht: '+p.ausRecht:''}
-- Mandant: ${p.mandant}${p.personLabel?' ('+p.personLabel+')':''}${p.herkunftLabel?', '+p.herkunftLabel:''}
+- Klient: ${p.mandant}${p.personLabel?' ('+p.personLabel+')':''}${p.herkunftLabel?', '+p.herkunftLabel:''}
 - Empfaenger: ${p.empf}${p.rolle?' - Rolle: '+p.rolle:''}
 - Historie:
 ${p.historie||'(keine angegeben)'}
@@ -494,18 +494,32 @@ Strenge priorisieren: Gibt es gravierende Verstoesse (Saetze ueber 30 Woerter, "
 - Judikaturzitierformat pruefen (Punkt 14.4): "Gericht vom TT.MM.JJJJ zu GZ X".
 - Falsches Datumformat (nicht TT.MM.JJJJ): Befund (Punkt 10.1).
 - Dokumenttyp-spezifische Regeln: ${getDtypeRules(p.dtype)}
-- Vorschlaege in Spalte 3 muessen selbst policy-konform sein: Saetze max 15 Woerter, eine Aussage pro Satz, keine Floskeln, konkret und direkt.
+- Vorschlaege in Spalte 3 muessen selbst policy-konform sein:
+  * Saetze maximal 15 Woerter (zaehle die Woerter!)
+  * Eine Aussage pro Satz
+  * Keine Floskeln
+  * Judikatur gemaess Punkt 14.4 der Policy zitieren: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt"
+  * Gesetzestellen in Klammer nach der Aussage: (§ X Abs Y ABGB)
+  * Konkret und direkt - kein "koennte" oder "wuerde"
+  * Kein "- siehe aber Punkte 2.6, 2.4 der Policy" nach jedem Vorschlag (steht nur in der Spaltenüberschrift)
 
 2. Vollstaendigkeit und Uebersehenes (Hauptproblem - 70% der Faelle):
 Der ReviewAssistant recherchiert eigenstaendig und denkt juristisch mit. Er beschraenkt sich NICHT auf den vorhandenen Text.
-Schritt 1: Was gehoert zum Sachverhalt und fehlt voellig? Pruefe Normen, Judikatur, Risiken, Gegenargumente anhand des Rechtsgebiets.
+Schritt 1: Eigenstaendige juristische Recherche zum Sachverhalt. Pruefe die Anwendbarkeit ALLER einschlaegigen Gesetze:
+  - Bei bestandrechtlichen Fragen: ABGB, MRG, WGG, KSchG, WEG, RichtWG, HeizKG
+  - Bei arbeitsrechtlichen Fragen: AngG, ABGB, ArbVG, MSchG, VKG, AVRAG, GlBG
+  - Bei gesellschaftsrechtlichen Fragen: GmbHG, AktG, UGB, SpaltG, EU-Vorschriften
+  - Bei fremdenrechtlichen Fragen: NAG, FPG, AsylG, AuslBG
+  - Allgemein: Pruefe ob EU-Recht (Richtlinien, Verordnungen) anwendbar ist
+  - Auslaendisches Recht: ${p.ausRecht?p.ausRecht+' pruefen':' nicht angegeben'}
+  Fuer jedes Gesetz: Ist es anwendbar? Wenn ja, wurde es im Dokument erwaehnt?
 Schritt 2: Gibt es in der Vorkorrespondenz (auch implizit) unbeantworte Fragen oder Themen?
 Schritt 3: Pruefe die vier Kriterien (Punkt 13.10 der Policy): Umfassend? Pro-aktiv? Gruendlich? Praktisch?
 "Uebersehen" = kommt GAR NICHT vor. Nicht: ungenuegend formuliert.
 Inhaltliche Fehler im engeren Sinn: Nur bei Wichtig-Modus oder offensichtlichen Fehlern.
 Rechtsgebiet(e): ${p.rgs}${p.ausRecht?' + Auslaendisches Recht: '+p.ausRecht:''}
 Rechtsschutz: ${rsHinweis}
-Ton: sachlich, freundlich, kurz. Nie "Es fehlt jede/r/s ..." sondern "Es fehlt eine ..." oder "Es fehlt ein ...". Nie absolutierende Sprache.
+Ton: sachlich, freundlich, kurz. VERBOTEN: "Es fehlt jede/r/s ...", "Es fehlt jeder ...", "keinerlei", "jede Einschaetzung", "jeder Hinweis". STATTDESSEN immer: "Es fehlt eine ...", "Es fehlt ein Hinweis, ob ...", "Es fehlt eine Einschaetzung, ob ...". Freundlich und praezise formulieren.
 Policy-Referenzen: IMMER "Punkte X.Y der Policy" (immer Plural "Punkte", auch bei einem einzigen Punkt). Beispiel: "Punkte 10.9 der Policy" oder "Punkte 10.9, 14.3 der Policy".
 
 3. Fristenscanner (ALLE Termine - auch implizite):
@@ -542,7 +556,8 @@ Regeln fuer den Output:
 - Modul B: Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist.
 - Modul B: Eigenstaendig denken - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
 - Modul C: Alle Termine mit konkretem Datum (TT.MM.JJJJ). Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
-- Kein Doppelpunkt am Anfang von Spalte 2 oder Spalte 3. Direkt mit Inhalt beginnen.
+- Kein Doppelpunkt am Anfang von Spalte 2 oder Spalte 3.
+- Einheitlich "Klient" verwenden - nie "Mandant". Direkt mit Inhalt beginnen.
 - Wenn Dokumenttyp ein E-Mail ist (${p.dtype.indexOf('E-Mail')>=0?'JA - schreibe "dieses E-Mail" statt "dieses Dokument"':'NEIN - schreibe "dieses Dokument"'}).
 - Ausgabesprache: ${p.lang}.
 - WICHTIG zur Sprache: Wenn die Ausgabesprache (${p.lang}) NICHT die Sprache des zu pruefenden Dokuments ist, dann: (a) Gib das Feedback in der Ausgabesprache. (b) Uebersetze in Spalte 3 (Vorschlag) den verbesserten Text in die Ausgabesprache.`;
@@ -637,7 +652,7 @@ function renderTable(title,section,sep){
     var parts=line.split(sep);
     var col1=parts[0]?parts[0].trim():'';
     var col2=parts[1]?parts[1].trim().replace(/^:\s*/,''):'';
-    var col3=parts[2]?parts[2].trim().replace(/^:\s*/,'').replace(/\s*-\s*siehe aber Punkte 2\.6,\s*2\.4 der Policy\.?$/i,''):'';
+    var col3=parts[2]?parts[2].trim().replace(/^:\s*/,''):'';
     html+='<tr><td style="color:#888;font-style:italic">'+esc(col1)+'</td><td>'+esc(col2)+'</td><td class="td-fix">'+esc(col3)+'</td></tr>';
   });
   html+='</tbody></table></div>';
