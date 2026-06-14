@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
+<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,6 +74,19 @@ textarea{resize:vertical;line-height:1.55}
 .key-status{font-size:11px;margin-top:.3rem}
 .key-status.ok{color:#1F3865}
 .key-status.err{color:#c44}
+.res-section{margin-bottom:1.25rem}
+.res-head{font-size:13px;font-weight:600;color:#1F3865;margin-bottom:.5rem;padding-bottom:.3rem;border-bottom:1px solid #e8e8e4}
+.res-none{font-size:13px;color:#aaa;font-style:italic}
+.res-hint{font-size:11px;color:#aaa;margin-top:.4rem}
+.res-table{width:100%;border-collapse:collapse;font-size:13px}
+.res-table th{text-align:left;font-weight:600;font-size:11px;color:#888;padding:5px 8px;border-bottom:1px solid #e8e8e4;background:#f9f9f7}
+.res-table td{padding:7px 8px;border-bottom:1px solid #f0f0ec;vertical-align:top;line-height:1.5}
+.res-table tr:last-child td{border-bottom:none}
+.res-table td:first-child{color:#888;font-style:italic;width:28%}
+.res-table td:nth-child(2){width:25%}
+.td-fix{color:#1F3865;font-weight:500}
+.res-list{margin:0;padding-left:1.2rem}
+.res-list li{font-size:13px;padding:3px 0;line-height:1.5}
 </style>
 <script src="./TAIYO ReviewAssistant_files/mammoth.browser.min.js.Download"></script></head>
 <body>
@@ -367,7 +380,7 @@ async function runCheck(){
     var resp=await fetch('/api',{method:'POST',headers:headers,body:JSON.stringify(bodyObj)});
     var data=await resp.json();
     if(data.error){rb.textContent='Fehler: '+data.error.message;}
-    else{rb.textContent=data.content[0].text;}
+    else{renderResult(data.content[0].text,rb);}
   }catch(e){rb.textContent='Verbindungsfehler: '+e.message;}
 
   btn.disabled=false;btn.textContent='Dokument prüfen →';
@@ -438,7 +451,43 @@ OUTPUT-REGELN - STRIKT EINHALTEN:
 
 7. Kein einleitender Text. Beginne sofort mit Modul A: und der Tabelle.
 
-8. Sprache: ${p.lang}.`;
+8. Sprache des Feedbacks: ${p.lang}.
+
+AUSGABEFORMAT: Antworte AUSSCHLIESSLICH mit validem JSON. Kein Text davor oder danach. Kein Markdown. Keine Erklaerungen. Nur das JSON-Objekt.
+
+JSON-Struktur:
+{
+  "modul_a": {
+    "befunde": [
+      {
+        "original": "wörtlicher Textausschnitt aus dem Dokument (max 2 Saetze)",
+        "problem": "Was ist falsch (Punkt X.Y der Policy)",
+        "verbesserung": "Konkret ausformulierter verbesserter Text"
+      }
+    ]
+  },
+  "modul_b": {
+    "befunde": [
+      {
+        "original": "betroffene Stelle oder leere Stelle im Dokument",
+        "problem": "Was fehlt oder ist falsch",
+        "verbesserung": "Konkret was hinzugefuegt oder geaendert werden soll"
+      }
+    ]
+  },
+  "modul_c": {
+    "termine": [
+      {
+        "bezeichnung": "Kurze Beschreibung des Termins",
+        "typ": "Gerichtsfrist / Urgenz Gegner / Urgenz Mandant / Urgenz Interessent",
+        "datum": "TT.MM.JJJJ oder Zeitangabe"
+      }
+    ]
+  }
+}
+
+Wenn ein Modul keine Befunde hat: leeres Array [].
+Maximal 5 Eintraege pro Modul. Nur die wichtigsten Punkte. Kleinere Verstoesse weglassen.`;
 }
 
 function getDtypeRules(dtype){
@@ -488,6 +537,78 @@ function getDtypeRules(dtype){
   }
   return `– Dokumenttyp: ${dtype}. Wende allgemeine Policy-Regeln an.`;
 }
+function stripMd(s){
+  if(!s)return'';
+  return s
+    .replace(/^#{1,6}\s+/gm,'')
+    .replace(/\*\*([^*]+)\*\*/g,'$1')
+    .replace(/\*([^*]+)\*/g,'$1')
+    .replace(/^[\s]*[-*]\s+/gm,'')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')
+    .trim();
+}
+
+function renderResult(raw, container){
+  // Ask model for JSON, but if it returns markdown, parse it gracefully
+  var text = raw;
+  // Try JSON parse first
+  var jsonMatch = text.match(/```json\s*([\s\S]*?)```/);
+  if(jsonMatch) text = jsonMatch[1];
+  try{
+    var data = JSON.parse(text);
+    renderJSON(data, container);
+    return;
+  }catch(e){}
+  // Fallback: render as cleaned plaintext
+  renderPlain(raw, container);
+}
+
+function renderJSON(data, container){
+  var html = '';
+  if(data.modul_a && data.modul_a.befunde && data.modul_a.befunde.length){
+    html += '<div class="res-section"><div class="res-head">Modul A &ndash; Policy &amp; Stil</div>';
+    html += '<table class="res-table"><thead><tr><th>Textausschnitt</th><th>Problem</th><th>Verbesserter Text</th></tr></thead><tbody>';
+    data.modul_a.befunde.forEach(function(b,i){
+      html += '<tr><td>'+esc(b.original||'')+'</td><td>'+esc(b.problem||'')+'</td><td class="td-fix">'+esc(b.verbesserung||'')+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="res-section"><div class="res-head">Modul A &ndash; Policy &amp; Stil</div><div class="res-none">Kein Befund.</div></div>';
+  }
+  if(data.modul_b && data.modul_b.befunde && data.modul_b.befunde.length){
+    html += '<div class="res-section"><div class="res-head">Modul B &ndash; Inhaltliche Vollst&auml;ndigkeit</div>';
+    html += '<table class="res-table"><thead><tr><th>Textausschnitt</th><th>Problem</th><th>Verbesserter Text</th></tr></thead><tbody>';
+    data.modul_b.befunde.forEach(function(b){
+      html += '<tr><td>'+esc(b.original||'')+'</td><td>'+esc(b.problem||'')+'</td><td class="td-fix">'+esc(b.verbesserung||'')+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="res-section"><div class="res-head">Modul B &ndash; Inhaltliche Vollst&auml;ndigkeit</div><div class="res-none">Kein Befund.</div></div>';
+  }
+  if(data.modul_c && data.modul_c.termine && data.modul_c.termine.length){
+    html += '<div class="res-section"><div class="res-head">Modul C &ndash; Termine &amp; Fristen</div><ol class="res-list">';
+    data.modul_c.termine.forEach(function(t){
+      html += '<li>'+esc(t.bezeichnung||'')+' &ndash; '+esc(t.typ||'')+' &ndash; Kalendereintrag bis '+esc(t.datum||'')+'</li>';
+    });
+    html += '</ol><div class="res-hint">Alle Termine in Kalender aller Teammitglieder eintragen (Punkt 7.8 / 15.2 der Policy).</div></div>';
+  } else {
+    html += '<div class="res-section"><div class="res-head">Modul C &ndash; Termine &amp; Fristen</div><div class="res-none">Kein Befund.</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function renderPlain(raw, container){
+  // Clean markdown and display as plain text
+  var clean = raw
+    .replace(/^#{1,6}\s+/gm,'')
+    .replace(/\*\*([^*]+)\*\*/g,'$1')
+    .replace(/\*([^*]+)\*/g,'$1')
+    .replace(/`([^`]+)`/g,'$1');
+  container.textContent = clean;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 </script>
 
 
