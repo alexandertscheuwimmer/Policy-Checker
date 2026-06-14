@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_2.html -->
+<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -87,6 +87,14 @@ textarea{resize:vertical;line-height:1.55}
 .td-fix{color:#1F3865;font-weight:500}
 .res-list{margin:0;padding-left:1.2rem}
 .res-list li{font-size:13px;padding:3px 0;line-height:1.5}
+.toggle-row{display:flex;align-items:center;gap:7px}
+.toggle-lbl{font-size:12px;color:#aaa;transition:color .15s}
+.tgl{position:relative;display:inline-block;width:34px;height:18px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-sl{position:absolute;cursor:pointer;inset:0;background:#ddd;border-radius:18px;transition:.2s}
+.tgl-sl:before{position:absolute;content:"";height:12px;width:12px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.tgl input:checked+.tgl-sl{background:#1F3865}
+.tgl input:checked+.tgl-sl:before{transform:translateX(16px)}
 </style>
 <script src="./TAIYO ReviewAssistant_files/mammoth.browser.min.js.Download"></script></head>
 <body>
@@ -159,13 +167,15 @@ textarea{resize:vertical;line-height:1.55}
       <div class="field">
         <label class="field-label">Mandant<span class="req">*</span></label>
         <input type="text" id="mandant-name" placeholder="z.B. Tanaka GmbH">
-        <div class="radio-row" style="margin-top:.5rem">
-          <label><input type="radio" name="person-type" value="nat" onchange="onPersonType(this)"> Natürliche Person</label>
-          <label><input type="radio" name="person-type" value="jur" onchange="onPersonType(this)"> Juristische Person</label>
+        <div class="toggle-row" style="margin-top:.55rem">
+          <span class="toggle-lbl" id="lbl-nat">Natürliche Person</span>
+          <label class="tgl"><input type="checkbox" id="person-type-cb" onchange="onPersonType(this)"><span class="tgl-sl"></span></label>
+          <span class="toggle-lbl" id="lbl-jur">Juristische Person</span>
         </div>
-        <div class="radio-row" style="margin-top:.3rem">
-          <label><input type="radio" name="herkunft" value="inl"> Inländer</label>
-          <label><input type="radio" name="herkunft" value="ausl"> Ausländer</label>
+        <div class="toggle-row" style="margin-top:.35rem">
+          <span class="toggle-lbl" id="lbl-inl">Inländer</span>
+          <label class="tgl"><input type="checkbox" id="herkunft-cb"><span class="tgl-sl"></span></label>
+          <span class="toggle-lbl" id="lbl-ausl">Ausländer</span>
         </div>
       </div>
       <div class="field">
@@ -330,8 +340,8 @@ function buildPrompt(){
   var dtype=document.querySelector('.pill.active[data-group="dtype"]');dtype=dtype?dtype.textContent.trim():'';
   var rgs=[];document.querySelectorAll('.pill.active[data-group="rg-multi"]').forEach(function(p){rgs.push(p.textContent.trim());});
   var mandant=document.getElementById('mandant-name').value.trim();
-  var personType=document.querySelector('input[name="person-type"]:checked');personType=personType?personType.value:'';
-  var herkunft=document.querySelector('input[name="herkunft"]:checked');herkunft=herkunft?herkunft.value:'';
+  var personTypeCb=document.getElementById('person-type-cb');var personType=personTypeCb?(personTypeCb.checked?'jur':'nat'):'';
+  var herkunftCb=document.getElementById('herkunft-cb');var herkunft=herkunftCb?(herkunftCb.checked?'ausl':'inl'):'';
   var identMandant=document.getElementById('ident-cb').checked;
   var empf=identMandant?mandant:document.getElementById('empf-name').value.trim();
   var rolle=identMandant?'Mandant selbst':(document.getElementById('rolle-input').value.trim());
@@ -368,7 +378,7 @@ async function runCheck(){
   var rb=document.getElementById('result-body');rb.textContent='';
 
   var systemPrompt=buildSystemPrompt(p);
-  var userMsg='Bitte prüfe das folgende Dokument gemäß den Anweisungen.\n\nDOKUMENT:\n'+p.docText;
+  var userMsg='Bitte prüfe das folgende Dokument. Antworte NUR mit den drei Tag-Bloecken (===MODUL_A=== etc.). Kein anderer Text.\n\nDOKUMENT:\n'+p.docText;
 
   try{
     var safeKey=key.replace(/[^\x20-\x7E]/g,'');
@@ -376,7 +386,7 @@ async function runCheck(){
     headers.append('Content-Type','application/json');
     headers.append('x-api-key',safeKey);
     headers.append('anthropic-version','2023-06-01');
-    var bodyObj={model:'claude-sonnet-4-6',max_tokens:4000,system:systemPrompt,messages:[{role:'user',content:userMsg}]};
+    var bodyObj={model:'claude-sonnet-4-6',max_tokens:4000,system:systemPrompt,messages:[{role:'user',content:userMsg},{role:'assistant',content:'===MODUL_A==='}]};
     var resp=await fetch('/api',{method:'POST',headers:headers,body:JSON.stringify(bodyObj)});
     var data=await resp.json();
     if(data.error){rb.textContent='Fehler: '+data.error.message;}
@@ -588,8 +598,10 @@ function renderResult(raw, container){
 }
 
 function extractSection(raw,tag){
+  // Model output starts after prefill '===MODUL_A===' so prepend it back
+  var full=(tag==='MODUL_A')?'===MODUL_A==='+raw:raw;
   var re=new RegExp('==='+tag+'===([\\s\\S]*?)==='+tag+'_ENDE===');
-  var m=raw.match(re);
+  var m=full.match(re);
   return m?m[1].trim():'';
 }
 
