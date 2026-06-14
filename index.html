@@ -364,7 +364,7 @@ async function runCheck(){
     headers.append('x-api-key',safeKey);
     headers.append('anthropic-version','2023-06-01');
     var bodyObj={model:'claude-sonnet-4-6',max_tokens:2000,system:systemPrompt,messages:[{role:'user',content:userMsg}]};
-    var resp=await fetch('https://taiyo-proxy.a-scheuwimmer.workers.dev',{method:'POST',headers:headers,body:JSON.stringify(bodyObj)});
+    var resp=await fetch('/api',{method:'POST',headers:headers,body:JSON.stringify(bodyObj)});
     var data=await resp.json();
     if(data.error){rb.textContent='Fehler: '+data.error.message;}
     else{rb.textContent=data.content[0].text;}
