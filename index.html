@@ -9,21 +9,21 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;padding:2rem 1rem}
 .wrap{max-width:720px;margin:0 auto}
 .header{display:flex;align-items:center;gap:10px;margin-bottom:1.75rem;padding-bottom:1rem;border-bottom:1px solid #e0e0dc}
-.logo{font-size:16px;font-weight:600;color:#1a1a1a}.logo span{color:#1D9E75}
+.logo{font-size:16px;font-weight:600;color:#1a1a1a}.logo span{color:#1F3865}
 .card{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:.875rem}
 .step-header{display:flex;align-items:center;margin-bottom:.8rem}
-.step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#1D9E75;color:#fff;font-size:11px;font-weight:600;margin-right:9px;flex-shrink:0}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#1F3865;color:#fff;font-size:11px;font-weight:600;margin-right:9px;flex-shrink:0}
 .step-title{font-size:15px;font-weight:600;color:#1a1a1a}
 .pills{display:flex;gap:7px;flex-wrap:wrap}
 .pill{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border:1px solid #d0d0cc;border-radius:20px;font-size:13px;cursor:pointer;color:#666;background:#fff;transition:all .15s;user-select:none;line-height:1.3}
 .pill:hover{background:#f5f5f3;color:#333}
-.pill.active{background:#E1F5EE;border-color:#1D9E75;color:#0F6E56;font-weight:600}
+.pill.active{background:#E8EDF5;border-color:#1F3865;color:#152847;font-weight:600}
 .pill svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
 .divider{height:1px;background:#f0f0ec;margin:.9rem 0}
 label.field-label{display:block;font-size:12.5px;color:#666;margin-bottom:.35rem;font-weight:500}
 .req{color:#d44;margin-left:2px}
 input[type=text],textarea,select{width:100%;border:1px solid #ddd;border-radius:7px;padding:8px 10px;font-size:13.5px;color:#1a1a1a;background:#fff;font-family:inherit;transition:border .15s;outline:none}
-input[type=text]:focus,textarea:focus{border-color:#1D9E75;box-shadow:0 0 0 2px rgba(29,158,117,.1)}
+input[type=text]:focus,textarea:focus{border-color:#1F3865;box-shadow:0 0 0 2px rgba(31,56,101,.1)}
 input[type=text]:disabled{background:#f5f5f3;color:#aaa}
 textarea{resize:vertical;line-height:1.55}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -31,20 +31,20 @@ textarea{resize:vertical;line-height:1.55}
 .field:last-child{margin-bottom:0}
 .radio-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:.4rem}
 .radio-row label{display:flex;align-items:center;gap:5px;font-size:12.5px;color:#555;cursor:pointer}
-.radio-row input[type=radio]{accent-color:#1D9E75;width:13px;height:13px;cursor:pointer}
+.radio-row input[type=radio]{accent-color:#1F3865;width:13px;height:13px;cursor:pointer}
 .empf-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem}
 .empf-header .field-label{margin-bottom:0}
 .ident-label{display:flex;align-items:center;gap:5px;font-size:12px;color:#aaa;cursor:pointer;pointer-events:none;user-select:none}
 .ident-label.enabled{color:#555;pointer-events:auto}
-.ident-label input[type=checkbox]{accent-color:#1D9E75;width:13px;height:13px;cursor:pointer}
+.ident-label input[type=checkbox]{accent-color:#1F3865;width:13px;height:13px;cursor:pointer}
 .drop-zone{border:1.5px dashed #ccc;border-radius:8px;padding:1rem;text-align:center;cursor:pointer;background:#fafafa;transition:all .15s;position:relative;min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-.drop-zone:hover,.drop-zone.drag-over{border-color:#1D9E75;background:#f0faf6}
-.drop-zone.has-files{border-color:#1D9E75;background:#f0faf6}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#1F3865;background:#edf0f7}
+.drop-zone.has-files{border-color:#1F3865;background:#edf0f7}
 .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .drop-label{font-size:13px;color:#666}
 .drop-sub{font-size:11px;color:#aaa}
 .file-list{margin-top:.4rem;display:flex;flex-direction:column;gap:3px;width:100%;position:relative;z-index:2}
-.file-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:#0F6E56;background:#fff;border:1px solid #1D9E75;border-radius:6px;padding:3px 8px;cursor:default}
+.file-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:#152847;background:#fff;border:1px solid #1F3865;border-radius:6px;padding:3px 8px;cursor:default}
 .file-chip .rm{cursor:pointer;color:#c44;font-size:14px;line-height:1;margin-left:auto;font-weight:700}
 .or-div{display:flex;align-items:center;gap:8px;margin:.65rem 0;color:#bbb;font-size:12px}
 .or-div::before,.or-div::after{content:'';flex:1;height:1px;background:#ebebeb}
@@ -54,32 +54,32 @@ textarea{resize:vertical;line-height:1.55}
 .wichtig-label input[type=checkbox]{accent-color:#c44;width:14px;height:14px;cursor:pointer}
 .wichtig-sub{font-size:11px;color:#bbb;font-weight:400;margin-left:1px}
 .sub-label{font-size:12px;color:#666;font-weight:600;margin-bottom:.45rem}
-.btn{width:100%;padding:11px 20px;background:#1D9E75;color:#fff;border:none;border-radius:8px;font-size:14.5px;font-weight:600;cursor:pointer;margin-top:.25rem;font-family:inherit;transition:background .15s}
-.btn:hover{background:#0F6E56}
+.btn{width:100%;padding:11px 20px;background:#1F3865;color:#fff;border:none;border-radius:8px;font-size:14.5px;font-weight:600;cursor:pointer;margin-top:.25rem;font-family:inherit;transition:background .15s}
+.btn:hover{background:#152847}
 .btn:disabled{background:#aaa;cursor:not-allowed}
 .hint{font-size:11px;color:#aaa;margin-top:3px}
 #result-wrap{display:none;margin-top:1.25rem}
 #result-card{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:1.25rem 1.4rem}
-#result-title{font-size:14px;font-weight:600;color:#1D9E75;margin-bottom:.75rem;display:flex;align-items:center;gap:7px}
+#result-title{font-size:14px;font-weight:600;color:#1F3865;margin-bottom:.75rem;display:flex;align-items:center;gap:7px}
 #result-body{font-size:13.5px;line-height:1.65;color:#1a1a1a;white-space:pre-wrap}
-#result-body a{color:#1D9E75}
-.spinner{display:inline-block;width:16px;height:16px;border:2px solid #e0faf2;border-top-color:#1D9E75;border-radius:50%;animation:spin .7s linear infinite}
+#result-body a{color:#1F3865}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #e0faf2;border-top-color:#1F3865;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .key-section{background:#f5f5f3;border-radius:8px;padding:.75rem 1rem;margin-bottom:.75rem}
 .key-section label{font-size:12px;color:#888;display:block;margin-bottom:.35rem}
 .key-row{display:flex;gap:7px}
 .key-row input{flex:1}
-.key-btn{padding:8px 14px;background:#1D9E75;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap}
-.key-btn:hover{background:#0F6E56}
+.key-btn{padding:8px 14px;background:#1F3865;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.key-btn:hover{background:#152847}
 .key-status{font-size:11px;margin-top:.3rem}
-.key-status.ok{color:#1D9E75}
+.key-status.ok{color:#1F3865}
 .key-status.err{color:#c44}
 </style>
 <script src="./TAIYO ReviewAssistant_files/mammoth.browser.min.js.Download"></script></head>
 <body>
 <div class="wrap">
   <div class="header">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F3865" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
     <div class="logo">TAIYO <span>ReviewAssistant</span></div>
   </div>
 
@@ -196,7 +196,7 @@ textarea{resize:vertical;line-height:1.55}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.8"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>
       <div class="drop-label">Datei hochladen oder hierher ziehen</div>
       <div class="drop-sub">docx · pdf · txt</div>
-      <div id="doc-file-name" style="font-size:12px;color:#1D9E75;font-weight:600;margin-top:.3rem;display:none"></div>
+      <div id="doc-file-name" style="font-size:12px;color:#1F3865;font-weight:600;margin-top:.3rem;display:none"></div>
     </div>
     <div class="or-div">oder</div>
     <textarea id="doc-text" style="min-height:125px" placeholder="Text direkt hier einfügen …"></textarea>
@@ -208,7 +208,7 @@ textarea{resize:vertical;line-height:1.55}
     <div class="sub-label">Ausgabesprache</div>
     <div class="lang-row" id="lang-pills">
       <div class="pill active" data-group="lang">Deutsch</div>
-      <div class="pill" data-group="lang">Englisch</div>
+      <div class="pill" data-group="lang">English</div>
       <div class="pill" data-group="lang">日本語</div>
       <div class="pill" data-group="lang">한국어</div>
     </div>
@@ -226,7 +226,7 @@ textarea{resize:vertical;line-height:1.55}
   <div id="result-wrap">
     <div id="result-card">
       <div id="result-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F3865" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
         Prüfungsergebnis
       </div>
       <div id="result-body"></div>
@@ -495,4 +495,12 @@ function getDtypeRules(dtype){
   if(dtype.indexOf('Sonstiges E-Mail')>=0){
     return `Sonstiges E-Mail:
 – Betreff klar und aussagekräftig.
-– Zweck des E-Mails im ersten Satz erkennb
+– Zweck des E-Mails im ersten Satz erkennbar.
+– Nächste Schritte klar definiert.`;
+  }
+  return `– Dokumenttyp: ${dtype}. Wende allgemeine Policy-Regeln an.`;
+}
+</script>
+
+
+</body></html>
