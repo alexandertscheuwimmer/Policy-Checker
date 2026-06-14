@@ -409,27 +409,30 @@ ${wichtigExtra}
 PRUEFREGELN:
 
 Policy und Stil:
-- Saetze maximal 15 Woerter; eine Aussage pro Satz. (Punkt 10.9 der Policy)
+- Satzlaenge: bis 20 Woerter tolerierbar. 21-30 Woerter: "Zu langer Satz". 31-45 Woerter: "Viel zu langer Satz". Ueber 45 Woerter: "Absurd langer Satz". Bei bereits ausreichend Feedback: Saetze bis 20 Woerter durchgehen lassen. (Punkt 10.9 der Policy)
+- Zwei Aussagen pro Satz: tolerierbar wenn der Satz kurz bleibt UND die Aussagen inhaltlich zusammenhaengen. Nur kritisieren wenn der Satz dadurch zu lang wird oder die Aussagen nichts miteinander zu tun haben.
 - Keine unnoetige Laenge. (Punkt 13.5 der Policy)
-- Keine So-What-Aussagen: korrekte Aussagen ohne Konsequenz fuer den Empfaenger sind ein schwerer Fehler. (Punkt 13.5 der Policy)
+- "So-What-Aussagen" sind ein schwerer Fehler: korrekte Aussagen ohne Konsequenz fuer den Empfaenger. Den Begriff "So-What-Aussage" immer in Anfuehrungszeichen schreiben. (Punkt 13.5 der Policy)
 - Dokument muss standalone sein: vollstaendig verstaendlich ohne Vorkenntnis. (Punkt 10.7 der Policy)
-- Keine Floskeln: Wir moechten uns bedanken / Ich erlaube mir / Wir wollen Ihnen mitteilen. (Punkt 13.9 der Policy)
-- Verweise praezisieren: nicht Wie gesagt sondern Wie in unserem E-Mail vom TT.MM.JJJJ. (Punkt 10.5 der Policy)
-- Wichtige Aussagen in Klammer belegen: (Paragraph X Abs Y ABGB) oder (OGH TT.MM.JJJJ, GZ ...). (Punkt 14.3 der Policy)
+- Floskeln sind verboten - AUSNAHME: Einleitung und Schluss bei E-Mails. Die Policy verlangt ausdruecklich eine kurze Einleitung (z.B. "In der Angelegenheit XXX") und einen hoeflichen Schluss (z.B. "stehe ich fuer Rueckfragen gerne zur Verfuegung" oder "Danke im Voraus"). Diese NICHT kritisieren. (Punkt 10.8 der Policy)
+- Verweise praezisieren: nicht "Wie gesagt" sondern "Wie in unserem E-Mail vom TT.MM.JJJJ". (Punkt 10.5 der Policy)
+- Wichtige Aussagen in Klammer belegen. (Punkt 14.3 der Policy)
 - Datumformat: TT.MM.JJJJ. Waehrung: EUR X,XX. (Punkt 10.1 der Policy)
 ${getDtypeRules(p.dtype)}
 
-Inhaltliche Vollstaendigkeit:
-- Wurden alle relevanten Rechtsfragen angesprochen?
-- Gibt es logische Luecken oder unbeantwortete Punkte?
-- Fehlen Argumente die aus der Historie erkennbar relevant sind?
-- Rechtsgebiet(e): ${p.rgs} - beruecksichtige relevante Normen und Judikatur.
-- Mitarbeiter uebersehen haeufiger etwas (70%) als dass sie inhaltliche Fehler machen (30%).
+Vollstaendigkeit und Uebersehenes (Schwerpunkt):
+- Das Hauptproblem ist Uebersehenes (70% der Faelle). Falsche Aussagen kommen selten vor (30%).
+- "Uebersehen" heisst: etwas kommt im Dokument GAR NICHT vor - nicht nur ungenuegend formuliert.
+- Denke eigenstaendig: Welche Rechtsfragen, Normen oder Argumente gehoeren zu diesem Sachverhalt und fehlen voellig?
+- Gibt es in der Vorkorrespondenz (auch implizit) gestellte Fragen die noch unbeantwortet sind?
+- Gibt es erkennbare Risiken oder Gegenargumente die nicht adressiert wurden?
+- Rechtsgebiet(e): ${p.rgs} - beruecksichtige was fehlt.
 
 Fristenscanner:
-- Identifiziere ALLE Termine, Fristen und Follow-ups.
+- Identifiziere ALLE Termine, Fristen und Follow-ups - auch implizite.
 - Klassifiziere: (a) Gerichts- oder Behoerdenfrist; (b) Urgenz beim Gegner: 2 Wochen; (c) Urgenz beim Mandanten: dringend 1-2 Werktage, standard 1 Woche, nicht eilig 2 Wochen; (d) Urgenz beim Interessenten: beauftragt 1-2 Wochen, keine Antwort 1-2 Monate, Absage 6-12 Monate.
-- Alle Termine sind in Kalender ALLER Teammitglieder einzutragen (Punkt 7.8 und 15.2 der Policy).
+- WICHTIG: Immer konkretes Datum angeben (TT.MM.JJJJ). Nie "binnen X Wochen". Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
+- Alle Termine in Kalender ALLER Teammitglieder eintragen (Punkt 7.8 und 15.2 der Policy).
 
 OUTPUT-REGELN - STRIKT EINHALTEN:
 
@@ -559,7 +562,7 @@ function renderTable(title,section,sep){
   }
   var lines=section.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l.indexOf(sep)>-1;});
   if(!lines.length){return html+'<div class="res-none">Kein Befund.</div></div>';}
-  html+='<table class="res-table"><thead><tr><th style="width:26%">Textausschnitt</th><th style="width:24%">Problem</th><th>Verbesserter Text</th></tr></thead><tbody>';
+  html+='<table class="res-table"><thead><tr><th style="width:26%">Textausschnitt</th><th style="width:24%">Problem</th><th>Vorschlag</th></tr></thead><tbody>';
   lines.forEach(function(line){
     // Remove leading "ZEILE:" prefix
     line=line.replace(/^ZEILE:\s*/i,'');
