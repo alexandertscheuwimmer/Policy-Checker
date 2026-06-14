@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
+<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -520,7 +520,7 @@ Inhaltliche Fehler im engeren Sinn: Nur bei Wichtig-Modus oder offensichtlichen 
 Rechtsgebiet(e): ${p.rgs}${p.ausRecht?' + Auslaendisches Recht: '+p.ausRecht:''}
 Rechtsschutz: ${rsHinweis}
 Ton: sachlich, freundlich, kurz. VERBOTEN: "Es fehlt jede/r/s ...", "Es fehlt jeder ...", "keinerlei", "jede Einschaetzung", "jeder Hinweis". STATTDESSEN immer: "Es fehlt eine ...", "Es fehlt ein Hinweis, ob ...", "Es fehlt eine Einschaetzung, ob ...". Freundlich und praezise formulieren.
-Policy-Referenzen: IMMER "Punkte X.Y der Policy" (immer Plural "Punkte", auch bei einem einzigen Punkt). Beispiel: "Punkte 10.9 der Policy" oder "Punkte 10.9, 14.3 der Policy".
+Policy-Referenzen: Ein Punkt = "Punkt X.Y der Policy" (Singular). Mehrere Punkte = "Punkte X.Y, Z.W der Policy" (Plural).
 
 3. Fristenscanner (ALLE Termine - auch implizite):
 - Gerichts-/Behoerdenfrist: konkretes Datum aus Schriftstueck.
@@ -555,6 +555,24 @@ Regeln fuer den Output:
 - Modul A: Spalte 3 (Verbesserter Text) ist die wichtigste - immer konkret ausformulieren.
 - Modul B: Nur was GAR NICHT im Dokument vorkommt. Nicht was ungenuegend formuliert ist.
 - Modul B: Eigenstaendig denken - nicht auf das beschraenken was der Mitarbeiter eh bedacht hat.
+
+SPALTE 2 (Problem) - STRENGE REGELN:
+- Maximal 15 Woerter pro Satz. Woerter zaehlen!
+- Nur eine Aussage pro Satz.
+- Kein Doppelpunkt am Anfang.
+- Kein "jede/r/s", kein "keinerlei". Stattdessen "ein/e".
+- Nur Policy-Punkt angeben, keine lange Erklaerung: z.B. "Beleg fehlt (Punkt 14.3 der Policy)"
+- Ein Punkt = "Punkt X.Y der Policy". Mehrere = "Punkte X.Y, Z.W der Policy".
+
+SPALTE 3 (Vorschlag) - STRENGE REGELN:
+- Maximal 15 Woerter pro Satz. Woerter zaehlen! Lieber zwei kurze Saetze als ein langer.
+- Nur eine Aussage pro Satz.
+- Kein Doppelpunkt am Anfang.
+- Policy-konform: keine Floskeln, konkret, direkt.
+- Judikatur nach Punkt 14.4 der Policy: "OGH vom TT.MM.JJJJ zu GZ X Ob Y/Zt"
+- Gesetzestellen nach der Aussage in Klammer: (§ X Abs Y ABGB)
+- Kein "koennte", "wuerde", "eventuell". Direkte Aussagen.
+- Kein "- siehe aber Punkte 2.6, 2.4 der Policy" (steht nur in der Spaltenüberschrift).
 - Modul C: Alle Termine mit konkretem Datum (TT.MM.JJJJ). Heutiges Datum: ${new Date().toLocaleDateString('de-AT')}.
 - Kein Doppelpunkt am Anfang von Spalte 2 oder Spalte 3.
 - Einheitlich "Klient" verwenden - nie "Mandant". Direkt mit Inhalt beginnen.
