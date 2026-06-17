@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
-.app{max-width:820px;margin:0 auto;padding:24px 20px 60px}
+.app{max-width:920px;margin:0 auto;padding:24px 20px 60px}
 
 /* Header */
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid #e0e0da}
@@ -156,6 +156,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     <span class="key-status" id="key-status">Kein Key</span>
     <button class="key-btn" onclick="saveKey()">Speichern</button>
   </div>
+  <div id="origin-diag" style="font-size:10px;color:#bbb;margin:-12px 0 16px 2px">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html</div>
 
   <!-- Schritt 1: Kontext -->
   <div class="card">
@@ -187,13 +188,15 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 
     <div class="field">
       <label class="field-label">Rechtsgebiet(e)</label>
-      <div class="chips" id="rg-chips">
-        <label class="chip"><input type="checkbox" value="Privatrecht">Privatrecht</label>
-        <label class="chip"><input type="checkbox" value="Strafrecht">Strafrecht</label>
-        <label class="chip"><input type="checkbox" value="Steuerrecht">Steuerrecht</label>
-        <label class="chip"><input type="checkbox" value="(Sonstiges) Öffentliches Recht">(Sonstiges) Öffentliches Recht</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="chips" id="rg-chips" style="margin-top:0">
+          <label class="chip"><input type="checkbox" value="Privatrecht">Privatrecht</label>
+          <label class="chip"><input type="checkbox" value="Strafrecht">Strafrecht</label>
+          <label class="chip"><input type="checkbox" value="Steuerrecht">Steuerrecht</label>
+          <label class="chip"><input type="checkbox" value="(Sonstiges) Öffentliches Recht">(Sonstiges) Öffentliches Recht</label>
+        </div>
+        <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="flex:1;min-width:160px;max-width:220px;font-size:12px;padding:5px 8px">
       </div>
-      <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="margin-top:8px">
     </div>
 
     <div class="field">
@@ -214,7 +217,6 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 
     <div class="two-col">
       <div class="field">
-        <label class="field-label">Klient — Status</label>
         <div class="slider-row">
           <span class="slider-side-label active" id="inausl-left">Inländer</span>
           <label class="toggle-wrap">
@@ -225,7 +227,6 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
         </div>
       </div>
       <div class="field">
-        <label class="field-label">Klient — Rechtsform</label>
         <div class="slider-row">
           <span class="slider-side-label active" id="natjur-left">natürliche Person</span>
           <label class="toggle-wrap">
@@ -720,7 +721,7 @@ function renderResult(raw,model,lang,translatedText,showTranslation){
     false);
 
   html+=renderModule(raw,'MODUL_B','Inhaltliche Vollständigkeit + Übersehenes',
-    ['Bereich','Befund','Empfehlung'],false);
+    ['Bereich','Befund','Empfehlung <span style="font-weight:400;font-size:10px;color:#a0b0d0">(siehe aber Punkte 2.6, 2.4 der Policy)</span>'],false);
 
   html+=renderFristen(raw);
 
@@ -846,11 +847,13 @@ function renderFristen(raw){
   if(k){
     document.getElementById('api-key').value=k;
     setKeyStatus('✓ Key gespeichert','ok');
-  } else {
-    // Hinweis: falls der Key schon einmal gespeichert wurde, aber jetzt fehlt,
-    // liegt das meist an einer neuen Cloudflare-Pages-Vorschau-URL (andere Origin).
-    // localStorage ist strikt pro exakter URL/Domain gebunden.
   }
+  // Diagnose: zeigt die aktuelle Origin an. Falls sich diese URL zwischen
+  // Besuchen ändert (z.B. wechselnde Cloudflare-Pages-Vorschau-Adresse),
+  // ist das die Ursache, warum localStorage den Key nicht behält.
+  try{
+    document.getElementById('origin-diag').textContent='Aktuelle Adresse: '+window.location.origin+window.location.pathname;
+  }catch(e){}
 })();
 </script>
 
