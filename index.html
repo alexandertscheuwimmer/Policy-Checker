@@ -185,18 +185,12 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     <div class="field">
       <label class="field-label">Rechtsgebiet(e)</label>
       <div class="chips" id="rg-chips">
-        <label class="chip"><input type="checkbox" value="Gesellschaftsrecht">Gesellschaftsrecht</label>
-        <label class="chip"><input type="checkbox" value="Arbeitsrecht">Arbeitsrecht</label>
-        <label class="chip"><input type="checkbox" value="Immobilienrecht">Immobilienrecht</label>
-        <label class="chip"><input type="checkbox" value="Insolvenzrecht">Insolvenzrecht</label>
-        <label class="chip"><input type="checkbox" value="Fremdenrecht">Fremdenrecht</label>
-        <label class="chip"><input type="checkbox" value="Vertragsrecht">Vertragsrecht</label>
-        <label class="chip"><input type="checkbox" value="Zivilprozessrecht">Zivilprozessrecht</label>
-        <label class="chip"><input type="checkbox" value="Steuerrecht">Steuerrecht</label>
-        <label class="chip"><input type="checkbox" value="Gewerberecht">Gewerberecht</label>
+        <label class="chip"><input type="checkbox" value="Privatrecht">Privatrecht</label>
         <label class="chip"><input type="checkbox" value="Strafrecht">Strafrecht</label>
+        <label class="chip"><input type="checkbox" value="Steuerrecht">Steuerrecht</label>
+        <label class="chip"><input type="checkbox" value="(Sonstiges) Öffentliches Recht">(Sonstiges) Öffentliches Recht</label>
       </div>
-      <input type="text" id="rg-frei" placeholder="Ausländisches Recht / weiteres Rechtsgebiet…" style="margin-top:8px">
+      <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="margin-top:8px">
     </div>
 
     <div class="two-col">
@@ -228,7 +222,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 
   <!-- Schritt 2: Dokument -->
   <div class="card">
-    <div class="card-title">Schritt 2 — Zu prüfendes Dokument</div>
+    <div class="card-title">Schritt 2 — Zu prüfender/s Text oder Dokument</div>
     <div class="field">
       <textarea id="doctext" style="min-height:160px" placeholder="Text hier einfügen…"></textarea>
     </div>
@@ -246,7 +240,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
   <div class="wichtig-section">
     <div class="wichtig-label">
       <strong>Wichtig-Modus</strong>
-      <small>Opus 4.8 · Aufwand Max · Denken ein — tiefere Analyse, höhere Kosten</small>
+      <small>Tiefere Analyse, höhere Kosten</small>
     </div>
     <label class="toggle-wrap">
       <input type="checkbox" id="wichtig-toggle">
@@ -269,13 +263,26 @@ var storedFiles = []; // [{name, base64, type}]
 function saveKey(){
   var k=document.getElementById('api-key').value.trim();
   if(!k){setKeyStatus('Kein Key','');return;}
+  k=sanitizeKey(k);
+  document.getElementById('api-key').value=k;
   try{localStorage.setItem('taiyo_api_key',k);}catch(e){}
   setKeyStatus('✓ Key gespeichert','ok');
 }
+function sanitizeKey(k){
+  k=k.replace(/[\u2018\u2019\u201A\u201B]/g,"'")
+     .replace(/[\u201C\u201D\u201E\u201F]/g,'"')
+     .replace(/[\u2013\u2014]/g,'-')
+     .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g,'')
+     .replace(/[\r\n\t]/g,'')
+     .trim();
+  return k.split('').filter(function(ch){return ch.charCodeAt(0)<=255;}).join('');
+}
 function getKey(){
   var k=document.getElementById('api-key').value.trim();
-  if(k)return k;
-  try{return localStorage.getItem('taiyo_api_key')||'';}catch(e){return '';}
+  if(!k){
+    try{k=localStorage.getItem('taiyo_api_key')||'';}catch(e){k='';}
+  }
+  return sanitizeKey(k);
 }
 function setKeyStatus(msg,cls){
   var el=document.getElementById('key-status');
@@ -337,11 +344,11 @@ function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function buildParams(){
   var rgs=Array.from(document.querySelectorAll('.chip input:checked')).map(function(c){return c.value;});
   var rgFrei=document.getElementById('rg-frei').value.trim();
-  if(rgFrei)rgs.push(rgFrei);
   return {
     dtype:document.getElementById('dtype').value,
     lang:document.getElementById('lang').value,
     rgs:rgs.length?rgs.join(', '):'(nicht angegeben)',
+    rgFrei:rgFrei,
     klient:document.getElementById('klient').value.trim()||'(nicht angegeben)',
     empf:document.getElementById('empf').value.trim()||'(nicht angegeben)',
     historie:document.getElementById('historie').value.trim(),
@@ -357,6 +364,10 @@ function buildSystemPrompt(p){
   var rsvHinweis=p.rsv
     ?'Der Klient hat eine Rechtsschutzversicherung. Beachte: Bei Forderungsbetreibungen Beratungspauschale und Deckung anfragen (Policy 17.3).'
     :'Der Klient hat KEINE Rechtsschutzversicherung.';
+
+  var rechtshinweis=p.rgFrei
+    ?'BESONDERER RECHTSHINWEIS: '+p.rgFrei+'. Berücksichtige diesen Hinweis aktiv bei der Prüfung – insbesondere wenn er auf ausländisches Recht verweist, prüfe auch nach diesem Recht.'
+    :'Kein besonderer Rechtshinweis angegeben. Prüfe ausschließlich nach österreichischem Recht.';
 
   var dtypeRules='';
   if(p.dtype.indexOf('E-Mail an bestehenden')>=0){
@@ -400,6 +411,7 @@ function buildSystemPrompt(p){
 'Klient: '+p.klient+'\n'+
 'Empfaenger: '+p.empf+'\n'+
 'Rechtsschutz: '+rsvHinweis+'\n'+
+rechtshinweis+'\n'+
 'Vorkorrespondenz/Sachverhalt:\n'+(p.historie||'(keine angegeben)')+'\n'+
 (p.zusatz?'Zusaetzlicher Kontext: '+p.zusatz+'\n':'')+
 '\n'+dtypeRules+'\n\n'+
@@ -431,7 +443,10 @@ function buildSystemPrompt(p){
 '– Korrekte deutsche Umlaute (ae/oe/ue/ss ist verboten – schreibe ae→ä, oe→ö, ue→ü, ss→ß).\n'+
 '– § und §§ verwenden (nie "Paragraph").\n'+
 '– Verjährung nur flaggen wenn realistisches Risiko besteht.\n'+
-'– GEWICHTUNG: Lässliche Sünden (etwas zu lange Sätze, Floskeln, etwas umständlich) kurz abhandeln oder bei zu viel Inhalt weglassen. Gravierende Sünden (VIEL zu lange Sätze, gänzlich fehlende Belege, VIEL zu umständlich) dürfen mehr Raum einnehmen.\n\n'+
+'– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern.\n'+
+'– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. Ein Engagement Letter allein als vertragliche Grundlage – ein zusätzliches Auftragsschreiben des Klienten ist nicht erforderlich. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung.\n'+
+'– VERSCHÄRFTE BELEGPFLICHT (Punkt 14.3): Jede Warnung an den Klienten vor Rechtsfolgen (Haftung, Verwaltungsstrafe, gerichtliche Strafe) ist eine "wichtige Aussage" im Sinne Punkt 14.3 und muss zwingend einen Beleg in Klammer haben. Fehlt der Beleg bei einer solchen Warnung: das ist ein gewichtiger Befund, nicht lässlich.\n'+
+'– Achte auf gute Sprache in deinem eigenen Output: öffne nie eine Klammer oder ein Anführungszeichen ohne es auch zu schließen.\n\n'+
 
 'MODUL B – INHALTLICHE VOLLSTAENDIGKEIT [HOECHSTE PRIORITAET – 70% Uebersehenes / 30% Fehler]:\n'+
 'Modul B ist KEINE Zusammenfassung des Vorhandenen. Modul B ist eigenstaendige juristische Recherche.\n'+
@@ -445,6 +460,7 @@ function buildSystemPrompt(p){
 '(4) Sind alle einschlaegigen Gesetze und Normen beruecksichtigt? (z.B. bei Fremdenrecht: migration.gv.at, NAG, AuslBG, Abermann; bei Gesellschaftsrecht: GmbHG, UGB, WiEReG; bei Immobilien: MRG, WEG, ABGB; bei Insolvenz: IO; bei Arbeitsrecht: AngG, AVRAG; etc.)\n'+
 '(5) Wurde proaktiv auf Gesetzesaenderungen, Fristen, Risiken hingewiesen? (Policy 13.10 Pro-aktiv)\n'+
 '(6) Wurde eine Fee Warning ausgesprochen, wenn die Kostenschaetzung voraussichtlich ueberschritten wird oder Ausserhalb des Scope of Work gearbeitet wird? (§ 1170a Abs 2 ABGB, Policy Anhang Honorare)\n\n'+
+'WICHTIG: "4a" und "4b" sind nur interne Denkkategorien für dich. Schreibe NIEMALS "4a -" oder "4b -" oder aehnliche Praefixe in das Feld BEREICH des Outputs. Verwende dort einen aussagekraeftigen Kurztitel des Befundes selbst (z.B. "Unbeantwortete Frage zu Fristverlaengerung" statt "4a - Unbeantwortete Frage").\n\n'+
 'Wenn Rechtsschutzversicherung im Text erwaehnt wird, der Kontext aber sagt KEINE RSV: Das ist ein Modul-B-Befund (Inhaltliche Vollstaendigkeit), NICHT Modul A.\n\n'+
 
 'MODUL C – FRISTENSCANNER:\n'+
@@ -640,11 +656,11 @@ function renderResult(raw,model,lang,translatedText,showTranslation){
   html+='<div class="result-header">Prüfbericht<span class="pass-indicator">'+model+' · '+passLabel+'</span></div>';
   html+='<div class="result-body">';
 
-  html+=renderModule(raw,'MODUL_A','A','Policy & Stil',
-    ['Textausschnitt','Problem <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag – siehe aber Punkte 2.6, 2.4 der Policy'],
+  html+=renderModule(raw,'MODUL_A','Policy & Stil',
+    ['Textausschnitt','Problem <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag <span style="font-weight:400;font-size:10px;color:#a0b0d0">(siehe aber Punkte 2.6, 2.4 der Policy)</span>'],
     false);
 
-  html+=renderModule(raw,'MODUL_B','B','Inhaltliche Vollständigkeit + Übersehenes',
+  html+=renderModule(raw,'MODUL_B','Inhaltliche Vollständigkeit + Übersehenes',
     ['Bereich','Befund','Empfehlung'],false);
 
   html+=renderFristen(raw);
@@ -661,13 +677,13 @@ function renderResult(raw,model,lang,translatedText,showTranslation){
   document.getElementById('result-wrap').innerHTML=html;
 }
 
-function renderModule(raw,modKey,modLetter,modTitle,headers,isFristen){
+function renderModule(raw,modKey,modTitle,headers,isFristen){
   var startTag='==='+modKey+'_START===';
   var endTag='==='+modKey+'_END===';
   var si=raw.indexOf(startTag);
   var ei=raw.indexOf(endTag);
   var html='<div style="margin-bottom:20px">';
-  html+='<div class="mod-sep">Modul '+modLetter+' — '+modTitle+'</div>';
+  html+='<div class="mod-sep">'+modTitle+'</div>';
 
   if(si===-1||ei===-1||ei<=si){
     html+='<div style="padding:10px 10px;font-size:13px;color:#aaa;font-style:italic">Kein Output empfangen.</div>';
@@ -700,7 +716,9 @@ function renderModule(raw,modKey,modLetter,modTitle,headers,isFristen){
     if(parts.length<2)return;
     html+='<tr>';
     parts.forEach(function(p,i){
-      html+='<td>'+escHtml(p.trim().replace(/^:\s*/,''))+'</td>';
+      var cell=p.trim().replace(/^:\s*/,'');
+      cell=cell.replace(/^4[ab]\s*[-–—]\s*/i,'');
+      html+='<td>'+escHtml(cell)+'</td>';
     });
     // Pad if fewer cols than headers
     for(var i=parts.length;i<headers.length;i++)html+='<td></td>';
@@ -717,7 +735,7 @@ function renderFristen(raw){
   var si=raw.indexOf(startTag);
   var ei=raw.indexOf(endTag);
   var html='<div style="margin-bottom:20px">';
-  html+='<div class="mod-sep">Modul C — Termine & Fristen</div>';
+  html+='<div class="mod-sep">Termine & Fristen</div>';
 
   if(si===-1||ei===-1||ei<=si){
     html+='<div style="padding:10px 10px;font-size:13px;color:#aaa;font-style:italic">Kein Output empfangen.</div>';
