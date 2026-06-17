@@ -176,8 +176,8 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
         <select id="lang">
           <option value="Deutsch">Deutsch</option>
           <option value="English">English</option>
-          <option value="Japanisch (日本語)">Japanisch (日本語)</option>
-          <option value="Koreanisch (한국어)">Koreanisch (한국어)</option>
+          <option value="日本語">日本語</option>
+          <option value="한국어">한국어</option>
         </select>
       </div>
     </div>
@@ -193,20 +193,42 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
       <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="margin-top:8px">
     </div>
 
+    <div class="field">
+      <label class="field-label">Ausländisches Recht <span class="opt">optional – falls relevant</span></label>
+      <input type="text" id="auslrecht" placeholder="z.B. Chinesisches Recht, Deutsches Recht…">
+    </div>
+
     <div class="two-col">
       <div class="field">
         <label class="field-label">Klient</label>
         <input type="text" id="klient" placeholder="Name des Klienten">
       </div>
       <div class="field">
-        <label class="field-label">Empfänger / Adressat</label>
-        <input type="text" id="empf" placeholder="z.B. Gericht, Behörde, Klient…">
+        <label class="field-label">Empfänger / Adressat <span class="opt">(allenfalls: Position beim Klienten)</span></label>
+        <input type="text" id="empf" placeholder="z.B. Gericht, Behörde, Klient, Geschäftsführer…">
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label class="field-label">Klient — Status</label>
+        <select id="inausl">
+          <option value="Inländer">Inländer</option>
+          <option value="Ausländer">Ausländer</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Klient — Rechtsform</label>
+        <select id="natjur">
+          <option value="natürliche Person">natürliche Person</option>
+          <option value="juristische Person">juristische Person</option>
+        </select>
       </div>
     </div>
 
     <div class="field">
-      <label class="field-label">Vorkorrespondenz / Sachverhalt <span class="opt">optional, aber für Modul B entscheidend</span></label>
-      <textarea id="historie" style="min-height:80px" placeholder="Kurze Zusammenfassung: Was wurde bisher besprochen? Welche Fragen hat der Klient gestellt? Was haben wir dem Klienten gefragt oder erbeten? Was ist der Hintergrund?"></textarea>
+      <label class="field-label">Vorkorrespondenz / Sachverhalt <span class="opt">optional, aber für inhaltliche Prüfung entscheidend</span></label>
+      <textarea id="historie" style="min-height:80px" placeholder="Kurze Zusammenfassung ODER die gesamte bisherige Korrespondenz im Original (beides funktioniert gleich gut): Was wurde bisher besprochen? Welche Fragen hat der Klient gestellt? Was haben wir dem Klienten gefragt oder erbeten? Was ist der Hintergrund?"></textarea>
     </div>
 
     <div class="field">
@@ -344,11 +366,15 @@ function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function buildParams(){
   var rgs=Array.from(document.querySelectorAll('.chip input:checked')).map(function(c){return c.value;});
   var rgFrei=document.getElementById('rg-frei').value.trim();
+  var auslrecht=document.getElementById('auslrecht').value.trim();
   return {
     dtype:document.getElementById('dtype').value,
     lang:document.getElementById('lang').value,
     rgs:rgs.length?rgs.join(', '):'(nicht angegeben)',
     rgFrei:rgFrei,
+    auslrecht:auslrecht,
+    inausl:document.getElementById('inausl').value,
+    natjur:document.getElementById('natjur').value,
     klient:document.getElementById('klient').value.trim()||'(nicht angegeben)',
     empf:document.getElementById('empf').value.trim()||'(nicht angegeben)',
     historie:document.getElementById('historie').value.trim(),
@@ -366,8 +392,12 @@ function buildSystemPrompt(p){
     :'Der Klient hat KEINE Rechtsschutzversicherung.';
 
   var rechtshinweis=p.rgFrei
-    ?'BESONDERER RECHTSHINWEIS: '+p.rgFrei+'. Berücksichtige diesen Hinweis aktiv bei der Prüfung – insbesondere wenn er auf ausländisches Recht verweist, prüfe auch nach diesem Recht.'
-    :'Kein besonderer Rechtshinweis angegeben. Prüfe ausschließlich nach österreichischem Recht.';
+    ?'BESONDERER RECHTSHINWEIS: '+p.rgFrei+'. Berücksichtige diesen Hinweis aktiv bei der Prüfung.'
+    :'Kein besonderer Rechtshinweis angegeben.';
+
+  var auslandHinweis=p.auslrecht
+    ?'AUSLÄNDISCHES RECHT: '+p.auslrecht+'. Berücksichtige dieses ausländische Recht aktiv und zusätzlich zum österreichischen Recht bei der Prüfung.'
+    :'Kein ausländisches Recht angegeben – prüfe ausschließlich nach österreichischem Recht.';
 
   var dtypeRules='';
   if(p.dtype.indexOf('E-Mail an bestehenden')>=0){
@@ -412,6 +442,8 @@ function buildSystemPrompt(p){
 'Empfaenger: '+p.empf+'\n'+
 'Rechtsschutz: '+rsvHinweis+'\n'+
 rechtshinweis+'\n'+
+auslandHinweis+'\n'+
+'Klient-Status: '+p.inausl+', '+p.natjur+'\n'+
 'Vorkorrespondenz/Sachverhalt:\n'+(p.historie||'(keine angegeben)')+'\n'+
 (p.zusatz?'Zusaetzlicher Kontext: '+p.zusatz+'\n':'')+
 '\n'+dtypeRules+'\n\n'+
@@ -422,11 +454,11 @@ rechtshinweis+'\n'+
 'Prüfe ausschliesslich gegen folgende Policy-Punkte:\n'+
 '10.2: Keine Absaetze mit nur einem Satz. Chronologische Gliederung. Datum TT.MM.JJJJ.\n'+
 '10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung.\n'+
-'10.7: Dokument muss Standalone sein – vollstaendig verstaendlich ohne Vorkenntnis. Konkret verweisen (nicht "wie gesagt", sondern "wie im E-Mail vom TT.MM.JJJJ").\n'+
+'10.7: Dokument muss Standalone sein – vollstaendig verstaendlich ohne Vorkenntnis. Das bedeutet NICHT, dass bereits erörterte Themen wortwörtlich wiederholt werden müssen: eine Kurzzusammenfassung mit Verweis auf das frühere E-Mail (z.B. "wie im E-Mail vom TT.MM.JJJJ") reicht in der Regel aus.\n'+
 '10.8: Bei Klienten-E-Mails: Eroeffnung mit Dank/Bezugnahme. Ende mit Angebot fuer Rueckfragen.\n'+
 '10.9: Max 15 Woerter pro Satz. Eine Aussage pro Satz. Keine Floskeln (z.B. "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen", "Ich erlaube mir"). Leichtverstaendlich. Konjunktiv ist NICHT verboten.\n'+
 '13.5: Keine So-What-Aussagen (richtig aber nutzlos fuer den Empfaenger). Keine Wiederholungen. Das Wesentliche in den Vordergrund.\n'+
-'13.6: Nie "Das habe ich schon erklaert". Missverstaendnisse sofort klaeren. Mit anderen Worten probieren – nicht wiederholen.\n'+
+'13.6: Nie "Das habe ich schon erklaert". Wenn eine Wiederholung tatsaechlich erforderlich ist (gemeinsam mit 10.7 zu lesen), gilt: sie soll hoeflich sein, sachlich sein, andere Worte verwenden, wenn moeglich einfacher sein, keine wortwoertliche Wiederholung wenn vermeidbar, keine Vorwuerfe, und einen Verweis auf das fruehere E-Mail in Klammer sofort nach der Aussage. WICHTIG: Sei hier nicht paepstlicher als der Papst. Wenn eine Wiederholung grosso modo diesen Kriterien entspricht, gilt 13.6 als erfuellt – pruefe nicht pedantisch jedes einzelne der sieben Elemente.\n'+
 '13.9: Service-orientiert. Dem Klienten Arbeit abnehmen. Optionen mit Vor-/Nachteilen. Nichts ist unmoeglich – hoechstens zu teuer.\n'+
 '13.10: Umfassend (nie nur einen Aspekt behandeln). Pro-aktiv (Gesetzesaenderungen etc. erkennen). Gruendlich (auch implizit beantwortete Fragen eroertern). Praktisch (konkretes Problem loesen, nicht nur Theorie).\n'+
 '14.1: Nur juristische Argumente. Hierarchie: Hoechstgericht > Literatur/sonstige Judikatur > andere.\n'+
@@ -461,7 +493,8 @@ rechtshinweis+'\n'+
 '(5) Wurde proaktiv auf Gesetzesaenderungen, Fristen, Risiken hingewiesen? (Policy 13.10 Pro-aktiv)\n'+
 '(6) Wurde eine Fee Warning ausgesprochen, wenn die Kostenschaetzung voraussichtlich ueberschritten wird oder Ausserhalb des Scope of Work gearbeitet wird? (§ 1170a Abs 2 ABGB, Policy Anhang Honorare)\n\n'+
 'WICHTIG: "4a" und "4b" sind nur interne Denkkategorien für dich. Schreibe NIEMALS "4a -" oder "4b -" oder aehnliche Praefixe in das Feld BEREICH des Outputs. Verwende dort einen aussagekraeftigen Kurztitel des Befundes selbst (z.B. "Unbeantwortete Frage zu Fristverlaengerung" statt "4a - Unbeantwortete Frage").\n\n'+
-'Wenn Rechtsschutzversicherung im Text erwaehnt wird, der Kontext aber sagt KEINE RSV: Das ist ein Modul-B-Befund (Inhaltliche Vollstaendigkeit), NICHT Modul A.\n\n'+
+'Wenn Rechtsschutzversicherung im Text erwaehnt wird, der Kontext aber sagt KEINE RSV: Das ist ein Modul-B-Befund (Inhaltliche Vollstaendigkeit), NICHT Modul A.\n'+
+'Wenn eine Honorarnote als Anhang erwaehnt oder beigefuegt ist: gehe davon aus, dass Zahlungsfrist und Kontonummer in dieser Honorarnote angegeben sind. Das ist KEIN Befund, auch wenn diese Angaben im Haupttext nicht wiederholt werden.\n\n'+
 
 'MODUL C – FRISTENSCANNER:\n'+
 'Identifiziere ALLE Termine, Fristen und erforderliche Follow-ups – auch implizite und gesetzliche.\n'+
@@ -605,8 +638,8 @@ async function runReview(){
     var outputLangCode=p.lang;
     var needsTranslation=(outputLangCode!=='Deutsch'&&docLangGuess==='de')||
                          (outputLangCode!=='English'&&docLangGuess==='en')||
-                         (outputLangCode.indexOf('Japanisch')>=0&&docLangGuess!=='ja')||
-                         (outputLangCode.indexOf('Koreanisch')>=0&&docLangGuess!=='ko');
+                         (outputLangCode==='日本語'&&docLangGuess!=='ja')||
+                         (outputLangCode==='한국어'&&docLangGuess!=='ko');
     if(needsTranslation&&p.docText){
       resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 3 von 3 – Übersetzung in '+outputLangCode+'…</p></div></div></div>';
       var transBody={
@@ -787,6 +820,10 @@ function renderFristen(raw){
   if(k){
     document.getElementById('api-key').value=k;
     setKeyStatus('✓ Key gespeichert','ok');
+  } else {
+    // Hinweis: falls der Key schon einmal gespeichert wurde, aber jetzt fehlt,
+    // liegt das meist an einer neuen Cloudflare-Pages-Vorschau-URL (andere Origin).
+    // localStorage ist strikt pro exakter URL/Domain gebunden.
   }
 })();
 </script>
