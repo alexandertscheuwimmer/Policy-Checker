@@ -75,6 +75,9 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .wichtig-label strong{color:#1F3865}
 .wichtig-label small{display:block;font-size:11px;color:#aaa;margin-top:2px}
 .toggle-wrap{position:relative;width:44px;height:24px;flex-shrink:0}
+.slider-row{display:flex;align-items:center;gap:9px;margin-top:4px}
+.slider-side-label{font-size:12px;color:#aaa;transition:color .15s;white-space:nowrap}
+.slider-side-label.active{color:#1F3865;font-weight:600}
 .toggle-wrap input{opacity:0;position:absolute;width:0;height:0}
 .toggle-slider{position:absolute;inset:0;background:#ddd;border-radius:12px;cursor:pointer;transition:.2s}
 .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
@@ -212,17 +215,25 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     <div class="two-col">
       <div class="field">
         <label class="field-label">Klient — Status</label>
-        <select id="inausl">
-          <option value="Inländer">Inländer</option>
-          <option value="Ausländer">Ausländer</option>
-        </select>
+        <div class="slider-row">
+          <span class="slider-side-label active" id="inausl-left">Inländer</span>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="inausl-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="slider-side-label" id="inausl-right">Ausländer</span>
+        </div>
       </div>
       <div class="field">
         <label class="field-label">Klient — Rechtsform</label>
-        <select id="natjur">
-          <option value="natürliche Person">natürliche Person</option>
-          <option value="juristische Person">juristische Person</option>
-        </select>
+        <div class="slider-row">
+          <span class="slider-side-label active" id="natjur-left">natürliche Person</span>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="natjur-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="slider-side-label" id="natjur-right">juristische Person</span>
+        </div>
       </div>
     </div>
 
@@ -318,6 +329,21 @@ document.querySelectorAll('.chip input').forEach(function(cb){
   });
 });
 
+// ─── Status/Rechtsform Slider (links/rechts-Label hervorheben) ────────
+function wireSlider(toggleId,leftId,rightId){
+  var t=document.getElementById(toggleId);
+  var l=document.getElementById(leftId);
+  var r=document.getElementById(rightId);
+  function update(){
+    l.classList.toggle('active',!t.checked);
+    r.classList.toggle('active',t.checked);
+  }
+  t.addEventListener('change',update);
+  update();
+}
+wireSlider('inausl-toggle','inausl-left','inausl-right');
+wireSlider('natjur-toggle','natjur-left','natjur-right');
+
 // ─── File upload ────────────────────────────────────────────────────
 document.getElementById('file-input').addEventListener('change',function(e){
   handleFiles(Array.from(e.target.files));
@@ -373,8 +399,8 @@ function buildParams(){
     rgs:rgs.length?rgs.join(', '):'(nicht angegeben)',
     rgFrei:rgFrei,
     auslrecht:auslrecht,
-    inausl:document.getElementById('inausl').value,
-    natjur:document.getElementById('natjur').value,
+    inausl:document.getElementById('inausl-toggle').checked?'Ausländer':'Inländer',
+    natjur:document.getElementById('natjur-toggle').checked?'juristische Person':'natürliche Person',
     klient:document.getElementById('klient').value.trim()||'(nicht angegeben)',
     empf:document.getElementById('empf').value.trim()||'(nicht angegeben)',
     historie:document.getElementById('historie').value.trim(),
@@ -476,7 +502,7 @@ auslandHinweis+'\n'+
 '– § und §§ verwenden (nie "Paragraph").\n'+
 '– Verjährung nur flaggen wenn realistisches Risiko besteht.\n'+
 '– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern.\n'+
-'– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. Ein Engagement Letter allein als vertragliche Grundlage – ein zusätzliches Auftragsschreiben des Klienten ist nicht erforderlich. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung.\n'+
+'– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung.\n'+
 '– VERSCHÄRFTE BELEGPFLICHT (Punkt 14.3): Jede Warnung an den Klienten vor Rechtsfolgen (Haftung, Verwaltungsstrafe, gerichtliche Strafe) ist eine "wichtige Aussage" im Sinne Punkt 14.3 und muss zwingend einen Beleg in Klammer haben. Fehlt der Beleg bei einer solchen Warnung: das ist ein gewichtiger Befund, nicht lässlich.\n'+
 '– Achte auf gute Sprache in deinem eigenen Output: öffne nie eine Klammer oder ein Anführungszeichen ohne es auch zu schließen.\n\n'+
 
@@ -573,7 +599,7 @@ async function runReview(){
     // Pass 1: Review
     var body1={
       model:model,
-      max_tokens:4000,
+      max_tokens:8000,
       system:sysPrompt,
       messages:[{role:'user',content:content}]
     };
@@ -615,7 +641,7 @@ async function runReview(){
 
     var body2={
       model:model,
-      max_tokens:4000,
+      max_tokens:8000,
       system:pass2Prompt,
       messages:[{role:'user',content:'Bitte korrigieren.'}]
     };
