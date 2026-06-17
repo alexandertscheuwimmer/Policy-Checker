@@ -152,7 +152,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 
   <!-- API Key -->
   <div class="key-section">
-    <input type="password" id="api-key" placeholder="Anthropic API Key eingeben…" autocomplete="off">
+    <input type="text" id="api-key" placeholder="Anthropic API Key eingeben…" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" style="font-family:monospace;-webkit-text-security:disc;text-security:disc">
     <span class="key-status" id="key-status">Kein Key</span>
     <button class="key-btn" onclick="saveKey()">Speichern</button>
   </div>
@@ -195,7 +195,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
           <label class="chip"><input type="checkbox" value="Steuerrecht">Steuerrecht</label>
           <label class="chip"><input type="checkbox" value="(Sonstiges) Öffentliches Recht">(Sonstiges) Öffentliches Recht</label>
         </div>
-        <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="flex:1;min-width:160px;max-width:220px;font-size:12px;padding:5px 8px">
+        <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="flex:1;min-width:200px;font-size:12px;padding:5px 8px">
       </div>
     </div>
 
@@ -561,6 +561,11 @@ var PROXY_URL = 'https://taiyo-review-proxy.a-scheuwimmer.workers.dev';
 async function runReview(){
   var key=getKey();
   if(!key){alert('Bitte zuerst den API Key eingeben und speichern.');return;}
+  if(!key.startsWith('sk-ant-')){
+    if(!confirm('Achtung: Der gespeicherte Key beginnt nicht mit "sk-ant-" (Länge: '+key.length+' Zeichen). Das deutet auf einen falsch gespeicherten oder vom Browser automatisch eingefügten Wert hin, nicht auf den echten Anthropic API Key. Trotzdem versuchen?')){
+      return;
+    }
+  }
   var p=buildParams();
   if(!p.docText&&storedFiles.length===0){alert('Bitte Text einfügen oder Datei hochladen.');return;}
 
@@ -621,9 +626,11 @@ async function runReview(){
     resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 2 von 2 – Policy-Kontrolle…</p></div></div></div>';
 
     var pass2Prompt='Du bist Qualitaetskontrolleur fuer den TAIYO ReviewAssistant.\n'+
-      'Der folgende Output wurde von einem Erstpruefungsdurchlauf erzeugt. Korrigiere ausschliesslich Spalte 2 (Problem) und Spalte 3 (Vorschlag/Empfehlung) auf Policy-Konformitaet.\n'+
-      'Spalte 1 (Textausschnitt) NIEMALS veraendern.\n\n'+
-      'KORREKTURREGELN fuer Spalte 2:\n'+
+      'Der folgende Output wurde von einem Erstpruefungsdurchlauf erzeugt und enthaelt drei Bloecke: ===MODUL_A_START/END===, ===MODUL_B_START/END===, ===MODUL_C_START/END===.\n\n'+
+      'KRITISCHE REGEL – UNBEDINGT BEFOLGEN:\n'+
+      'Du darfst AUSSCHLIESSLICH innerhalb von ===MODUL_A_START=== bis ===MODUL_A_END=== etwas veraendern, und dort auch nur Spalte 2 (Problem) und Spalte 3 (Vorschlag). Spalte 1 (Textausschnitt) bleibt unveraendert.\n'+
+      'Die Bloecke ===MODUL_B_START=== bis ===MODUL_B_END=== und ===MODUL_C_START=== bis ===MODUL_C_END=== musst du ZEICHENGENAU UNVERAENDERT aus dem Original kopieren – jede Zeile, jedes Zeichen, ohne Kuerzung, ohne Auslassung, ohne Umformulierung. Diese beiden Bloecke sind fuer dich nur durchzureichender Text, den du nicht inhaltlich bewertest.\n\n'+
+      'KORREKTURREGELN fuer Modul-A-Spalte 2 (Problem):\n'+
       '– Kurz, freundlich, loesungsorientiert – sagt was gefordert ist, nicht was falsch ist.\n'+
       '– Einheitlich "Klient" (nie "Mandant").\n'+
       '– Keine "jede/r/s"-Formulierungen (stattdessen "ein/e").\n'+
@@ -631,13 +638,12 @@ async function runReview(){
       '– Keine Abkuerzungen.\n'+
       '– Policy-Referenzen in Klammer: (Punkt 10.9 der Policy).\n'+
       '– Korrekte deutsche Umlaute.\n\n'+
-      'KORREKTURREGELN fuer Spalte 3:\n'+
+      'KORREKTURREGELN fuer Modul-A-Spalte 3 (Vorschlag):\n'+
       '– Max 15 Woerter pro Satz.\n'+
       '– Kein Doppelpunkt am Anfang.\n'+
       '– Policy-konformer Verbesserungstext, kein blosser Kommentar.\n'+
       '– Alle Belege nach der Aussage in Klammer.\n\n'+
-      'Gib den vollstaendigen Output im exakt gleichen Format zurueck (===MODUL_X_START/END=== usw.).\n'+
-      'Aendere nur was korrekturbeduerfftig ist. Sprachausgabe: '+p.lang+'.\n\n'+
+      'Gib den vollstaendigen Output zurueck – alle drei Bloecke, exakt im gleichen Format, MODUL_B und MODUL_C zeichengenau wie im Original. Sprachausgabe fuer Modul A: '+p.lang+'.\n\n'+
       'ZU KORRIGIERENDER OUTPUT:\n'+pass1Text;
 
     var body2={
@@ -658,6 +664,11 @@ async function runReview(){
     var d2=await r2.json();
     if(d2.error){throw new Error(d2.error.message);}
     var finalText=d2.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+
+    // SICHERHEITSNETZ: Modul B und C duerfen durch Pass 2 NIEMALS veraendert oder verloren gehen.
+    // Wir ersetzen sie hart durch die Originalbloecke aus Pass 1, unabhaengig davon was Pass 2 geliefert hat.
+    finalText=forceRestoreBlock(finalText,pass1Text,'MODUL_B');
+    finalText=forceRestoreBlock(finalText,pass1Text,'MODUL_C');
 
     // Pass 3 (nur wenn Ausgabesprache ≠ Dokumentsprache): Übersetzung des geprüften Textes
     var translatedText='';
@@ -696,6 +707,27 @@ async function runReview(){
 }
 
 // ─── Language detection ───────────────────────────────────────────────
+// ─── Sicherheitsnetz: Block aus Original-Text erzwingen ───────────────
+// Verhindert, dass Pass 2 (Policy-Kontrolle) Modul B oder C versehentlich
+// veraendert, verkuerzt oder weglaesst. Ersetzt den Block in `text` durch
+// den exakten Block aus `sourceText`, unabhaengig davon was Pass 2 geliefert hat.
+function forceRestoreBlock(text,sourceText,modKey){
+  var startTag='==='+modKey+'_START===';
+  var endTag='==='+modKey+'_END===';
+  var srcStart=sourceText.indexOf(startTag);
+  var srcEnd=sourceText.indexOf(endTag);
+  if(srcStart===-1||srcEnd===-1||srcEnd<=srcStart)return text; // Original hatte den Block selbst nicht – nichts zu tun
+  var originalBlock=sourceText.substring(srcStart,srcEnd+endTag.length);
+
+  var curStart=text.indexOf(startTag);
+  var curEnd=text.indexOf(endTag);
+  if(curStart===-1||curEnd===-1||curEnd<=curStart){
+    // Block fehlt komplett in Pass-2-Output – am Ende anhaengen
+    return text+'\n\n'+originalBlock;
+  }
+  return text.substring(0,curStart)+originalBlock+text.substring(curEnd+endTag.length);
+}
+
 function guessLang(text){
   if(!text||text.length<20)return 'de';
   var t=text.substring(0,500);
