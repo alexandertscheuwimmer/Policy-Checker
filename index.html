@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
+<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +31,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* Form card */
 .card{background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:18px 20px;margin-bottom:16px}
-.card-title{font-size:12px;font-weight:600;color:#1F3865;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+.card-title{font-size:12px;font-weight:700;color:#1F3865;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
 
 /* Fields */
 .field{margin-bottom:13px}
@@ -88,6 +88,8 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .submit-btn{width:100%;background:#1F3865;color:#fff;border:none;border-radius:7px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;letter-spacing:.01em}
 .submit-btn:hover{background:#2a4d85}
 .submit-btn:disabled{background:#aaa;cursor:not-allowed}
+.clear-btn{width:100%;background:#fff;color:#1F3865;border:1px solid #c9d3e4;border-radius:7px;padding:10px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-top:9px}
+.clear-btn:hover{background:#f0f4fa;border-color:#1F3865}
 
 /* Results */
 .result-wrap{margin-top:20px}
@@ -156,7 +158,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     <span class="key-status" id="key-status">Kein Key</span>
     <button class="key-btn" onclick="saveKey()">Speichern</button>
   </div>
-  <div id="origin-diag" style="font-size:10px;color:#bbb;margin:-12px 0 16px 2px">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html</div>
+  <div id="origin-diag" style="font-size:10px;color:#bbb;margin:-12px 0 16px 2px">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html</div>
 
   <!-- Schritt 1: Kontext -->
   <div class="card">
@@ -184,26 +186,30 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
       <div class="field">
         <label class="field-label">Klient</label>
         <input type="text" id="klient" placeholder="Name des Klienten">
-        <div class="slider-row" style="margin-top:10px">
-          <span class="slider-side-label active" id="inausl-left">Inländer</span>
-          <label class="toggle-wrap">
-            <input type="checkbox" id="inausl-toggle">
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="slider-side-label" id="inausl-right">Ausländer</span>
-        </div>
-        <div class="slider-row" style="margin-top:8px">
-          <span class="slider-side-label active" id="natjur-left">natürliche Person</span>
-          <label class="toggle-wrap">
-            <input type="checkbox" id="natjur-toggle">
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="slider-side-label" id="natjur-right">juristische Person</span>
-        </div>
       </div>
       <div class="field">
         <label class="field-label">Empfänger / Adressat <span class="opt">(allenfalls: Position beim Klienten)</span></label>
         <input type="text" id="empf" placeholder="z.B. Gericht, Behörde, Klient, Geschäftsführer…">
+      </div>
+    </div>
+
+    <!-- Klient-Eigenschaften: beide Regler nebeneinander, linksbündig (dürfen unter Empfänger reichen) -->
+    <div class="field" style="display:flex;gap:34px;flex-wrap:wrap;align-items:center;margin-top:-2px">
+      <div class="slider-row" style="margin-top:0">
+        <span class="slider-side-label active" id="inausl-left">Inländer</span>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="inausl-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="slider-side-label" id="inausl-right">Ausländer</span>
+      </div>
+      <div class="slider-row" style="margin-top:0">
+        <span class="slider-side-label active" id="natjur-left">natürliche Person</span>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="natjur-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="slider-side-label" id="natjur-right">juristische Person</span>
       </div>
     </div>
 
@@ -284,6 +290,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 
   <!-- Submit -->
   <button class="submit-btn" id="submit-btn" onclick="runReview()">Dokument prüfen</button>
+  <button class="clear-btn" id="clear-btn" onclick="clearAll()">Alles zurücksetzen (neue Prüfung)</button>
 
   <!-- Result -->
   <div class="result-wrap" id="result-wrap" style="display:none"></div>
@@ -389,6 +396,28 @@ function renderFileList(){
 function removeFile(i){storedFiles.splice(i,1);renderFileList();}
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+// ─── Clear All: alles fuer eine neue Pruefung zuruecksetzen (Key bleibt) ──
+function clearAll(){
+  ['rg-frei','auslrecht','klient','empf','historie','zusatz','doctext','dokinfo'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('dtype').selectedIndex=0;
+  document.getElementById('lang').selectedIndex=0;
+  ['inausl-toggle','natjur-toggle','wichtig-toggle','rsv-cb'].forEach(function(id){
+    document.getElementById(id).checked=false;
+  });
+  document.querySelectorAll('.chip input:checked').forEach(function(cb){
+    cb.checked=false;cb.closest('.chip').classList.remove('active');
+  });
+  ['inausl','natjur'].forEach(function(pfx){
+    document.getElementById(pfx+'-left').classList.add('active');
+    document.getElementById(pfx+'-right').classList.remove('active');
+  });
+  storedFiles=[];renderFileList();
+  var rw=document.getElementById('result-wrap');rw.style.display='none';rw.innerHTML='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
 // ─── Build params ────────────────────────────────────────────────────
 function buildParams(){
   var rgs=Array.from(document.querySelectorAll('.chip input:checked')).map(function(c){return c.value;});
@@ -481,8 +510,8 @@ auslandHinweis+'\n'+
 
 'MODUL A – POLICY & STIL:\n'+
 'Prüfe ausschliesslich gegen folgende Policy-Punkte:\n'+
-'10.2: Keine Absaetze mit nur einem Satz. Chronologische Gliederung. Datum TT.MM.JJJJ.\n'+
-'10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung.\n'+
+'10.2: Keine Absaetze mit nur einem Satz. Chronologische Gliederung. Datum IMMER im Format TT.MM.JJJJ – flagge jedes andere Datumsformat im geprueften Dokument (z.B. "1. Maerz 2026", "2026-03-01", "01/03/2026") als Befund und schreibe in eigenen Vorschlaegen stets TT.MM.JJJJ.\n'+
+'10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung. In fremdsprachigen Texten nach einem Fachausdruck den deutschen Originalbegriff (falls es einen gibt) in Klammer und KURSIV hinzufuegen – z.B. englisch "company register extract (*Firmenbuchauszug*)", "business register excerpt (*GISA-Auszug*)". Flagge fremdsprachige Dokumente, in denen ein solcher Fachausdruck (z.B. Firmenbuchauszug, GISA-Auszug) OHNE den deutschen Originalbegriff in kursiver Klammer vorkommt, als Befund.\n'+
 '10.7: Dokument muss Standalone sein – vollstaendig verstaendlich ohne Vorkenntnis. Das bedeutet NICHT, dass bereits erörterte Themen wortwörtlich wiederholt werden müssen: eine Kurzzusammenfassung mit Verweis auf das frühere E-Mail (z.B. "wie im E-Mail vom TT.MM.JJJJ") reicht in der Regel aus.\n'+
 '10.8: Bei Klienten-E-Mails: Eroeffnung mit Dank/Bezugnahme. Ende mit Angebot fuer Rueckfragen.\n'+
 '10.9: Max 15 Woerter pro Satz. Eine Aussage pro Satz. Keine Floskeln (z.B. "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen", "Ich erlaube mir"). Leichtverstaendlich. Konjunktiv ist NICHT verboten.\n'+
@@ -492,12 +521,12 @@ auslandHinweis+'\n'+
 '13.10: Umfassend (nie nur einen Aspekt behandeln). Pro-aktiv (Gesetzesaenderungen etc. erkennen). Gruendlich (auch implizit beantwortete Fragen eroertern). Praktisch (konkretes Problem loesen, nicht nur Theorie).\n'+
 '14.1: Nur juristische Argumente. Hierarchie: Hoechstgericht > Literatur/sonstige Judikatur > andere.\n'+
 '14.2: Anwaelte: "Herr/Frau Kollege/in". Schlussformel: "Mit freundlichen kollegialen Gruessen".\n'+
-'14.3: Wichtige Aussagen separat in Klammer belegen – NACH der Aussage, nie als Teil der Aussage. Format: (OGH TT.MM.JJJJ, GZ X Ob Y/Zt) oder (§ X Abs Y ABGB).\n'+
+'14.3: Wichtige Aussagen separat in Klammer belegen – NACH der Aussage, nie als Teil der Aussage. Format: (OGH TT.MM.JJJJ, GZ X Ob Y/Zt) oder (§ X Abs Y ABGB). Belegt eine Fundstelle die Aussage nur MITTELBAR (Umkehrschluss, Analogie, Groessenschluss o.ae.), darf der Beleg NICHT allein stehen: ergaenze eine kurze Erklaerung, z.B. "(folgt im Umkehrschluss aus § X)" oder "(folgt analog aus § Y)". Nur ein direkt belegender Verweis darf allein in der Klammer stehen. Wichtige und fuer den Klienten nachteilige Aussagen werden weiterhin stets nach der Aussage in Klammer belegt.\n'+
 '14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl". In Schriftsaetzen und Legal Opinions KEIN blosser Rechtssatz ohne Leitentscheidung. In E-Mails und Aktenvermerken: blosser Rechtssatz (z.B. RS0069706) ausreichend. Jeden zitierten Rechtssatz/Judikatur pruefen: sagt die Fundstelle wirklich das Behauptete aus?\n'+
 '14.5: NUR bei Ausgabesprache English – Gesetzeszitate ins Englische umstellen (§ -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director); das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" -> "Sec 879 para 2 no 1a ABGB".\n'+
 '14.9: Ueber Recherchen sofort Aktenvermerk anlegen.\n\n'+
 'WICHTIG fuer Modul A:\n'+
-'– Einheitlich "Klient" verwenden (NIEMALS "Mandant").\n'+
+'– Im deutschsprachigen Text einheitlich "Klient" verwenden (NIEMALS "Mandant"). In einem fremdsprachigen Text den dortigen Begriff verwenden (z.B. englisch "client") – KEINE deutschen Begriffe wie "Klient" oder "Firmenbuch" im fremdsprachigen Fliesstext; ist ein deutscher Begriff aus Lesbarkeitsgruenden ausnahmsweise noetig, MUSS er kursiv stehen (idealerweise in Klammer nach dem fremdsprachigen Begriff). Flagge deutschsprachige Begriffe, die in einem fremdsprachigen Dokument nicht-kursiv im Fliesstext stehen, als Befund.\n'+
 '– Kein Doppelpunkt am Beginn von Spalte 2 oder 3.\n'+
 '– Keine "jede/r/s"-Formulierungen – stattdessen "ein/e".\n'+
 '– Keine Abkuerzungen in Spalten 2 und 3.\n'+
@@ -506,7 +535,7 @@ auslandHinweis+'\n'+
 '– § und §§ verwenden (nie "Paragraph").\n'+
 '– Verjährung nur flaggen wenn realistisches Risiko besteht.\n'+
 '– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern.\n'+
-'– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung.\n'+
+'– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung. Die Adresse von TAIYO Offices in der Schreibweise "Schwedenpl.5 (Eing. Dominikanerb.21)" – diese abgekürzte Form ist eine Ausnahme von Punkt 10.9 und KEIN Befund. Eine Einleitung mit Wohlbefinden-Wunsch ("We hope you are doing well.", "Wir hoffen, es geht Ihnen gut.") ist als E-Mail-Einleitung grundsätzlich zulässig (Punkt 10.8) – nur im konkreten Einzelfall ausnahmsweise unpassend, sonst nie ein Befund.\n'+
 '– VERSCHÄRFTE BELEGPFLICHT (Punkt 14.3): Jede Warnung an den Klienten vor Rechtsfolgen (Haftung, Verwaltungsstrafe, gerichtliche Strafe) ist eine "wichtige Aussage" im Sinne Punkt 14.3 und muss zwingend einen Beleg in Klammer haben. Fehlt der Beleg bei einer solchen Warnung: das ist ein gewichtiger Befund, nicht lässlich.\n'+
 '– Achte auf gute Sprache in deinem eigenen Output: öffne nie eine Klammer oder ein Anführungszeichen ohne es auch zu schließen.\n\n'+
 
@@ -553,8 +582,10 @@ auslandHinweis+'\n'+
 '===MODUL_C_END===\n\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
 'Maximal 6 Zeilen pro Modul. Nur die wichtigsten Punkte.\n'+
+'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
 'Kein einleitender Text. Beginne sofort mit ===MODUL_A_START===.\n'+
 'Sprache des gesamten Outputs: '+p.lang+'.'+
+(p.lang!=='Deutsch'?'\n\nFREMDSPRACHIGER OUTPUT (Punkt 10.5): Verwende im gesamten fremdsprachigen Output KEINE deutschen Begriffe (z.B. "Klient", "Firmenbuch") im Fliesstext – nutze den dortigen Begriff; ein deutscher Begriff ist nur ausnahmsweise und dann KURSIV (in Klammer) zulaessig. Fuege nach Fachausdruecken den deutschen Originalbegriff (falls vorhanden) kursiv in Klammer hinzu.':'')+
 (p.lang==='English'?'\n\nWICHTIG (Punkt 14.5): Da die Ausgabesprache English ist, ALLE Gesetzeszitate im gesamten Output ins Englische umstellen: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director. Das Gesetzeskuerzel selbst bleibt unveraendert (z.B. ABGB, UGB, AngG). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB". Judikatur-Zitate behalten Gericht/Datum/GZ.':'');
 }
 
@@ -650,7 +681,7 @@ async function runReview(){
       'Die Bloecke ===MODUL_B_START=== bis ===MODUL_B_END=== und ===MODUL_C_START=== bis ===MODUL_C_END=== musst du ZEICHENGENAU UNVERAENDERT aus dem Original kopieren – jede Zeile, jedes Zeichen, ohne Kuerzung, ohne Auslassung, ohne Umformulierung. Diese beiden Bloecke sind fuer dich nur durchzureichender Text, den du nicht inhaltlich bewertest.\n\n'+
       'KORREKTURREGELN fuer Modul-A-Spalte 2 (Problem):\n'+
       '– Kurz, freundlich, loesungsorientiert – sagt was gefordert ist, nicht was falsch ist.\n'+
-      '– Einheitlich "Klient" (nie "Mandant").\n'+
+      '– Im deutschen Text einheitlich "Klient" (nie "Mandant"); im fremdsprachigen Output den dortigen Begriff (z.B. "client"), deutsche Begriffe nur kursiv.\n'+
       '– Keine "jede/r/s"-Formulierungen (stattdessen "ein/e").\n'+
       '– Kein Doppelpunkt am Anfang.\n'+
       '– Keine Abkuerzungen.\n'+
@@ -660,7 +691,8 @@ async function runReview(){
       '– Max 15 Woerter pro Satz.\n'+
       '– Kein Doppelpunkt am Anfang.\n'+
       '– Policy-konformer Verbesserungstext, kein blosser Kommentar.\n'+
-      '– Alle Belege nach der Aussage in Klammer.\n\n'+
+      '– Alle Belege nach der Aussage in Klammer. Belegt eine Fundstelle nur mittelbar (Umkehrschluss, Analogie), kurze Erklaerung ergaenzen, z.B. "(folgt im Umkehrschluss aus § X)"; ein direkter Beleg darf allein stehen.\n'+
+      '– Im fremdsprachigen Output keine deutschen Begriffe im Fliesstext (nur kursiv in Klammer); deutschen Originalbegriff nach Fachausdruecken kursiv in Klammer (Punkt 10.5).\n\n'+
       'Gib den vollstaendigen Output zurueck – alle drei Bloecke, exakt im gleichen Format, MODUL_B und MODUL_C zeichengenau wie im Original. Sprachausgabe fuer Modul A: '+p.lang+'.\n\n'+
       'ZU KORRIGIERENDER OUTPUT:\n'+pass1Text;
 
@@ -702,6 +734,7 @@ async function runReview(){
         model:model,
         max_tokens:6000,
         system:'Du bist ein professioneller juristischer Übersetzer. Übersetze den folgenden Text vollständig und präzise ins '+outputLangCode+'. Behalte Formatierung, Absätze und alle juristischen Fachbegriffe bei.'+
+          (outputLangCode!=='Deutsch'?' Verwende KEINE deutschen Begriffe (z.B. "Klient", "Firmenbuch") im Fliesstext – nutze den dortigen Begriff. Fuege nach Fachausdruecken den deutschen Originalbegriff (falls vorhanden) in Klammer und KURSIV hinzu, z.B. "company register extract (*Firmenbuchauszug*)". Muss ein deutscher Begriff ausnahmsweise im Fliesstext stehen, setze ihn kursiv.':'')+
           (outputLangCode==='English'?' Stelle alle Gesetzeszitate gemaess Punkt 14.5 der Policy ins Englische um: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq.; das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB".':'')+
           ' Gib nur den übersetzten Text aus – keinen Kommentar, keine Erklärung.',
         messages:[{role:'user',content:'ZU ÜBERSETZENDER TEXT:\n\n'+p.docText}]
@@ -761,16 +794,31 @@ function guessLang(text){
   return 'de';
 }
 
-// ─── Einleitungssatz: was wird geprueft (deckt Missverstaendnisse auf) ───
+// ─── Einleitungssatz: was wird geprueft (natuerliche Sprache; deckt Missverstaendnisse auf) ───
 function buildIntro(p){
-  var teile=[];
-  teile.push(p.dtype);
-  if(p.empf&&p.empf!=='(nicht angegeben)')teile.push('an '+p.empf);
-  var s='Geprüft wird: '+teile.join(' ')+'.';
-  s+=' Klient: '+p.klient+' ('+p.inausl+', '+p.natjur+').';
-  s+=' Rechtsgebiet: '+p.rgs+(p.auslrecht?' (zusätzlich '+p.auslrecht+')':'')+'.';
-  s+=' Ausgabesprache: '+p.lang+'.';
-  s+=' '+(p.rsv?'Mit Rechtsschutzversicherung.':'Ohne Rechtsschutzversicherung.');
+  var dtMap={
+    'E-Mail an bestehenden Klienten':'eine E-Mail an einen bestehenden Klienten',
+    'Sonstiges E-Mail':'eine sonstige E-Mail',
+    'Schriftsatz':'ein Schriftsatz',
+    'Vertrag':'ein Vertrag',
+    'Interner Aktenvermerk':'ein interner Aktenvermerk',
+    'Legal Opinion / Externes Memo':'eine Legal Opinion bzw. ein externes Memo',
+    'Sonstiges':'ein sonstiges Dokument'
+  };
+  var dt=dtMap[p.dtype]||('ein Dokument ('+p.dtype+')');
+  var s='Geprüft wird '+dt;
+  if(p.empf&&p.empf!=='(nicht angegeben)')s+=', gerichtet an '+p.empf;
+  s+='. ';
+  var herkunft=(p.inausl==='Ausländer')?'ausländische':'inländische';
+  s+='Der Klient'+((p.klient&&p.klient!=='(nicht angegeben)')?' ('+p.klient+')':'')+
+     ' ist eine '+herkunft+' '+p.natjur+
+     (p.rsv?' und hat eine Rechtsschutzversicherung':' und hat keine Rechtsschutzversicherung')+'. ';
+  if(p.rgs&&p.rgs!=='(nicht angegeben)')s+='Es geht um '+p.rgs;
+  else s+='Das Rechtsgebiet ist nicht näher angegeben';
+  if(p.rgFrei)s+=' ('+p.rgFrei+')';
+  if(p.auslrecht)s+='; zusätzlich ist '+p.auslrecht+' zu berücksichtigen';
+  var langN={'Deutsch':'Deutsch','English':'Englisch','日本語':'Japanisch','한국어':'Koreanisch'}[p.lang]||p.lang;
+  s+='. Die Ausgabe erfolgt auf '+langN+'.';
   return s;
 }
 
