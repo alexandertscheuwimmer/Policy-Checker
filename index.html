@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
+<!-- saved from url=(0060)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -156,11 +156,76 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     <span class="key-status" id="key-status">Kein Key</span>
     <button class="key-btn" onclick="saveKey()">Speichern</button>
   </div>
-  <div id="origin-diag" style="font-size:10px;color:#bbb;margin:-12px 0 16px 2px">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html</div>
+  <div id="origin-diag" style="font-size:10px;color:#bbb;margin:-12px 0 16px 2px">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index_1.html</div>
 
   <!-- Schritt 1: Kontext -->
   <div class="card">
     <div class="card-title">Schritt 1 — Kontext</div>
+
+    <div class="field">
+      <label class="field-label">Rechtsgebiet(e)</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="chips" id="rg-chips" style="margin-top:0">
+          <label class="chip"><input type="checkbox" value="Privatrecht">Privatrecht</label>
+          <label class="chip"><input type="checkbox" value="Strafrecht">Strafrecht</label>
+          <label class="chip"><input type="checkbox" value="Steuerrecht">Steuerrecht</label>
+          <label class="chip"><input type="checkbox" value="(Sonstiges) Öffentliches Recht">(Sonstiges) Öffentliches Recht</label>
+        </div>
+        <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="flex:1;min-width:200px;font-size:12px;padding:5px 8px">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Ausländisches Recht <span class="opt">optional – falls relevant</span></label>
+      <input type="text" id="auslrecht" placeholder="z.B. Chinesisches Recht, Deutsches Recht…">
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label class="field-label">Klient</label>
+        <input type="text" id="klient" placeholder="Name des Klienten">
+        <div class="slider-row" style="margin-top:10px">
+          <span class="slider-side-label active" id="inausl-left">Inländer</span>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="inausl-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="slider-side-label" id="inausl-right">Ausländer</span>
+        </div>
+        <div class="slider-row" style="margin-top:8px">
+          <span class="slider-side-label active" id="natjur-left">natürliche Person</span>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="natjur-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="slider-side-label" id="natjur-right">juristische Person</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Empfänger / Adressat <span class="opt">(allenfalls: Position beim Klienten)</span></label>
+        <input type="text" id="empf" placeholder="z.B. Gericht, Behörde, Klient, Geschäftsführer…">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Vorkorrespondenz / Sachverhalt <span class="opt">optional, aber für inhaltliche Prüfung entscheidend</span></label>
+      <textarea id="historie" style="min-height:80px" placeholder="Kurze Zusammenfassung ODER die gesamte bisherige Korrespondenz im Original (beides funktioniert gleich gut): Was wurde bisher besprochen? Welche Fragen hat der Klient gestellt? Was haben wir dem Klienten gefragt oder erbeten? Was ist der Hintergrund?"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Zusätzlicher Kontext <span class="opt">optional</span></label>
+      <textarea id="zusatz" style="min-height:44px" placeholder="z.B. Klient ist nervös, bitte sachlicher Ton. Verjährungsfrist läuft 30.06.2026 ab."></textarea>
+    </div>
+
+    <label class="cb-row">
+      <input type="checkbox" id="rsv-cb">
+      Klient hat eine Rechtsschutzversicherung
+    </label>
+  </div>
+
+  <!-- Schritt 2: Dokument -->
+  <div class="card">
+    <div class="card-title">Schritt 2 — Zu prüfender/s Text oder Dokument</div>
 
     <div class="two-col">
       <div class="field">
@@ -187,79 +252,14 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
     </div>
 
     <div class="field">
-      <label class="field-label">Rechtsgebiet(e)</label>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div class="chips" id="rg-chips" style="margin-top:0">
-          <label class="chip"><input type="checkbox" value="Privatrecht">Privatrecht</label>
-          <label class="chip"><input type="checkbox" value="Strafrecht">Strafrecht</label>
-          <label class="chip"><input type="checkbox" value="Steuerrecht">Steuerrecht</label>
-          <label class="chip"><input type="checkbox" value="(Sonstiges) Öffentliches Recht">(Sonstiges) Öffentliches Recht</label>
-        </div>
-        <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="flex:1;min-width:200px;font-size:12px;padding:5px 8px">
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field-label">Ausländisches Recht <span class="opt">optional – falls relevant</span></label>
-      <input type="text" id="auslrecht" placeholder="z.B. Chinesisches Recht, Deutsches Recht…">
-    </div>
-
-    <div class="two-col">
-      <div class="field">
-        <label class="field-label">Klient</label>
-        <input type="text" id="klient" placeholder="Name des Klienten">
-      </div>
-      <div class="field">
-        <label class="field-label">Empfänger / Adressat <span class="opt">(allenfalls: Position beim Klienten)</span></label>
-        <input type="text" id="empf" placeholder="z.B. Gericht, Behörde, Klient, Geschäftsführer…">
-      </div>
-    </div>
-
-    <div class="two-col">
-      <div class="field">
-        <div class="slider-row">
-          <span class="slider-side-label active" id="inausl-left">Inländer</span>
-          <label class="toggle-wrap">
-            <input type="checkbox" id="inausl-toggle">
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="slider-side-label" id="inausl-right">Ausländer</span>
-        </div>
-      </div>
-      <div class="field">
-        <div class="slider-row">
-          <span class="slider-side-label active" id="natjur-left">natürliche Person</span>
-          <label class="toggle-wrap">
-            <input type="checkbox" id="natjur-toggle">
-            <span class="toggle-slider"></span>
-          </label>
-          <span class="slider-side-label" id="natjur-right">juristische Person</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field-label">Vorkorrespondenz / Sachverhalt <span class="opt">optional, aber für inhaltliche Prüfung entscheidend</span></label>
-      <textarea id="historie" style="min-height:80px" placeholder="Kurze Zusammenfassung ODER die gesamte bisherige Korrespondenz im Original (beides funktioniert gleich gut): Was wurde bisher besprochen? Welche Fragen hat der Klient gestellt? Was haben wir dem Klienten gefragt oder erbeten? Was ist der Hintergrund?"></textarea>
-    </div>
-
-    <div class="field">
-      <label class="field-label">Zusätzlicher Kontext <span class="opt">optional</span></label>
-      <textarea id="zusatz" style="min-height:44px" placeholder="z.B. Klient ist nervös, bitte sachlicher Ton. Verjährungsfrist läuft 30.06.2026 ab."></textarea>
-    </div>
-
-    <label class="cb-row">
-      <input type="checkbox" id="rsv-cb">
-      Klient hat eine Rechtsschutzversicherung
-    </label>
-  </div>
-
-  <!-- Schritt 2: Dokument -->
-  <div class="card">
-    <div class="card-title">Schritt 2 — Zu prüfender/s Text oder Dokument</div>
-    <div class="field">
       <textarea id="doctext" style="min-height:160px" placeholder="Text hier einfügen…"></textarea>
     </div>
+
+    <div class="field">
+      <label class="field-label">Zusätzliche Informationen zum zu prüfenden Text/Dokument <span class="opt">optional</span></label>
+      <textarea id="dokinfo" style="min-height:44px" placeholder="z.B. Die Änderungen im Markup dieser docx stammen vom ReviewAssistant (bitte nicht als meinen Fehler werten, sondern die überarbeitete Fassung prüfen). Oder: Dies ist erst ein Entwurf, der Betreff fehlt noch."></textarea>
+    </div>
+
     <div class="field">
       <div class="upload-area" id="upload-area">
         <input type="file" id="file-input" multiple="" accept=".pdf,.docx,.txt,.doc">
@@ -408,6 +408,7 @@ function buildParams(){
     zusatz:document.getElementById('zusatz').value.trim(),
     rsv:document.getElementById('rsv-cb').checked,
     docText:document.getElementById('doctext').value.trim(),
+    dokinfo:document.getElementById('dokinfo').value.trim(),
     wichtig:document.getElementById('wichtig-toggle').checked
   };
 }
@@ -443,21 +444,21 @@ function buildSystemPrompt(p){
       '– Anredeformel: "Sehr geehrter Herr Kollege" / "Sehr geehrte Frau Kollegin" (Policy 14.2).\n'+
       '– Schlussformel: "Mit freundlichen kollegialen Grüßen" (Policy 14.2).\n'+
       '– Alle Judikaturzitate mit Gericht, Datum und GZ (Policy 14.4) – bloße Rechtssätze genuegen NICHT.\n'+
-      '– Kommunikation mit Gerichten/Behoerden stets via Schriftsatz, nicht via E-Mail (Policy 14.6).';
+      '– Kommunikation mit Gerichten/Behoerden stets via Schriftsatz, nicht via E-Mail (Policy 14.7).';
   } else if(p.dtype==='Vertrag'){
     dtypeRules='DOKUMENTTYP-REGELN (Vertrag):\n'+
       '– Fachbegriffe erklaeren oder vermeiden (Policy 10.5).\n'+
-      '– Scope of Work klar und eng formulieren (Policy 12.7).\n'+
+      '– Scope of Work klar und eng formulieren (Policy 12.8).\n'+
       '– Fee Warning-Tatbestaende beachten (§ 1170a Abs 2 ABGB).';
   } else if(p.dtype==='Interner Aktenvermerk'){
     dtypeRules='DOKUMENTTYP-REGELN (Interner Aktenvermerk):\n'+
-      '– Strukturiert: Vorfrage und Hauptfrage, formelle und materielle Frage (Policy 14.7).\n'+
+      '– Strukturiert: Vorfrage und Hauptfrage, formelle und materielle Frage (Policy 14.8).\n'+
       '– Am Ende Zusammenfassung der Arbeit (Policy 8.7).\n'+
-      '– Rechercheergebnisse immer sofort in Aktenvermerk (Policy 8.7, 14.8).';
+      '– Rechercheergebnisse immer sofort in Aktenvermerk (Policy 8.7, 14.9).';
   } else if(p.dtype.indexOf('Legal Opinion')>=0){
     dtypeRules='DOKUMENTTYP-REGELN (Legal Opinion / Externes Memo):\n'+
       '– Alle Judikaturzitate mit Gericht, Datum und GZ – blosse Rechtsstaetze genuegen NICHT.\n'+
-      '– Ergebnisoffen: Pros und Contras (Policy 14.7).\n'+
+      '– Ergebnisoffen: Pros und Contras (Policy 14.8).\n'+
       '– Standalone: vollstaendig ohne Vorkenntnis verstaendlich (Policy 10.7).';
   }
 
@@ -473,6 +474,7 @@ auslandHinweis+'\n'+
 'Klient-Status: '+p.inausl+', '+p.natjur+'\n'+
 'Vorkorrespondenz/Sachverhalt:\n'+(p.historie||'(keine angegeben)')+'\n'+
 (p.zusatz?'Zusaetzlicher Kontext: '+p.zusatz+'\n':'')+
+(p.dokinfo?'\nZUSAETZLICHE INFORMATIONEN ZUM ZU PRUEFENDEN TEXT/DOKUMENT (vom Mitarbeiter angegeben – aktiv beruecksichtigen): '+p.dokinfo+'\nFalls daraus hervorgeht, dass Aenderungen im Markup/in den nachverfolgten Aenderungen vom ReviewAssistant selbst stammen: behandle diese Aenderungen als bereits geprueft und uebernommen. Werte sie NICHT als Fehler des Mitarbeiters und bewerte das Dokument in seiner ueberarbeiteten Fassung.\n':'')+
 '\n'+dtypeRules+'\n\n'+
 
 'PFLICHTPRUEFUNG – ALLE DREI MODULE IMMER AKTIV:\n\n'+
@@ -492,7 +494,8 @@ auslandHinweis+'\n'+
 '14.2: Anwaelte: "Herr/Frau Kollege/in". Schlussformel: "Mit freundlichen kollegialen Gruessen".\n'+
 '14.3: Wichtige Aussagen separat in Klammer belegen – NACH der Aussage, nie als Teil der Aussage. Format: (OGH TT.MM.JJJJ, GZ X Ob Y/Zt) oder (§ X Abs Y ABGB).\n'+
 '14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl". In Schriftsaetzen und Legal Opinions KEIN blosser Rechtssatz ohne Leitentscheidung. In E-Mails und Aktenvermerken: blosser Rechtssatz (z.B. RS0069706) ausreichend. Jeden zitierten Rechtssatz/Judikatur pruefen: sagt die Fundstelle wirklich das Behauptete aus?\n'+
-'14.8: Ueber Recherchen sofort Aktenvermerk anlegen.\n\n'+
+'14.5: NUR bei Ausgabesprache English – Gesetzeszitate ins Englische umstellen (§ -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director); das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" -> "Sec 879 para 2 no 1a ABGB".\n'+
+'14.9: Ueber Recherchen sofort Aktenvermerk anlegen.\n\n'+
 'WICHTIG fuer Modul A:\n'+
 '– Einheitlich "Klient" verwenden (NIEMALS "Mandant").\n'+
 '– Kein Doppelpunkt am Beginn von Spalte 2 oder 3.\n'+
@@ -542,7 +545,7 @@ auslandHinweis+'\n'+
 '===MODUL_A_END===\n\n'+
 '===MODUL_B_START===\n'+
 'BEREICH|||BEFUND|||EMPFEHLUNG\n'+
-'[4a/4b + Kurztitel]|||[Was fehlt oder wurde uebersehen]|||[Konkrete Empfehlung]\n'+
+'[Aussagekraeftiger Kurztitel des Befundes]|||[Was fehlt oder wurde uebersehen]|||[Konkrete Empfehlung]\n'+
 '===MODUL_B_END===\n\n'+
 '===MODUL_C_START===\n'+
 'BEZEICHNUNG|||TYP|||DATUM/ZEITRAUM|||HINWEIS\n'+
@@ -551,7 +554,8 @@ auslandHinweis+'\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
 'Maximal 6 Zeilen pro Modul. Nur die wichtigsten Punkte.\n'+
 'Kein einleitender Text. Beginne sofort mit ===MODUL_A_START===.\n'+
-'Sprache des gesamten Outputs: '+p.lang+'.';
+'Sprache des gesamten Outputs: '+p.lang+'.'+
+(p.lang==='English'?'\n\nWICHTIG (Punkt 14.5): Da die Ausgabesprache English ist, ALLE Gesetzeszitate im gesamten Output ins Englische umstellen: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director. Das Gesetzeskuerzel selbst bleibt unveraendert (z.B. ABGB, UGB, AngG). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB". Judikatur-Zitate behalten Gericht/Datum/GZ.':'');
 }
 
 // ─── Proxy URL (Cloudflare Worker) ───────────────────────────────────
@@ -605,12 +609,15 @@ async function runReview(){
     // Pass 1: Review
     var body1={
       model:model,
-      max_tokens:8000,
+      max_tokens:16000,
       system:sysPrompt,
       messages:[{role:'user',content:content}]
     };
     if(p.wichtig){
-      body1.thinking={type:'enabled',budget_tokens:8000};
+      // max_tokens MUSS groesser als budget_tokens sein – sonst kann das Denken das
+      // gesamte Output-Budget aufbrauchen (war 8000/8000: mutmassliche Ursache dafuer,
+      // dass Modul C – zuletzt generiert – im Output fehlte).
+      body1.thinking={type:'enabled',budget_tokens:10000};
     }
 
     var r1=await fetch(PROXY_URL,{
@@ -621,6 +628,17 @@ async function runReview(){
     var d1=await r1.json();
     if(d1.error){throw new Error(d1.error.message);}
     var pass1Text=d1.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+
+    // DIAGNOSE Modul C: rohen Pass-1-Output und Block-Praesenz protokollieren.
+    // In der Browser-Konsole (F12) pruefbar, ob Modul C schon im Pass-1-Output fehlt.
+    console.log('=== TAIYO ReviewAssistant – ROHER PASS-1-OUTPUT ===\n'+pass1Text);
+    console.log('Pass 1 – MODUL_A:',pass1Text.indexOf('===MODUL_A_START===')>=0,
+                '| MODUL_B:',pass1Text.indexOf('===MODUL_B_START===')>=0,
+                '| MODUL_C:',pass1Text.indexOf('===MODUL_C_START===')>=0,
+                '| stop_reason:',d1.stop_reason);
+    if(pass1Text.indexOf('===MODUL_C_START===')<0){
+      console.warn('WARNUNG: Modul C fehlt bereits im Pass-1-Output. stop_reason='+d1.stop_reason+' – bei "max_tokens" wurde der Output abgeschnitten.');
+    }
 
     // Pass 2: Policy control – correct columns 2+3
     resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 2 von 2 – Policy-Kontrolle…</p></div></div></div>';
@@ -648,12 +666,12 @@ async function runReview(){
 
     var body2={
       model:model,
-      max_tokens:8000,
+      max_tokens:12000,
       system:pass2Prompt,
       messages:[{role:'user',content:'Bitte korrigieren.'}]
     };
     if(p.wichtig){
-      body2.thinking={type:'enabled',budget_tokens:4000};
+      body2.thinking={type:'enabled',budget_tokens:6000};
     }
 
     var r2=await fetch(PROXY_URL,{
@@ -682,8 +700,10 @@ async function runReview(){
       resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 3 von 3 – Übersetzung in '+outputLangCode+'…</p></div></div></div>';
       var transBody={
         model:model,
-        max_tokens:4000,
-        system:'Du bist ein professioneller juristischer Übersetzer. Übersetze den folgenden Text vollständig und präzise ins '+outputLangCode+'. Behalte Formatierung, Absätze und alle juristischen Fachbegriffe bei. Gib nur den übersetzten Text aus – keinen Kommentar, keine Erklärung.',
+        max_tokens:6000,
+        system:'Du bist ein professioneller juristischer Übersetzer. Übersetze den folgenden Text vollständig und präzise ins '+outputLangCode+'. Behalte Formatierung, Absätze und alle juristischen Fachbegriffe bei.'+
+          (outputLangCode==='English'?' Stelle alle Gesetzeszitate gemaess Punkt 14.5 der Policy ins Englische um: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq.; das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB".':'')+
+          ' Gib nur den übersetzten Text aus – keinen Kommentar, keine Erklärung.',
         messages:[{role:'user',content:'ZU ÜBERSETZENDER TEXT:\n\n'+p.docText}]
       };
       var r3=await fetch(PROXY_URL,{
@@ -697,7 +717,7 @@ async function runReview(){
       }
     }
 
-    renderResult(finalText,model,p.lang,translatedText,needsTranslation);
+    renderResult(finalText,model,p.lang,translatedText,needsTranslation,buildIntro(p));
 
   }catch(err){
     resultWrap.innerHTML='<div class="error-box">Verbindungsfehler: '+escHtml(err.message)+'</div>';
@@ -741,12 +761,31 @@ function guessLang(text){
   return 'de';
 }
 
+// ─── Einleitungssatz: was wird geprueft (deckt Missverstaendnisse auf) ───
+function buildIntro(p){
+  var teile=[];
+  teile.push(p.dtype);
+  if(p.empf&&p.empf!=='(nicht angegeben)')teile.push('an '+p.empf);
+  var s='Geprüft wird: '+teile.join(' ')+'.';
+  s+=' Klient: '+p.klient+' ('+p.inausl+', '+p.natjur+').';
+  s+=' Rechtsgebiet: '+p.rgs+(p.auslrecht?' (zusätzlich '+p.auslrecht+')':'')+'.';
+  s+=' Ausgabesprache: '+p.lang+'.';
+  s+=' '+(p.rsv?'Mit Rechtsschutzversicherung.':'Ohne Rechtsschutzversicherung.');
+  return s;
+}
+
 // ─── Render result ───────────────────────────────────────────────────
-function renderResult(raw,model,lang,translatedText,showTranslation){
+function renderResult(raw,model,lang,translatedText,showTranslation,intro){
   var html='<div class="result-card">';
   var passLabel=showTranslation?'Drei-Pass':'Zwei-Pass';
   html+='<div class="result-header">Prüfbericht<span class="pass-indicator">'+model+' · '+passLabel+'</span></div>';
   html+='<div class="result-body">';
+
+  // Einleitungssatz (Item 3): kurz, was geprueft wird – damit ein
+  // Missverstaendnis (z.B. falscher Dokumenttyp) sofort auffaellt.
+  if(intro){
+    html+='<div style="background:#f0f4fa;border-left:3px solid #1F3865;border-radius:4px;padding:9px 12px;margin-bottom:16px;font-size:12px;color:#444;line-height:1.5">'+escHtml(intro)+'</div>';
+  }
 
   html+=renderModule(raw,'MODUL_A','Policy & Stil',
     ['Textausschnitt','Problem <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag <span style="font-weight:400;font-size:10px;color:#a0b0d0">(siehe aber Punkte 2.6, 2.4 der Policy)</span>'],
@@ -888,6 +927,7 @@ function renderFristen(raw){
   }catch(e){}
 })();
 </script>
+
 
 
 </body></html>
