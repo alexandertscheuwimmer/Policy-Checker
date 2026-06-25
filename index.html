@@ -1,5 +1,100 @@
 <!DOCTYPE html>
-<!-- saved from url=(0058)file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html -->
+<!--
+=======================================================================
+  TAIYO ReviewAssistant — REGRESSIONS-CHECKLISTE
+  Vor JEDER künftigen Änderung am Code MUSS diese Liste vollständig
+  durchgegangen und jeder Punkt per grep im tatsächlichen Code verifiziert
+  werden — NICHT aus dem Gedächtnis behauptet. NIEMALS kürzen oder entfernen.
+  Zuletzt abgeglichen mit Dr. Scheuwimmer: 25.06.2026.
+=======================================================================
+
+  --- VIER LEITSTERNE (dürfen bei keinem Build regredieren) ---
+  1. Modul A: lässlich vs. gravierend gewichtet; max. 5 Befunde
+     (Top-5-Deckel nach Gravität).
+  2. Modul C: vollständige Urgenz-/Follow-up-Logik mit ALLEN Richtwerten
+     (Gericht/Gegner/Klient/Interessent) + Doppelkalendierung +
+     physische Termine.
+  3. EIN EINZIGES, UNGETEILTES TOOL — niemals aufspalten.
+  4. Modul B = eigenständige juristische Recherche, Schwerpunkt 70%
+     Übersehenes (4a Kommunikationslücken in BEIDE Richtungen + 4b
+     juristische Lücken), nur 30% Fehler im Vorhandenen.
+     "Vollständigkeit" = was FEHLT, nicht Feinschliff am Vorhandenen.
+
+  --- WAS IST AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen) ---
+  - "Danke für Ihre Rückmeldung" als E-Mail-Einleitung (10.8 verlangt das).
+  - "Akonto" ohne Erklärung — außer Kontext signalisiert ausdrücklich
+    einen bildungsfernen Klienten.
+  - EIN Engagement Letter pro Klient gilt für ALLE Mandate dieses
+    Klienten — fehlendes neues Auftragsschreiben ist NIE ein Befund.
+  - Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt
+    wurde — Kurzwiederholung in Klammer reicht.
+  - Adresse "Schwedenpl.5 (Eing. Dominikanerb.21)" — Ausnahme von 10.9.
+  - Wohlbefinden-Einleitung ("Wir hoffen, es geht Ihnen gut.") — laut
+    10.8 grundsätzlich zulässig, nur im Einzelfall ausnahmsweise nicht.
+  - Konjunktiv — NICHT verboten durch Punkt 10.9.
+  - In E-Mails/Aktenvermerken: bloßer Rechtssatz (z.B. RS0069706) als
+    Beleg ausreichend — Gericht/Datum/GZ NICHT verlangen (nur in
+    Schriftsätzen/Legal Opinions zwingend).
+  - Honorarnote als Anhang erwähnt/beigefügt: Zahlungsfrist/Kontonummer
+    müssen NICHT im Haupttext wiederholt werden.
+
+  --- TECHNISCH KRITISCH ---
+  - max_tokens für Pass 1 UND Pass 2 NIE unter 8000 setzen (bei zu
+    niedrigem Wert wurde Modul C/Gerichtsfrist abgeschnitten).
+  - Im Wichtig-Modus: max_tokens MUSS größer sein als budget_tokens des
+    Thinking-Parameters (war 8000/8000 — mutmaßliche Ursache dafür, dass
+    Modul C, zuletzt generiert, im Output fehlte).
+  - API-Key-Problem (Browser-Passwortmanager-Interferenz, "invalid
+    x-api-key") — NICHT als final gelöst markieren ohne ausdrückliche
+    Bestätigung durch Dr. Scheuwimmer.
+  - Datei NIEMALS über "Speichern unter" aus der gerenderten Browser-
+    Ansicht sichern — das baut den DOM neu zusammen und wirft führende
+    Kommentare (also genau diese Checkliste) weg. Immer: Download-Button
+    im Chat, GitHub-Raw-Download, oder view-source: + Strg+S.
+
+  --- VOLLSTÄNDIGE FELDLISTE SCHRITT 1 ---
+  Dokumenttyp; Ausgabesprache (Deutsch/English/日本語/한국어, OHNE
+  deutsche Zusatzbezeichnung); Rechtsgebiet-Chips (Privatrecht/
+  Strafrecht/Steuerrecht/(Sonstiges) Öffentliches Recht); Freitextfeld
+  "Hinweis auf besondere Rechtsgebiete"; SEPARATES Freitextfeld
+  "Ausländisches Recht"; Klient; Empfänger/Adressat mit Hinweis
+  "(allenfalls: Position beim Klienten)"; ECHTER Slider/Toggle
+  Inländer↔Ausländer (kein Dropdown); ECHTER Slider/Toggle natürliche↔
+  juristische Person (kein Dropdown); Vorkorrespondenz/Sachverhalt
+  (Hinweis "für inhaltliche Prüfung entscheidend", Placeholder erwähnt
+  explizit, dass komplette Korrespondenz eingefügt werden kann);
+  Zusätzlicher Kontext; RSV-Checkbox.
+
+  --- VOLLSTÄNDIGE FELDLISTE SCHRITT 2 ---
+  Dokumenttyp-Textfeld "Zu prüfender/s Text oder Dokument"; Feld
+  "Zusätzliche Informationen zum zu prüfenden Text/Dokument"; Datei-
+  Upload (PDF/DOCX/TXT) mit Entfernen-Button OHNE Page-Reload.
+
+  --- WICHTIG-MODUS ---
+  UI zeigt NUR "Tiefere Analyse, höhere Kosten" — keine Modell-/
+  Einstellungsdetails anzeigen. Intern: claude-opus-4-8 +
+  thinking enabled (budget_tokens kleiner als max_tokens).
+
+  --- BEKANNTER OFFENER BUG (Stand 25.06.2026) ---
+  Modul C (Gerichtsfrist) fehlte bereits im Pass-1-Output, vor jeglichem
+  Parsing. Diagnose-Logging (console.log/console.warn mit rohem
+  Pass-1-Output und stop_reason) ist eingebaut, Ursache noch NICHT final
+  bestätigt behoben.
+
+  --- BUILD-ITEMS A–H (Status zuletzt geprüft 25.06.2026) ---
+  A: Bei JEDER Code-Änderung an diesem Tool: Claude arbeitet mit
+     aktuellem Opus + Max-Aufwand + Denken (Arbeitsanweisung an Claude,
+     kein Code-Item).
+  B: Wichtig-Modus = aktuellstes Opus + Max + Denken — umgesetzt.
+  C: Doppelkalendierung — umgesetzt.
+  D: Physische Termine — umgesetzt.
+  E: Upload-Bug behoben — umgesetzt.
+  F: Entfernen-Button ohne Reload — umgesetzt.
+  G: RSV-Kontradiktion → Modul B statt Modul A — umgesetzt.
+  H: Übersetzungs-Pass (Pass 3 bei Ausgabesprache ≠ Dokumentsprache) —
+     umgesetzt.
+=======================================================================
+-->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
