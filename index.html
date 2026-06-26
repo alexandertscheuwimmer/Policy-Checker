@@ -5,7 +5,7 @@
   Vor JEDER künftigen Änderung am Code MUSS diese Liste vollständig
   durchgegangen und jeder Punkt per grep im tatsächlichen Code verifiziert
   werden — NICHT aus dem Gedächtnis behauptet. NIEMALS kürzen oder entfernen.
-  Zuletzt abgeglichen mit Dr. Scheuwimmer: 25.06.2026.
+  Zuletzt abgeglichen mit Dr. Scheuwimmer: 26.06.2026.
 =======================================================================
 
   --- VIER LEITSTERNE (dürfen bei keinem Build regredieren) ---
@@ -93,6 +93,29 @@
   G: RSV-Kontradiktion → Modul B statt Modul A — umgesetzt.
   H: Übersetzungs-Pass (Pass 3 bei Ausgabesprache ≠ Dokumentsprache) —
      umgesetzt.
+
+  --- BUILD 26.06.2026 (acht Verbesserungen) ---
+  1. Header-Layout: API-Key-Eingabefeld + "Speichern" in der Kopfzeile
+     rechts neben dem Titel; Status "Key gespeichert" rechtsbuendig
+     DARUNTER; origin-diag darunter. Kein separater .key-section-Block.
+  2. Logo (logo-badge) leicht groesser; "ReviewAssistant"/Untertitel
+     bleiben unveraendert.
+  3. Mehr Abstand vor der Ausgabe (#result-wrap margin-top 40px).
+  4. Reihenfolge vertauscht: Schritt 1 = zu pruefender Text/Dokument
+     (oben), Schritt 2 = Kontext (darunter). Feld-IDs unveraendert.
+  5. Verbotene Bestaetigungszeilen-Liste erweitert (u.a. "Compliant",
+     "OK", "No issues", "Akzeptabel", "Unauffaellig").
+  6.-8. GRAVITAETS-MARKIERUNG: Das Modell stellt gravierenden Befunden
+     "[!]" an den Zeilenanfang (vor die erste Spalte). renderModule
+     erkennt "[!]", entfernt es, setzt tr.grave + rotes Badge
+     "GRAVIEREND" (Modul A und Modul B). Pass 2 MUSS "[!]" am Modul-A-
+     Zeilenanfang erhalten; Modul-B/C-Marker ueberleben via
+     forceRestoreBlock. Definition "gravierend" je Modul steht im
+     Systemprompt (z.B. Satz mit 30+ Woertern; eklatanter Widerspruch
+     zum Gesetzeswortlaut wie § 7 GmbHG; verwaltungs-/kriminal-
+     strafrechtliche Folge; mehrfach unbeantwortete Klientenfrage; nur
+     FBG statt auch GmbHG; nicht stuetzender Rechtssatz; falsch
+     berechnete Frist). renderFristen entfernt versehentliche "[!]".
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -105,24 +128,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .app{max-width:920px;margin:0 auto;padding:24px 20px 60px}
 
 /* Header */
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid #e0e0da}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid #e0e0da;gap:18px}
 .header-left{display:flex;align-items:center;gap:10px}
-.logo-badge{background:#1F3865;border-radius:6px;padding:5px 11px;display:flex;align-items:center;gap:6px}
-.logo-badge .kanji{color:#fff;font-size:14px;font-weight:700;font-family:serif}
+.logo-badge{background:#1F3865;border-radius:6px;padding:7px 13px;display:flex;align-items:center;gap:7px}
+.logo-badge .kanji{color:#fff;font-size:17px;font-weight:700;font-family:serif}
 .logo-badge .name{display:flex;flex-direction:column;line-height:1.1}
-.logo-badge .name span:first-child{color:#fff;font-size:10px;font-weight:700;letter-spacing:2px}
-.logo-badge .name span:last-child{color:rgba(255,255,255,.75);font-size:7px;letter-spacing:3px}
+.logo-badge .name span:first-child{color:#fff;font-size:11px;font-weight:700;letter-spacing:2px}
+.logo-badge .name span:last-child{color:rgba(255,255,255,.75);font-size:8px;letter-spacing:3px}
 .header-title{font-size:16px;font-weight:600;color:#1F3865;letter-spacing:.01em}
 .header-title small{display:block;font-size:11px;font-weight:400;color:#888;margin-top:1px;letter-spacing:0}
 
-/* API Key */
-.key-section{background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
-.key-section input{flex:1;border:none;outline:none;font-size:13px;font-family:monospace;color:#333;background:transparent}
-.key-status{font-size:12px;white-space:nowrap}
+/* API Key (in Kopfzeile rechts) */
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:320px}
+.key-row{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:8px 10px;width:100%}
+.key-row input{flex:1;border:none;outline:none;font-size:13px;font-family:monospace;color:#333;background:transparent}
+.key-status{font-size:11px;white-space:nowrap;padding-right:2px}
 .key-status.ok{color:#2a7a2a}
 .key-status.err{color:#c44}
-.key-btn{background:#1F3865;color:#fff;border:none;border-radius:5px;padding:5px 11px;font-size:12px;cursor:pointer;white-space:nowrap}
+.key-btn{background:#1F3865;color:#fff;border:none;border-radius:5px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
 .key-btn:hover{background:#2a4d85}
+@media(max-width:600px){
+  .header{flex-direction:column;align-items:stretch;gap:14px}
+  .header-right{align-items:stretch;min-width:0}
+  .key-status{align-self:flex-end}
+}
 
 /* Form card */
 .card{background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:18px 20px;margin-bottom:16px}
@@ -187,7 +216,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .clear-btn:hover{background:#f0f4fa;border-color:#1F3865}
 
 /* Results */
-.result-wrap{margin-top:20px}
+.result-wrap{margin-top:40px}
 .result-card{background:#fff;border:1px solid #e8e8e4;border-radius:8px;overflow:hidden}
 .result-header{background:#1F3865;color:#fff;padding:12px 18px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
 .result-body{padding:18px 20px}
@@ -201,6 +230,10 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .review-table td:nth-child(2){width:35%}
 .review-table td:nth-child(3){color:#1F3865;width:40%}
 .review-table tr:hover td{background:#fafaf8}
+.review-table tr.grave td{background:#fff5f5}
+.review-table tr.grave td:first-child{border-left:3px solid #c00}
+.review-table tr.grave:hover td{background:#fdecec}
+.grave-badge{display:inline-block;background:#c00;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;letter-spacing:.05em;margin-right:6px;vertical-align:middle;font-style:normal}
 
 /* Module separator */
 .mod-sep{padding:8px 10px;background:#f5f5f3;font-size:11px;font-weight:700;color:#1F3865;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid #e8e8e4}
@@ -233,7 +266,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 <body>
 <div class="app">
 
-  <!-- Header -->
+  <!-- Header (mit API-Key rechts) -->
   <div class="header">
     <div class="header-left">
       <div class="logo-badge">
@@ -245,19 +278,66 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
         <small>Internes Qualitätsprüfungstool</small>
       </div>
     </div>
+    <div class="header-right">
+      <div class="key-row">
+        <input type="text" id="api-key" placeholder="Anthropic API Key eingeben…" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" style="font-family:monospace;-webkit-text-security:disc;text-security:disc">
+        <button class="key-btn" onclick="saveKey()">Speichern</button>
+      </div>
+      <span class="key-status" id="key-status">Kein Key</span>
+      <div id="origin-diag" style="font-size:10px;color:#bbb">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html</div>
+    </div>
   </div>
 
-  <!-- API Key -->
-  <div class="key-section">
-    <input type="text" id="api-key" placeholder="Anthropic API Key eingeben…" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" style="font-family:monospace;-webkit-text-security:disc;text-security:disc">
-    <span class="key-status" id="key-status">Kein Key</span>
-    <button class="key-btn" onclick="saveKey()">Speichern</button>
-  </div>
-  <div id="origin-diag" style="font-size:10px;color:#bbb;margin:-12px 0 16px 2px">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html</div>
-
-  <!-- Schritt 1: Kontext -->
+  <!-- Schritt 1: Dokument -->
   <div class="card">
-    <div class="card-title">Schritt 1 — Kontext</div>
+    <div class="card-title">Schritt 1 — Zu prüfender/s Text oder Dokument</div>
+
+    <div class="two-col">
+      <div class="field">
+        <label class="field-label">Dokumenttyp</label>
+        <select id="dtype">
+          <option value="E-Mail an bestehenden Klienten">E-Mail an bestehenden Klienten</option>
+          <option value="Sonstiges E-Mail">Sonstiges E-Mail</option>
+          <option value="Schriftsatz">Schriftsatz</option>
+          <option value="Vertrag">Vertrag</option>
+          <option value="Interner Aktenvermerk">Interner Aktenvermerk</option>
+          <option value="Legal Opinion / Externes Memo">Legal Opinion / Externes Memo</option>
+          <option value="Sonstiges">Sonstiges</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Ausgabesprache</label>
+        <select id="lang">
+          <option value="Deutsch">Deutsch</option>
+          <option value="English">English</option>
+          <option value="日本語">日本語</option>
+          <option value="한국어">한국어</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <textarea id="doctext" style="min-height:160px" placeholder="Text hier einfügen…"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Zusätzliche Informationen zum zu prüfenden Text/Dokument <span class="opt">optional</span></label>
+      <textarea id="dokinfo" style="min-height:44px" placeholder="z.B. Die Änderungen im Markup dieser docx stammen vom ReviewAssistant (bitte nicht als meinen Fehler werten, sondern die überarbeitete Fassung prüfen). Oder: Dies ist erst ein Entwurf, der Betreff fehlt noch."></textarea>
+    </div>
+
+    <div class="field">
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="file-input" multiple="" accept=".pdf,.docx,.txt,.doc">
+        <p><strong>Dateien hochladen</strong> oder hierher ziehen</p>
+        <p style="font-size:11px;margin-top:3px">PDF, DOCX, TXT</p>
+      </div>
+      <div class="file-list" id="file-list"></div>
+    </div>
+  </div>
+
+  <!-- Schritt 2: Kontext -->
+  <div class="card">
+    <div class="card-title">Schritt 2 — Kontext</div>
 
     <div class="field">
       <label class="field-label">Rechtsgebiet(e)</label>
@@ -322,53 +402,6 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
       <input type="checkbox" id="rsv-cb">
       Klient hat eine Rechtsschutzversicherung
     </label>
-  </div>
-
-  <!-- Schritt 2: Dokument -->
-  <div class="card">
-    <div class="card-title">Schritt 2 — Zu prüfender/s Text oder Dokument</div>
-
-    <div class="two-col">
-      <div class="field">
-        <label class="field-label">Dokumenttyp</label>
-        <select id="dtype">
-          <option value="E-Mail an bestehenden Klienten">E-Mail an bestehenden Klienten</option>
-          <option value="Sonstiges E-Mail">Sonstiges E-Mail</option>
-          <option value="Schriftsatz">Schriftsatz</option>
-          <option value="Vertrag">Vertrag</option>
-          <option value="Interner Aktenvermerk">Interner Aktenvermerk</option>
-          <option value="Legal Opinion / Externes Memo">Legal Opinion / Externes Memo</option>
-          <option value="Sonstiges">Sonstiges</option>
-        </select>
-      </div>
-      <div class="field">
-        <label class="field-label">Ausgabesprache</label>
-        <select id="lang">
-          <option value="Deutsch">Deutsch</option>
-          <option value="English">English</option>
-          <option value="日本語">日本語</option>
-          <option value="한국어">한국어</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="field">
-      <textarea id="doctext" style="min-height:160px" placeholder="Text hier einfügen…"></textarea>
-    </div>
-
-    <div class="field">
-      <label class="field-label">Zusätzliche Informationen zum zu prüfenden Text/Dokument <span class="opt">optional</span></label>
-      <textarea id="dokinfo" style="min-height:44px" placeholder="z.B. Die Änderungen im Markup dieser docx stammen vom ReviewAssistant (bitte nicht als meinen Fehler werten, sondern die überarbeitete Fassung prüfen). Oder: Dies ist erst ein Entwurf, der Betreff fehlt noch."></textarea>
-    </div>
-
-    <div class="field">
-      <div class="upload-area" id="upload-area">
-        <input type="file" id="file-input" multiple="" accept=".pdf,.docx,.txt,.doc">
-        <p><strong>Dateien hochladen</strong> oder hierher ziehen</p>
-        <p style="font-size:11px;margin-top:3px">PDF, DOCX, TXT</p>
-      </div>
-      <div class="file-list" id="file-list"></div>
-    </div>
   </div>
 
   <!-- Wichtig-Modus -->
@@ -677,7 +710,13 @@ auslandHinweis+'\n'+
 '===MODUL_C_END===\n\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
 'Maximal 6 Zeilen pro Modul. Nur die wichtigsten Punkte.\n'+
-'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
+'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "Compliant", "Compliant.", "OK", "No issues", "Looks good", "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Akzeptabel", "Unauffaellig", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
+'GRAVITAETS-MARKIERUNG (gravierende Befunde hervorheben):\n'+
+'Stelle einer Zeile die Markierung "[!]" voran (ganz am Zeilenanfang, VOR der ersten Spalte), wenn der Befund ein gravierender, gröberer Fehler ist – niemals bei gewöhnlichen oder lässlichen Befunden. Beispielzeile: "[!]Textausschnitt|||Problem|||Vorschlag". Setze die Markierung sparsam und nur bei wirklich schwerwiegenden Fällen.\n'+
+'Gravierend in MODUL A (Policy & Stil) ist z.B.: ein Satz mit 30 oder mehr Wörtern (Punkt 10.9); eine so unhöfliche Aussage, dass sie fast beleidigend wirkt (Punkt 10.8); ein juristischer Fachbegriff, den ein Nicht-Jurist nicht kennt, ohne Erklärung in Klammer (Punkt 10.5); eine Warnung vor Rechtsfolgen ohne den nach Punkt 14.3 zwingenden Beleg.\n'+
+'Gravierend in MODUL B als LÜCKE ist z.B.: der Klient hat mehrfach nach derselben Sache gefragt und immer noch keine Antwort erhalten; eine Frage wurde nur nach einem Gesetz beantwortet, nicht aber nach einem zweiten einschlägigen (z.B. nach dem FBG, aber nicht nach dem GmbHG); eine zwingende einschlägige Norm wurde völlig übersehen (z.B. die Meldepflicht nach dem WiEReG bei einer GmbH-Gründung).\n'+
+'Gravierend in MODUL B als FEHLER ist z.B.: eine Auskunft, die dem Gesetzeswortlaut direkt und eklatant widerspricht (z.B. widerspricht "Die Gesellschaft darf ihre eigenen Gründungskosten uneingeschränkt selbst tragen." direkt dem § 7 GmbHG); eine Auskunft, deren Befolgung verwaltungsstrafrechtliche oder kriminalstrafrechtliche Rechtsfolgen herbeiführt; ein zitierter Rechtssatz oder eine zitierte Entscheidung, die die behauptete Aussage in Wahrheit nicht stützt (Punkt 14.4); eine falsch berechnete Frist, deren Befolgung zum Versäumen einer Gerichtsfrist führt.\n'+
+'Wichtig: Das "[!]" ist nur eine Markierung – es darf im sichtbaren Text der Spalten NICHT auftauchen, sondern steht ausschließlich ganz am Zeilenanfang.\n\n'+
 'Kein einleitender Text. Beginne sofort mit ===MODUL_A_START===.\n'+
 'Sprache des gesamten Outputs: '+p.lang+'.'+
 (p.lang!=='Deutsch'?'\n\nFREMDSPRACHIGER OUTPUT (Punkt 10.5): Verwende im gesamten fremdsprachigen Output KEINE deutschen Begriffe (z.B. "Klient", "Firmenbuch") im Fliesstext – nutze den dortigen Begriff; ein deutscher Begriff ist nur ausnahmsweise und dann KURSIV (in Klammer) zulaessig. Fuege nach Fachausdruecken den deutschen Originalbegriff (falls vorhanden) kursiv in Klammer hinzu.':'')+
@@ -773,6 +812,7 @@ async function runReview(){
       'Der folgende Output wurde von einem Erstpruefungsdurchlauf erzeugt und enthaelt drei Bloecke: ===MODUL_A_START/END===, ===MODUL_B_START/END===, ===MODUL_C_START/END===.\n\n'+
       'KRITISCHE REGEL – UNBEDINGT BEFOLGEN:\n'+
       'Du darfst AUSSCHLIESSLICH innerhalb von ===MODUL_A_START=== bis ===MODUL_A_END=== etwas veraendern, und dort auch nur Spalte 2 (Problem) und Spalte 3 (Vorschlag). Spalte 1 (Textausschnitt) bleibt unveraendert.\n'+
+      'Eine etwaige Markierung "[!]" ganz am Anfang einer Modul-A-Zeile (Kennzeichen eines gravierenden Befundes) MUSST du unveraendert an genau dieser Stelle beibehalten.\n'+
       'Die Bloecke ===MODUL_B_START=== bis ===MODUL_B_END=== und ===MODUL_C_START=== bis ===MODUL_C_END=== musst du ZEICHENGENAU UNVERAENDERT aus dem Original kopieren – jede Zeile, jedes Zeichen, ohne Kuerzung, ohne Auslassung, ohne Umformulierung. Diese beiden Bloecke sind fuer dich nur durchzureichender Text, den du nicht inhaltlich bewertest.\n\n'+
       'KORREKTURREGELN fuer Modul-A-Spalte 2 (Problem):\n'+
       '– Kurz, freundlich, loesungsorientiert – sagt was gefordert ist, nicht was falsch ist.\n'+
@@ -986,13 +1026,21 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
   html+='</tr></thead><tbody>';
 
   lines.forEach(function(line){
+    var grave=false;
+    var stripped=line.replace(/^\s*\[!\]\s*/,'');
+    if(stripped!==line){grave=true;line=stripped;}
     var parts=line.split('|||');
     if(parts.length<2)return;
-    html+='<tr>';
+    html+='<tr'+(grave?' class="grave"':'')+'>';
     parts.forEach(function(p,i){
       var cell=p.trim().replace(/^:\s*/,'');
       cell=cell.replace(/^4[ab]\s*[-–—]\s*/i,'');
-      html+='<td>'+escHtml(cell)+'</td>';
+      cell=cell.replace(/\[!\]/g,'').trim();
+      if(i===0&&grave){
+        html+='<td><span class="grave-badge">GRAVIEREND</span>'+escHtml(cell)+'</td>';
+      }else{
+        html+='<td>'+escHtml(cell)+'</td>';
+      }
     });
     // Pad if fewer cols than headers
     for(var i=parts.length;i<headers.length;i++)html+='<td></td>';
@@ -1032,18 +1080,21 @@ function renderFristen(raw){
 
   html+='<ul class="fristen-list">';
   lines.forEach(function(line){
+    var grave=false;
+    var stripped=line.replace(/^\s*\[!\]\s*/,'');
+    if(stripped!==line){grave=true;line=stripped;}
     var parts=line.split('|||');
     if(parts.length<2)return;
-    var bezeichnung=parts[0]?parts[0].trim():'';
-    var typ=parts[1]?parts[1].trim():'';
-    var datum=parts[2]?parts[2].trim():'';
-    var hinweis=parts[3]?parts[3].trim():'';
+    var bezeichnung=parts[0]?parts[0].trim().replace(/\[!\]/g,''):'';
+    var typ=parts[1]?parts[1].trim().replace(/\[!\]/g,''):'';
+    var datum=parts[2]?parts[2].trim().replace(/\[!\]/g,''):'';
+    var hinweis=parts[3]?parts[3].trim().replace(/\[!\]/g,''):'';
     var badgeClass='urgenz-klient';
     if(typ.toLowerCase().indexOf('gericht')>=0||typ.toLowerCase().indexOf('behoerde')>=0||typ.toLowerCase().indexOf('frist')>=0)badgeClass='court';
     else if(typ.toLowerCase().indexOf('gegner')>=0)badgeClass='urgenz-gegner';
     else if(typ.toLowerCase().indexOf('interessent')>=0)badgeClass='urgenz-interessent';
     else if(typ.toLowerCase().indexOf('physisch')>=0)badgeClass='physisch';
-    html+='<li><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
+    html+='<li'+(grave?' style="background:#fff5f5"':'')+'><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
     html+='<span><strong>'+escHtml(bezeichnung)+'</strong>';
     if(datum)html+=' <span style="color:#888;font-size:12px">→ '+escHtml(datum)+'</span>';
     if(hinweis)html+='<br><span style="font-size:11px;color:#888;margin-top:2px;display:block">'+escHtml(hinweis)+'</span>';
