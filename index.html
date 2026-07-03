@@ -55,6 +55,16 @@
     5). KEIN 'anthropic-beta: interleaved-thinking'-Header (Proxy leitet
     ihn ohnehin nicht weiter). Modell-Strings sind KEINE Evergreen-Alias
     — bei neuem Sonnet/Opus-Release manuell hochziehen.
+  - STREAMING PFLICHT (seit 02.07.2026, NIE wieder abschalten): Alle drei
+    API-Aufrufe MUESSEN mit stream:true laufen, der Worker (functions/
+    api.js) reicht upstream.body UNGEPUFFERT durch (NICHT await
+    upstream.text()), der Client liest die SSE-Antwort via readStream().
+    Grund: adaptives Denken mit hohem/max. Aufwand dauert oft > 100 s;
+    ohne Streaming puffert der Worker die ganze Antwort, Cloudflare bricht
+    mit Fehler 524 ab und liefert die Nicht-JSON-Seite "error code: 524",
+    an der JSON.parse scheitert ("Unexpected token 'e'..." bzw. Firefox
+    "unexpected character at line 1 column 1"). Mit Streaming fliessen
+    sofort message_start/ping/Delta-Bytes -> Verbindung bleibt am Leben.
   - API-Key-Problem (Browser-Passwortmanager-Interferenz, "invalid
     x-api-key") — NICHT als final gelöst markieren ohne ausdrückliche
     Bestätigung durch Dr. Scheuwimmer.
@@ -218,6 +228,27 @@
      Wichtig-Modus NICHT aktiv, empfiehlt der Vorspann den Wichtig-Modus.
      Dazu wird der aktuelle Modus in den Systemprompt-Kontext gereicht.
      Bei bereits aktivem Wichtig-Modus nie.
+  --- BUILD 02.07.2026 (Fix: Cloudflare-524-Timeout) ---
+  Symptom: "Verbindungsfehler: Unexpected token 'e', \"error code: 524 \"
+  is not valid JSON" (Chrome) bzw. "JSON.parse: unexpected character at
+  line 1 column 1" (Firefox). Ursache: Regression aus BUILD 01.07.2026 –
+  adaptives Denken mit hohem/max. Aufwand macht Antworten oft > 100 s
+  lang; der Worker pufferte sie mit await upstream.text(), sodass
+  Cloudflare die Verbindung mit 524 abbrach und eine Nicht-JSON-Seite
+  lieferte, an der der Client-Parser scheiterte. KEINE Modell-/Aufwands-/
+  Denk-Aenderung noetig – geloest durch Streaming:
+  1. functions/api.js: gibt jetzt upstream.body ungepuffert zurueck
+     (Streaming-Passthrough) statt await upstream.text(); Content-Type
+     wird von upstream uebernommen. MUSS mit index.html zusammen deployed
+     werden.
+  2. index.html: stream:true in allen drei Bodies (Pass 1/2/3); neue
+     Funktion readStream() liest die SSE-Antwort, sammelt text_delta,
+     ignoriert thinking_delta, wirft bei error-Events und bei !response.ok
+     eine lesbare Meldung (kein JSON.parse-Absturz mehr). stop_reason
+     kommt jetzt aus dem message_delta-Event (s1.stopReason).
+  3. Uebersetzung (Pass 3) ist in try/catch gekapselt – ein Fehler dort
+     bricht die Pruefung nicht mehr ab.
+  4. Klarere Fehleranzeige bei Timeout/Netzfehler.
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -932,6 +963,56 @@ auslandHinweis+'\n'+
 var PROXY_URL = 'https://taiyo-review-proxy.a-scheuwimmer.workers.dev';
 
 // ─── Run review ──────────────────────────────────────────────────────
+// ─── SSE-Streaming-Antwort lesen ─────────────────────────────────────
+// Liest eine gestreamte Anthropic-Antwort (stream:true) und sammelt den
+// reinen Text (text_delta). thinking_delta wird ignoriert. Streaming
+// verhindert das Cloudflare-524-Timeout bei langem adaptivem Denken.
+async function readStream(response){
+  if(!response.ok){
+    var errText='';
+    try{ errText=await response.text(); }catch(e){ errText=''; }
+    var msg=errText;
+    try{ var j=JSON.parse(errText); if(j&&j.error&&j.error.message) msg=j.error.message; }catch(e){}
+    if(!msg) msg='Serverantwort ohne Inhalt';
+    throw new Error('HTTP '+response.status+' – '+String(msg).slice(0,300));
+  }
+  if(!response.body||!response.body.getReader){
+    // Fallback: kein Streaming verfuegbar -> als JSON parsen
+    var data=await response.json();
+    if(data.error){ throw new Error(data.error.message); }
+    var t=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    return {text:t,stopReason:data.stop_reason};
+  }
+  var reader=response.body.getReader();
+  var decoder=new TextDecoder();
+  var buffer='';
+  var text='';
+  var stopReason=null;
+  while(true){
+    var chunk=await reader.read();
+    if(chunk.done) break;
+    buffer+=decoder.decode(chunk.value,{stream:true});
+    var nl;
+    while((nl=buffer.indexOf('\n'))>=0){
+      var line=buffer.slice(0,nl);
+      buffer=buffer.slice(nl+1);
+      if(line.indexOf('data:')!==0) continue;
+      var payload=line.slice(5).trim();
+      if(!payload||payload==='[DONE]') continue;
+      var evt;
+      try{ evt=JSON.parse(payload); }catch(e){ continue; }
+      if(evt.type==='content_block_delta'&&evt.delta){
+        if(evt.delta.type==='text_delta'&&typeof evt.delta.text==='string'){ text+=evt.delta.text; }
+      } else if(evt.type==='message_delta'&&evt.delta&&evt.delta.stop_reason){
+        stopReason=evt.delta.stop_reason;
+      } else if(evt.type==='error'){
+        throw new Error((evt.error&&evt.error.message)||'API-Streaming-Fehler');
+      }
+    }
+  }
+  return {text:text,stopReason:stopReason};
+}
+
 async function runReview(){
   var key=getKey();
   if(!key){alert('Bitte zuerst den API Key eingeben und speichern.');return;}
@@ -990,6 +1071,7 @@ async function runReview(){
       max_tokens:p.wichtig?48000:32000,
       output_config:{effort:effort},
       thinking:{type:'adaptive'},
+      stream:true,
       system:sysPrompt,
       messages:[{role:'user',content:content}]
     };
@@ -999,9 +1081,8 @@ async function runReview(){
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
       body:JSON.stringify(body1)
     });
-    var d1=await r1.json();
-    if(d1.error){throw new Error(d1.error.message);}
-    var pass1Text=d1.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var s1=await readStream(r1);
+    var pass1Text=s1.text;
 
     // DIAGNOSE Modul C: rohen Pass-1-Output und Block-Praesenz protokollieren.
     // In der Browser-Konsole (F12) pruefbar, ob Modul C schon im Pass-1-Output fehlt.
@@ -1009,9 +1090,9 @@ async function runReview(){
     console.log('Pass 1 – MODUL_A:',pass1Text.indexOf('===MODUL_A_START===')>=0,
                 '| MODUL_B:',pass1Text.indexOf('===MODUL_B_START===')>=0,
                 '| MODUL_C:',pass1Text.indexOf('===MODUL_C_START===')>=0,
-                '| stop_reason:',d1.stop_reason);
+                '| stop_reason:',s1.stopReason);
     if(pass1Text.indexOf('===MODUL_C_START===')<0){
-      console.warn('WARNUNG: Modul C fehlt bereits im Pass-1-Output. stop_reason='+d1.stop_reason+' – bei "max_tokens" wurde der Output abgeschnitten.');
+      console.warn('WARNUNG: Modul C fehlt bereits im Pass-1-Output. stop_reason='+s1.stopReason+' – bei "max_tokens" wurde der Output abgeschnitten.');
     }
 
     // Pass 2: Policy control – correct columns 2+3
@@ -1046,6 +1127,7 @@ async function runReview(){
       max_tokens:p.wichtig?32000:24000,
       output_config:{effort:effort},
       thinking:{type:'adaptive'},
+      stream:true,
       system:pass2Prompt,
       messages:[{role:'user',content:'Bitte korrigieren.'}]
     };
@@ -1055,9 +1137,8 @@ async function runReview(){
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
       body:JSON.stringify(body2)
     });
-    var d2=await r2.json();
-    if(d2.error){throw new Error(d2.error.message);}
-    var finalText=d2.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var s2=await readStream(r2);
+    var finalText=s2.text;
 
     // SICHERHEITSNETZ: Modul B und C duerfen durch Pass 2 NIEMALS veraendert oder verloren gehen.
     // Wir ersetzen sie hart durch die Originalbloecke aus Pass 1, unabhaengig davon was Pass 2 geliefert hat.
@@ -1080,27 +1161,38 @@ async function runReview(){
         max_tokens:p.wichtig?16000:12000,
         output_config:{effort:effort},
         thinking:{type:'adaptive'},
+        stream:true,
         system:'Du bist ein professioneller juristischer Übersetzer. Übersetze den folgenden Text vollständig und präzise ins '+outputLangCode+'. Behalte Formatierung, Absätze und alle juristischen Fachbegriffe bei.'+
           (outputLangCode!=='Deutsch'?' Verwende KEINE deutschen Begriffe (z.B. "Klient", "Firmenbuch") im Fliesstext – nutze den dortigen Begriff. Fuege nach Fachausdruecken den deutschen Originalbegriff (falls vorhanden) in Klammer und KURSIV hinzu, z.B. "company register extract (*Firmenbuchauszug*)". Muss ein deutscher Begriff ausnahmsweise im Fliesstext stehen, setze ihn kursiv.':'')+
           (outputLangCode==='English'?' Stelle alle Gesetzeszitate gemaess Punkt 14.5 der Policy ins Englische um: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq.; das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB".':'')+
           ' Gib nur den übersetzten Text aus – keinen Kommentar, keine Erklärung.',
         messages:[{role:'user',content:'ZU ÜBERSETZENDER TEXT:\n\n'+p.docText}]
       };
-      var r3=await fetch(PROXY_URL,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-        body:JSON.stringify(transBody)
-      });
-      var d3=await r3.json();
-      if(!d3.error){
-        translatedText=d3.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+      try{
+        var r3=await fetch(PROXY_URL,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+          body:JSON.stringify(transBody)
+        });
+        var s3=await readStream(r3);
+        translatedText=s3.text;
+      }catch(transErr){
+        // Uebersetzung ist optional – ein Fehler hier darf die Pruefung nicht abbrechen.
+        console.warn('Uebersetzung (Pass 3) fehlgeschlagen:',transErr.message);
+        translatedText='';
+        needsTranslation=false;
       }
     }
 
     renderResult(finalText,model,p.lang,translatedText,needsTranslation,buildIntro(p));
 
   }catch(err){
-    resultWrap.innerHTML='<div class="error-box">Verbindungsfehler: '+escHtml(err.message)+'</div>';
+    var m=err&&err.message?err.message:String(err);
+    var hint='';
+    if(/524|timeout|timed out|Failed to fetch|NetworkError|load failed/i.test(m)){
+      hint='<div style="margin-top:8px;font-size:12px;color:#666">Die Verbindung wurde unterbrochen oder hat zu lange gedauert. Bitte erneut versuchen; bei langen Dokumenten kann die Prüfung einige Minuten dauern.</div>';
+    }
+    resultWrap.innerHTML='<div class="error-box">Verbindungsfehler: '+escHtml(m)+hint+'</div>';
   }finally{
     btn.disabled=false;btn.textContent='Dokument prüfen';
   }
