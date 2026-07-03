@@ -17,13 +17,19 @@ export async function onRequestPost(context) {
     body: body,
   });
 
-  const responseBody = await upstream.text();
-
-  return new Response(responseBody, {
+  // Antwort UNGEPUFFERT durchreichen (Stream). Frueher wurde hier mit
+  // `await upstream.text()` die komplette Antwort abgewartet – bei langem
+  // adaptivem Denken (hoher/max. Aufwand) dauert das oft > 100 s, wodurch
+  // Cloudflare die Verbindung mit Fehler 524 abbricht und eine Nicht-JSON-
+  // Fehlerseite liefert. Durch das Durchreichen von upstream.body fliessen
+  // sofort Bytes (message_start/ping/Delta-Events), die Verbindung bleibt
+  // am Leben, und beliebig lange Antworten kommen vollstaendig an.
+  return new Response(upstream.body, {
     status: upstream.status,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': upstream.headers.get('Content-Type') || 'application/json',
       'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-cache',
     },
   });
 }
