@@ -265,6 +265,27 @@
   wiederholen. Reiner Schutz-/Diagnose-Diff: KEINE Aenderung an Modell
   (claude-opus-4-8/claude-sonnet-5), Aufwand/effort, Streaming, max_tokens,
   Modullogik, forceRestoreBlock oder Prompts.
+
+  --- BUILD 05.07.2026 (Spracherkennung guessLang + Uebersetzung, Punkt 2) ---
+  Problem A: guessLang zaehlte Kana UND CJK-Ideogramme zusammen als
+  'japanisch'. Chinesischer Text (Hanzi, keine Kana) wurde daher als
+  Japanisch fehlerkannt. Fix: Kana (U+3040-U+30FF) und Ideogramme
+  (U+4E00-U+9FAF) getrennt zaehlen. Reihenfolge: Hangul>5 -> ko; Kana>0
+  -> ja (Kanji-Anteil egal); Ideogramme>10 ohne Kana -> zh; sonst en/de.
+  Restunschaerfe: japanischer Reintext ohne Kana in den ersten 500 Zeichen
+  kann als zh erscheinen (selten; bei Ziel de/en folgenlos, da beide dann
+  ohnehin uebersetzt werden).
+  Problem B: Die alte needsTranslation-Bedingung (vier OR-Zweige) deckte
+  nur de/en-Quelle sowie ja/ko-Ziel ab -> ja/ko-Quelle mit de/en-Ausgabe
+  UND (nach Fix A) zh-Quelle mit de/en-Ausgabe wurden NICHT uebersetzt.
+  Fix: ersetzt durch die eigentliche Regel needsTranslation = Dokument-
+  sprache != Ausgabesprache (outMap bildet Deutsch/English/日本語/한국어 auf
+  de/en/ja/ko ab). Schliesst die ja/ko->de/en-Luecke mit und bindet zh als
+  Quellsprache voll ein. Ausgabesprachen unveraendert nur de/en/ja/ko (kein
+  zh-Ziel). Hinweis: Pass 3 uebersetzt weiterhin nur EINGEFUEGTEN Text
+  (p.docText), nicht hochgeladene Dateien - unveraendert, kein Teil dieses
+  Fixes. Chinesisch-Quelle laeuft ueber den generischen Juristen-Uebersetzer-
+  Prompt (keine zh-spezifische Policy-Regel wie 14.5 fuer EN).
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1175,12 +1196,14 @@ async function runReview(){
 
     // Pass 3 (nur wenn Ausgabesprache ≠ Dokumentsprache): Übersetzung des geprüften Textes
     var translatedText='';
-    var docLangGuess=guessLang(p.docText);
+    var docLangGuess=guessLang(p.docText);          // 'de'|'en'|'ja'|'ko'|'zh'
+    var outMap={'Deutsch':'de','English':'en','日本語':'ja','한국어':'ko'};
+    var outLang=outMap[p.lang]||'de';
     var outputLangCode=p.lang;
-    var needsTranslation=(outputLangCode!=='Deutsch'&&docLangGuess==='de')||
-                         (outputLangCode!=='English'&&docLangGuess==='en')||
-                         (outputLangCode==='日本語'&&docLangGuess!=='ja')||
-                         (outputLangCode==='한국어'&&docLangGuess!=='ko');
+    // Uebersetzung des Originaldokuments, sobald Dokument- und Ausgabesprache
+    // verschieden sind. Deckt jetzt zh-Quelle sowie ja/ko-Quelle -> de/en mit
+    // ab (fruehere Luecken). Ausgabesprachen nur de/en/ja/ko (kein zh-Ziel).
+    var needsTranslation=!!p.docText && docLangGuess!==outLang;
     if(needsTranslation&&p.docText){
       resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 3 von 3 – Übersetzung in '+outputLangCode+'…</p></div></div></div>';
       var transBody={
@@ -1250,10 +1273,12 @@ function forceRestoreBlock(text,sourceText,modKey){
 function guessLang(text){
   if(!text||text.length<20)return 'de';
   var t=text.substring(0,500);
-  var jaChars=(t.match(/[\u3040-\u30ff\u4e00-\u9faf]/g)||[]).length;
+  var kana=(t.match(/[\u3040-\u30ff]/g)||[]).length;   // Hiragana + Katakana => eindeutig Japanisch
+  var ideo=(t.match(/[\u4e00-\u9faf]/g)||[]).length;   // CJK-Ideogramme: Japanisch UND Chinesisch
   var koChars=(t.match(/[\uAC00-\uD7A3]/g)||[]).length;
   if(koChars>5)return 'ko';
-  if(jaChars>10)return 'ja';
+  if(kana>0)return 'ja';                               // Kana vorhanden => Japanisch (Kanji-Anteil egal)
+  if(ideo>10)return 'zh';                              // Ideogramme OHNE Kana => Chinesisch
   var enWords=(t.match(/\b(the|and|of|to|in|is|it|that|for|on|are|with|as|this|be)\b/gi)||[]).length;
   var deWords=(t.match(/\b(der|die|das|und|in|von|zu|den|mit|auf|ist|des|ein|ich|wir|Sie)\b/gi)||[]).length;
   if(enWords>deWords)return 'en';
