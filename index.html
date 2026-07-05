@@ -400,6 +400,24 @@
   (Buttons je <li>), renderResult (reset + feedback-bar + updateFeedbackBar),
   runReview (lastReviewMeta). Grave-Erkennung/Top-5-Netz/Modul-Struktur
   unveraendert. Node-getestet: buildFeedbackText, Status-Toggle, mailto-Laenge.
+
+  --- BUILD 05.07.2026 (UX-Feinschliff, 6 Punkte) ---
+  P1: Status-Buttons in Modul C (Termine & Fristen) jetzt rechtsbuendig
+  (Inhalts-Span flex:1) statt direkt nach dem Termin - konsistent mit der
+  Status-Spalte von Modul A/B. Modul C bleibt Liste (kein Tabellen-Umbau).
+  P2: Modul-B-Titel 'Inhaltliche Vollstaendigkeit + Uebersehenes' -> nur
+  'Inhaltliche Vollstaendigkeit' (wirkt auch auf das Feedback-Mail-Label).
+  P3: Ausdrueckliche KEIN-FEHLER-Ausnahme ergaenzt: 'jeder/jede/jedes' +
+  Substantiv im gepruefen Dokument (z.B. 'jeder Vertragspartner') ist KEIN
+  Befund und kein Verstoss gegen 10.9; 'ein/e' ist dort nicht besser. Die
+  interne Spalte-2/3-Regel 'Keine jede/r/s' bleibt unveraendert (betrifft nur
+  die Eigenformulierung des Tools, nicht den gepruefen Text).
+  P4: Placeholder doctext 'Text hier einfuegen...' -> 'Zu pruefenden Text
+  hier einfuegen...'.
+  P5: Dropzone 'Dateien hochladen oder hierher ziehen' -> 'Zu pruefende
+  Dateien hochladen oder hierher ziehen'.
+  P6: Feld Vorkorrespondenz/Sachverhalt min-height 80px -> 160px (gleich
+  gross wie das Feld fuer den zu pruefenden Text).
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -617,13 +635,13 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
     </div>
 
     <div class="field">
-      <textarea id="doctext" style="min-height:160px" placeholder="Text hier einfügen…"></textarea>
+      <textarea id="doctext" style="min-height:160px" placeholder="Zu prüfenden Text hier einfügen…"></textarea>
     </div>
 
     <div class="field">
       <div class="upload-area" id="upload-area">
         <input type="file" id="file-input" multiple="" accept=".pdf,.docx,.txt,.doc">
-        <p><strong>Dateien hochladen</strong> oder hierher ziehen</p>
+        <p><strong>Zu prüfende Dateien hochladen</strong> oder hierher ziehen</p>
         <p style="font-size:11px;margin-top:3px">PDF, DOCX, TXT</p>
       </div>
       <div class="file-list" id="file-list"></div>
@@ -694,7 +712,7 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
 
     <div class="field">
       <label class="field-label">Vorkorrespondenz / Sachverhalt <span class="opt">optional, aber für inhaltliche Prüfung entscheidend</span></label>
-      <textarea id="historie" style="min-height:80px" placeholder="Kurze Zusammenfassung ODER die gesamte bisherige Korrespondenz im Original (beides funktioniert gleich gut): Was wurde bisher besprochen? Welche Fragen hat der Klient gestellt? Was haben wir dem Klienten gefragt oder erbeten? Was ist der Hintergrund?"></textarea>
+      <textarea id="historie" style="min-height:160px" placeholder="Kurze Zusammenfassung ODER die gesamte bisherige Korrespondenz im Original (beides funktioniert gleich gut): Was wurde bisher besprochen? Welche Fragen hat der Klient gestellt? Was haben wir dem Klienten gefragt oder erbeten? Was ist der Hintergrund?"></textarea>
     </div>
 
     <div class="field">
@@ -1126,7 +1144,7 @@ auslandHinweis+'\n'+
 '– § und §§ verwenden (nie "Paragraph").\n'+
 '– Verjährung nur flaggen wenn realistisches Risiko besteht.\n'+
 '– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern. Gravierende Befunde (insbesondere ein Satz mit 30 oder mehr Wörtern) zählen IMMER zu den schlimmsten und werden NIE durch den Top-5-Deckel weggelassen.\n'+
-'– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung. Die Adresse von TAIYO Offices in der Schreibweise "Schwedenpl.5 (Eing. Dominikanerb.21)" – diese abgekürzte Form ist eine Ausnahme von Punkt 10.9 und KEIN Befund. Eine Einleitung mit Wohlbefinden-Wunsch ("We hope you are doing well.", "Wir hoffen, es geht Ihnen gut.") ist als E-Mail-Einleitung grundsätzlich zulässig (Punkt 10.8) – nur im konkreten Einzelfall ausnahmsweise unpassend, sonst nie ein Befund.\n'+
+'– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung. Die Adresse von TAIYO Offices in der Schreibweise "Schwedenpl.5 (Eing. Dominikanerb.21)" – diese abgekürzte Form ist eine Ausnahme von Punkt 10.9 und KEIN Befund. Eine Einleitung mit Wohlbefinden-Wunsch ("We hope you are doing well.", "Wir hoffen, es geht Ihnen gut.") ist als E-Mail-Einleitung grundsätzlich zulässig (Punkt 10.8) – nur im konkreten Einzelfall ausnahmsweise unpassend, sonst nie ein Befund. Eine "jeder/jede/jedes"-Formulierung im gepruefen Dokument (z.B. "jeder Vertragspartner", "jede Frist") ist KEIN Befund und insbesondere KEIN Verstoss gegen Punkt 10.9; "ein/e" ist dort nicht besser als "jeder/jede".\n'+
 '– VERSCHÄRFTE BELEGPFLICHT (Punkt 14.3): Jede Warnung an den Klienten vor Rechtsfolgen (Haftung, Verwaltungsstrafe, gerichtliche Strafe) ist eine "wichtige Aussage" im Sinne Punkt 14.3 und muss zwingend einen Beleg in Klammer haben. Fehlt der Beleg bei einer solchen Warnung: das ist ein gewichtiger Befund, nicht lässlich.\n'+
 '– Achte auf gute Sprache in deinem eigenen Output: öffne nie eine Klammer oder ein Anführungszeichen ohne es auch zu schließen.\n\n'+
 
@@ -1560,7 +1578,7 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
     ['Textausschnitt','Problem <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag <span style="font-weight:400;font-size:10px;color:#a0b0d0">(siehe aber Punkte 2.6, 2.4 der Policy)</span>'],
     false);
 
-  html+=renderModule(raw,'MODUL_B','Inhaltliche Vollständigkeit + Übersehenes',
+  html+=renderModule(raw,'MODUL_B','Inhaltliche Vollständigkeit',
     ['Bereich','Befund','Empfehlung <span style="font-weight:400;font-size:10px;color:#a0b0d0">(siehe aber Punkte 2.6, 2.4 der Policy)</span>'],false);
 
   html+=renderFristen(raw);
@@ -1817,7 +1835,7 @@ function renderFristen(raw){
     else if(hasAny(['interessent','prospect','見込','잠재']))badgeClass='urgenz-interessent';
     else if(hasAny(['physisch','physical','in person','on-site','vor ort','対面','대면']))badgeClass='physisch';
     html+='<li id="row-'+fid+'" data-fid="'+fid+'"'+(grave?' style="background:#fff5f5"':'')+'><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
-    html+='<span><strong>'+escHtml(bezeichnung)+'</strong>';
+    html+='<span style="flex:1;min-width:0"><strong>'+escHtml(bezeichnung)+'</strong>';
     if(datum)html+=' <span style="color:#888;font-size:12px">→ '+escHtml(datum)+'</span>';
     if(hinweis)html+='<br><span style="font-size:11px;color:#888;margin-top:2px;display:block">'+escHtml(hinweis)+'</span>';
     html+='</span>'+statusButtonsDiv(fid)+'</li>';
