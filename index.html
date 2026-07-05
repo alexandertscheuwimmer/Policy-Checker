@@ -99,8 +99,10 @@
 
   --- BEKANNTER OFFENER BUG (Stand 25.06.2026) ---
   Modul C (Gerichtsfrist) fehlte bereits im Pass-1-Output, vor jeglichem
-  Parsing. Diagnose-Logging (console.log/console.warn mit rohem
-  Pass-1-Output und stop_reason) ist eingebaut, Ursache noch NICHT final
+  Parsing. Diagnose-Logging: Block-Praesenz (MODUL_A/B/C true/false) +
+  stop_reason via console.log/console.warn IMMER aktiv; der VOLLE rohe
+  Pass-1-Output nur bei Aufruf mit ?debug=1 (DEBUG_LOG_FULL_OUTPUT,
+  Standard AUS, siehe BUILD 05.07.2026). Ursache noch NICHT final
   bestätigt behoben.
 
   --- BUILD-ITEMS A–H (Status zuletzt geprüft 25.06.2026) ---
@@ -249,6 +251,20 @@
   3. Uebersetzung (Pass 3) ist in try/catch gekapselt – ein Fehler dort
      bricht die Pruefung nicht mehr ab.
   4. Klarere Fehleranzeige bei Timeout/Netzfehler.
+
+  --- BUILD 05.07.2026 (Vertraulichkeit: Roh-Output-Logging, Punkt 4) ---
+  Problem: console.log des VOLLSTAENDIGEN rohen Pass-1-Outputs (enthaelt
+  Mandantendokument-Inhalt inkl. woertlicher Textausschnitte) lief bei
+  JEDER Pruefung ungefiltert in die Browser-Konsole. Fix: hinter Debug-
+  Flag DEBUG_LOG_FULL_OUTPUT gelegt, Standard AUS. Aktivierung nur per
+  Aufruf mit ?debug=1 (URLSearchParams, aufrufgebunden, nicht persistent).
+  Die reine Block-Praesenz-Diagnose (MODUL_A/B/C true/false + stop_reason
+  via console.log/console.warn) bleibt IMMER aktiv (nicht vertraulich) und
+  dient weiter als Frueherkennung des offenen Modul-C-Bugs: zeigt sie
+  MODUL_C:false, Seite mit ?debug=1 neu laden und Pruefung zur Volldiagnose
+  wiederholen. Reiner Schutz-/Diagnose-Diff: KEINE Aenderung an Modell
+  (claude-opus-4-8/claude-sonnet-5), Aufwand/effort, Streaming, max_tokens,
+  Modullogik, forceRestoreBlock oder Prompts.
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -962,6 +978,13 @@ auslandHinweis+'\n'+
 // ─── Proxy URL (Cloudflare Worker) ───────────────────────────────────
 var PROXY_URL = 'https://taiyo-review-proxy.a-scheuwimmer.workers.dev';
 
+// DEBUG_LOG_FULL_OUTPUT: steuert, ob der VOLLE rohe Pass-1-Output (enthaelt
+// Mandantendokument-Inhalt) in die Browser-Konsole geloggt wird. Standard AUS
+// (Vertraulichkeit, Punkt 4). Nur zur Diagnose des offenen Modul-C-Bugs: Seite
+// mit ?debug=1 aufrufen, dann ist es NUR fuer diesen Aufruf aktiv (nicht persistent).
+var DEBUG_LOG_FULL_OUTPUT=false;
+try{DEBUG_LOG_FULL_OUTPUT=new URLSearchParams(location.search).get('debug')==='1';}catch(e){}
+
 // ─── Run review ──────────────────────────────────────────────────────
 // ─── SSE-Streaming-Antwort lesen ─────────────────────────────────────
 // Liest eine gestreamte Anthropic-Antwort (stream:true) und sammelt den
@@ -1086,7 +1109,11 @@ async function runReview(){
 
     // DIAGNOSE Modul C: rohen Pass-1-Output und Block-Praesenz protokollieren.
     // In der Browser-Konsole (F12) pruefbar, ob Modul C schon im Pass-1-Output fehlt.
-    console.log('=== TAIYO ReviewAssistant – ROHER PASS-1-OUTPUT ===\n'+pass1Text);
+    // VERTRAULICHKEIT (Punkt 4): Der volle Pass-1-Output enthaelt Mandanten-
+    // dokument-Inhalt und wird daher NUR bei ?debug=1 geloggt (Standard AUS).
+    if(DEBUG_LOG_FULL_OUTPUT){
+      console.log('ROHER PASS-1-OUTPUT (Debug-Modus):\n'+pass1Text);
+    }
     console.log('Pass 1 – MODUL_A:',pass1Text.indexOf('===MODUL_A_START===')>=0,
                 '| MODUL_B:',pass1Text.indexOf('===MODUL_B_START===')>=0,
                 '| MODUL_C:',pass1Text.indexOf('===MODUL_C_START===')>=0,
