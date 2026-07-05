@@ -286,6 +286,20 @@
   (p.docText), nicht hochgeladene Dateien - unveraendert, kein Teil dieses
   Fixes. Chinesisch-Quelle laeuft ueber den generischen Juristen-Uebersetzer-
   Prompt (keine zh-spezifische Policy-Regel wie 14.5 fuer EN).
+
+  --- BUILD 05.07.2026 (Top-5-Deckel Modul A als Code-Sicherheitsnetz) ---
+  Bisher hing der Top-5-Deckel (max. 5 Modul-A-Befunde) NUR am Systemprompt;
+  kein Code erzwang ihn - anders als beim 30-Woerter-Netz. Jetzt determi-
+  nistisches Netz in renderModule (nur MODUL_A), VOR der Render-Schleife:
+  klassifiziert jede Zeile (gravierend = fuehrendes [!] ODER maxSentence-
+  WordCount>=30, exakt wie die Render-Schleife) und kuerzt bei mehr als 5
+  gueltigen Befunden. Variante (a): ALLE gravierenden bleiben immer erhalten;
+  gekuerzt wird nur unter den laesslichen (Budget = 5 minus Anzahl
+  gravierender; die spaetesten laesslichen ueber Budget entfallen). Folge:
+  bei mehr als 5 gravierenden hat der Bericht bewusst mehr als 5 Zeilen -
+  ein 30+-Woerter-Befund wird NIE durch den Deckel entfernt (konsistent zur
+  Leitstern-Regel). Gilt ausschliesslich fuer Modul A; Modul B/C unberuehrt.
+  Die Render-Schleife selbst bleibt byte-identisch (Netz nur vorgeschaltet).
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1393,6 +1407,35 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
   if(lines.length===0){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Kein Befund.</div>';
     html+='</div>';return html;
+  }
+
+  // TOP-5-DECKEL (nur Modul A) - deterministisches Sicherheitsnetz zur
+  // Prompt-Regel 'hoechstens 5 Modul-A-Befunde'. Haelt sich das Modell nicht
+  // daran, kuerzen wir hier - aber NUR unter den laesslichen Befunden: ALLE
+  // gravierenden ([!] bzw. 30+-Woerter-Satz) bleiben erhalten (Variante a),
+  // der Bericht darf also >5 Zeilen haben, wenn es >5 gravierende gibt.
+  // Verworfen werden die spaetesten laesslichen Befunde oberhalb des Budgets
+  // (5 minus Anzahl gravierender). Grave-Erkennung spiegelt exakt die
+  // Render-Schleife unten (fuehrendes [!] bzw. maxSentenceWordCount>=30).
+  if(modKey==='MODUL_A'){
+    var classified=lines.map(function(l){
+      var g=/^\s*\[!\]\s*/.test(l);
+      var cols=l.replace(/^\s*\[!\]\s*/,'').split('|||');
+      var valid=cols.length>=2;
+      if(!g&&valid&&maxSentenceWordCount(cols[0])>=30)g=true;
+      return {line:l,grave:g,valid:valid};
+    });
+    var validCount=0;classified.forEach(function(c){if(c.valid)validCount++;});
+    if(validCount>5){
+      var graveCount=0;classified.forEach(function(c){if(c.valid&&c.grave)graveCount++;});
+      var venialBudget=Math.max(0,5-graveCount);
+      lines=classified.filter(function(c){
+        if(!c.valid)return true;
+        if(c.grave)return true;
+        if(venialBudget>0){venialBudget--;return true;}
+        return false;
+      }).map(function(c){return c.line;});
+    }
   }
 
   html+='<table class="review-table"><thead><tr>';
