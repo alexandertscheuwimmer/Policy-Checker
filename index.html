@@ -378,6 +378,28 @@
   Getestet in Node: decodeBase64Text (UTF-8 + windows-1252-Fallback),
   maxSentenceWordCount (Abkuerzungen/Daten/Mehrsatz), Regression aller
   frueheren Suiten. Invarianten unveraendert.
+
+  --- BUILD 05.07.2026 (Feedback-Loop / Selbstoptimierung) ---
+  Neben jedem Befund (Modul A, B UND C) drei sich gegenseitig ausschliessende
+  Status-Buttons: Umgesetzt / Falsch / zur Kenntnis genommen (Labels in
+  FB_LABELS, leicht aenderbar). Erneuter Klick auf denselben Status hebt ihn
+  auf. Bearbeitete Zeilen werden optisch gedimmt (Umgesetzt zusaetzlich
+  durchgestrichen). Zweck: (a) UI hilft, alle Befunde abzuarbeiten; (b) als
+  'Falsch' markierte Befunde werden gesammelt und koennen als E-Mail an
+  FEEDBACK_EMAIL (a.scheuwimmer@taiyolegal.at) gesendet werden, um Systemprompt/
+  Policy nachzuschaerfen. Nur 'Falsch' fliesst in die Mail; 'zur Kenntnis
+  genommen' = Befund richtig, aber bewusst nicht umgesetzt -> NICHT in die Mail.
+  Zustand rein clientseitig in reviewFindings (kein Server/keine DB; bei
+  jedem neuen Bericht via renderResult zurueckgesetzt). E-Mail via mailto:
+  (kein neuer Dienst noetig); bei > ~1900 Zeichen mailto-Fallback auf
+  Klemmbrett + Hinweis. Zusaetzlich 'Text kopieren' (unbegrenzt). Feedback-
+  Mail enthaelt Dokumenttyp/Sprache (lastReviewMeta) + je Befund Modul,
+  Gravitaet und Spalten. HINWEIS: Die Mail enthaelt zwangslaeufig woertliche
+  Textausschnitte (Spalte 1) - Empfaenger ist der Kanzleiinhaber selbst.
+  Aenderungen: renderModule (Status-Spalte + Befunderfassung), renderFristen
+  (Buttons je <li>), renderResult (reset + feedback-bar + updateFeedbackBar),
+  runReview (lastReviewMeta). Grave-Erkennung/Top-5-Netz/Modul-Struktur
+  unveraendert. Node-getestet: buildFeedbackText, Status-Toggle, mailto-Laenge.
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -522,6 +544,24 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 
 /* Pass indicator */
 .pass-indicator{font-size:11px;color:rgba(255,255,255,.7);font-weight:400}
+/* Feedback-Loop: Status-Buttons je Befund + optische Abarbeitung */
+.status-col{white-space:nowrap;width:1%;vertical-align:top}
+.st-btns{display:flex;gap:3px;flex-wrap:wrap}
+.st-btn{font-size:10px;line-height:1.2;padding:2px 7px;border:1px solid #d8d8d8;border-radius:9px;background:#fff;color:#777;cursor:pointer;user-select:none;white-space:nowrap}
+.st-btn:hover{border-color:#999;color:#333}
+.st-btn.active{color:#fff;font-weight:600;border-color:transparent}
+.st-btn.umgesetzt.active{background:#2a7a2a}
+.st-btn.falsch.active{background:#c00}
+.st-btn.kenntnis.active{background:#888}
+tr.st-umgesetzt td,li.st-umgesetzt{opacity:.5}
+tr.st-umgesetzt td:first-child{text-decoration:line-through}
+tr.st-falsch td,li.st-falsch{opacity:.62}
+tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
+.feedback-bar{margin-top:18px;border-top:1px solid #eee;padding-top:12px;font-size:12.5px;color:#555;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.feedback-bar .fb-count{color:#777}
+.fb-btn{font-size:12px;padding:6px 12px;border-radius:6px;border:1px solid #1F3865;background:#1F3865;color:#fff;cursor:pointer}
+.fb-btn:hover{background:#16283f}
+.fb-btn.secondary{background:#fff;color:#1F3865}
 </style>
 </head>
 <body>
@@ -688,6 +728,10 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 // ─── Stored files ───────────────────────────────────────────────────
 var storedFiles = []; // [{name, base64, type}] bzw. {name, type:'docx', extractedText}
 var pendingExtractions=0; // Fix 4: laufende Datei-Lesevorgaenge (sofortiges UI-Feedback + Pruef-Sperre)
+var reviewFindings=[];   // Feedback-Loop: je Befund {fid,module,grave,cells,headers,status}
+var lastReviewMeta=null; // {dtype,lang} des letzten Laufs (fuer die Feedback-Mail)
+var FEEDBACK_EMAIL='a.scheuwimmer@taiyolegal.at';   // Ziel der "Falsch"-Feedback-Mail (leicht aenderbar)
+var FB_LABELS={umgesetzt:'Umgesetzt',falsch:'Falsch',kenntnis:'zur Kenntnis genommen'};
 
 // ─── DOCX -> Text (dependency-frei: ZIP-Central-Directory + DecompressionStream) ──
 // Die Anthropic-API akzeptiert als document-Block nur application/pdf. DOCX wird daher
@@ -1397,6 +1441,7 @@ async function runReview(){
       }
     }
 
+    lastReviewMeta={dtype:p.dtype,lang:p.lang};
     renderResult(finalText,model,p.lang,translatedText,needsTranslation,buildIntro(p));
     if(truncated){
       resultWrap.insertAdjacentHTML('afterbegin','<div style="background:#fdecea;border-left:3px solid #d33;border-radius:4px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#7a1c14;line-height:1.5">Achtung: Die Antwort war möglicherweise unvollständig (Token-Limit erreicht). Einzelne Befunde oder Fristen könnten fehlen. Bitte das Dokument kürzen oder erneut prüfen; im Wichtig-Modus steht mehr Budget zur Verfügung.</div>');
@@ -1496,6 +1541,7 @@ function renderVorab(raw){
 
 // ─── Render result ───────────────────────────────────────────────────
 function renderResult(raw,model,lang,translatedText,showTranslation,intro){
+  reviewFindings=[];   // Feedback-Loop: bei jedem neuen Bericht zuruecksetzen
   var html='<div class="result-card">';
   var passLabel=showTranslation?'Drei-Pass':'Zwei-Pass';
   html+='<div class="result-header">Prüfbericht<span class="pass-indicator">'+model+' · '+passLabel+'</span></div>';
@@ -1527,8 +1573,106 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
     html+='</div>';
   }
 
+  html+='<div id="feedback-bar" class="feedback-bar"></div>';
   html+='</div></div>';
   document.getElementById('result-wrap').innerHTML=html;
+  updateFeedbackBar();
+}
+
+// ─── Feedback-Loop (BUILD 05.07.2026 Runde 3) ──────────────────────────────
+// Je Befund drei sich gegenseitig ausschliessende Status: Umgesetzt / Falsch /
+// zur Kenntnis genommen. "Falsch"-Befunde koennen als E-Mail an FEEDBACK_EMAIL
+// gesammelt werden, um Systemprompt/Policy nachzuschaerfen.
+function statusButtonsDiv(fid){
+  return '<div class="st-btns">'+
+    '<button type="button" id="btn-'+fid+'-umgesetzt" class="st-btn umgesetzt" onclick="setFindingStatus(\''+fid+'\',\'umgesetzt\')">'+FB_LABELS.umgesetzt+'</button>'+
+    '<button type="button" id="btn-'+fid+'-falsch" class="st-btn falsch" onclick="setFindingStatus(\''+fid+'\',\'falsch\')">'+FB_LABELS.falsch+'</button>'+
+    '<button type="button" id="btn-'+fid+'-kenntnis" class="st-btn kenntnis" onclick="setFindingStatus(\''+fid+'\',\'kenntnis\')">'+FB_LABELS.kenntnis+'</button>'+
+    '</div>';
+}
+
+function setFindingStatus(fid,status){
+  var f=null;
+  for(var i=0;i<reviewFindings.length;i++){ if(reviewFindings[i].fid===fid){ f=reviewFindings[i]; break; } }
+  if(!f)return;
+  f.status=(f.status===status)?'':status;   // erneuter Klick auf denselben Status hebt ihn auf
+  var row=document.getElementById('row-'+fid);
+  if(row){
+    row.classList.remove('st-umgesetzt','st-falsch','st-kenntnis');
+    if(f.status)row.classList.add('st-'+f.status);
+  }
+  ['umgesetzt','falsch','kenntnis'].forEach(function(st){
+    var b=document.getElementById('btn-'+fid+'-'+st);
+    if(b)b.classList.toggle('active',f.status===st);
+  });
+  updateFeedbackBar();
+}
+
+function buildFeedbackText(){
+  var falsch=reviewFindings.filter(function(f){return f.status==='falsch';});
+  var out=[];
+  out.push('Betrifft: ReviewAssistant – als (vermeintlich) FALSCH markierte Befunde.');
+  if(lastReviewMeta){ out.push('Geprueftes Dokument: '+lastReviewMeta.dtype+' | Ausgabesprache: '+lastReviewMeta.lang); }
+  out.push('Datum: '+new Date().toLocaleDateString('de-AT'));
+  out.push('');
+  out.push('Folgende Befunde bitte im ReviewAssistant (Systemprompt/Policy) pruefen und ggf. anpassen:');
+  out.push('');
+  falsch.forEach(function(f,idx){
+    out.push((idx+1)+'. ['+f.module+(f.grave?' – gravierend':'')+']');
+    f.cells.forEach(function(c,i){
+      if(!c)return;
+      var label=(f.headers&&f.headers[i]?f.headers[i]:'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+      out.push('   '+(label?label+': ':'')+c);
+    });
+    out.push('');
+  });
+  out.push('(Automatisch aus dem ReviewAssistant erzeugt.)');
+  return out.join('\n');
+}
+
+function updateFeedbackBar(){
+  var bar=document.getElementById('feedback-bar');
+  if(!bar)return;
+  var total=reviewFindings.length;
+  var handled=reviewFindings.filter(function(f){return f.status;}).length;
+  var falsch=reviewFindings.filter(function(f){return f.status==='falsch';}).length;
+  if(total===0){ bar.innerHTML=''; return; }
+  var h='<span class="fb-count">'+handled+' von '+total+' Befunden bearbeitet'+(falsch?' · '+falsch+' als falsch markiert':'')+'</span>';
+  if(falsch>0){
+    h+='<button type="button" class="fb-btn" onclick="sendFeedbackEmail()">Falsch-Befunde als E-Mail an '+FEEDBACK_EMAIL+'</button>';
+    h+='<button type="button" class="fb-btn secondary" onclick="copyFeedbackText()">Text kopieren</button>';
+  } else {
+    h+='<span style="color:#aaa;font-size:11.5px">Als "Falsch" markierte Befunde lassen sich als Feedback-Mail sammeln.</span>';
+  }
+  bar.innerHTML=h;
+}
+
+function sendFeedbackEmail(){
+  var body=buildFeedbackText();
+  var subject='ReviewAssistant – falsche Befunde ('+new Date().toLocaleDateString('de-AT')+')';
+  var url='mailto:'+FEEDBACK_EMAIL+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  if(url.length>1900){
+    // mailto-Laengenlimit mancher Browser -> Klemmbrett-Fallback
+    copyFeedbackText(true);
+    alert('Es sind sehr viele Befunde als falsch markiert – der E-Mail-Entwurf waere fuer manche Programme zu lang. Der vollstaendige Text wurde daher in die Zwischenablage kopiert; bitte in eine E-Mail an '+FEEDBACK_EMAIL+' einfuegen.');
+    return;
+  }
+  window.location.href=url;
+}
+
+function copyFeedbackText(silent){
+  var text=buildFeedbackText();
+  function done(){ if(!silent)alert('Die als falsch markierten Befunde wurden in die Zwischenablage kopiert.'); }
+  function fallback(){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta); done();
+    }catch(e){ if(!silent)alert('Kopieren war nicht moeglich. Bitte den Text manuell markieren und kopieren.'); }
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(fallback); }
+  else { fallback(); }
 }
 
 function renderModule(raw,modKey,modTitle,headers,isFristen){
@@ -1592,6 +1736,7 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
 
   html+='<table class="review-table"><thead><tr>';
   headers.forEach(function(h){html+='<th>'+h+'</th>';});
+  html+='<th class="status-col">Status</th>';
   html+='</tr></thead><tbody>';
 
   lines.forEach(function(line){
@@ -1603,15 +1748,19 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
     // Sicherheitsnetz: Ein Satz mit 30+ Woertern im Textausschnitt ist immer gravierend (Modul A),
     // auch wenn das Modell das "[!]" vergessen hat.
     if(!grave && modKey==='MODUL_A' && maxSentenceWordCount(parts[0])>=30){grave=true;}
-    html+='<tr'+(grave?' class="grave"':'')+'>';
-    parts.forEach(function(p,i){
+    var cells=parts.map(function(p){
       var cell=p.trim().replace(/^:\s*/,'');
       cell=cell.replace(/^4[ab]\s*[-–—]\s*/i,'');
-      cell=cell.replace(/\[!\]/g,'').trim();
-      html+='<td>'+escHtml(cell)+'</td>';
+      return cell.replace(/\[!\]/g,'').trim();
     });
+    // Feedback-Loop: jeden Befund erfassen (eindeutige fid ueber laufenden Index)
+    var fid=modKey+'-'+reviewFindings.length;
+    reviewFindings.push({fid:fid,module:modTitle,grave:grave,cells:cells,headers:headers,status:''});
+    html+='<tr id="row-'+fid+'" data-fid="'+fid+'"'+(grave?' class="grave"':'')+'>';
+    cells.forEach(function(cell){ html+='<td>'+escHtml(cell)+'</td>'; });
     // Pad if fewer cols than headers
     for(var i=parts.length;i<headers.length;i++)html+='<td></td>';
+    html+='<td class="status-col">'+statusButtonsDiv(fid)+'</td>';
     html+='</tr>';
   });
 
@@ -1657,6 +1806,8 @@ function renderFristen(raw){
     var typ=parts[1]?parts[1].trim().replace(/\[!\]/g,''):'';
     var datum=parts[2]?parts[2].trim().replace(/\[!\]/g,''):'';
     var hinweis=parts[3]?parts[3].trim().replace(/\[!\]/g,''):'';
+    var fid='MODUL_C-'+reviewFindings.length;
+    reviewFindings.push({fid:fid,module:'Termine & Fristen',grave:grave,cells:[bezeichnung,typ,datum,hinweis],headers:['Bezeichnung','Typ','Datum/Zeitraum','Hinweis'],status:''});
     var badgeClass='urgenz-klient';
     // Fix 5: Badge-Klassifikation auch bei fremdsprachigem Output (en/ja/ko).
     var tl=typ.toLowerCase();
@@ -1665,11 +1816,11 @@ function renderFristen(raw){
     else if(hasAny(['gegner','opponent','counterpart','opposing','相手方','상대방']))badgeClass='urgenz-gegner';
     else if(hasAny(['interessent','prospect','見込','잠재']))badgeClass='urgenz-interessent';
     else if(hasAny(['physisch','physical','in person','on-site','vor ort','対面','대면']))badgeClass='physisch';
-    html+='<li'+(grave?' style="background:#fff5f5"':'')+'><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
+    html+='<li id="row-'+fid+'" data-fid="'+fid+'"'+(grave?' style="background:#fff5f5"':'')+'><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
     html+='<span><strong>'+escHtml(bezeichnung)+'</strong>';
     if(datum)html+=' <span style="color:#888;font-size:12px">→ '+escHtml(datum)+'</span>';
     if(hinweis)html+='<br><span style="font-size:11px;color:#888;margin-top:2px;display:block">'+escHtml(hinweis)+'</span>';
-    html+='</span></li>';
+    html+='</span>'+statusButtonsDiv(fid)+'</li>';
   });
   html+='</ul>';
   html+='<div style="padding:6px 10px 0;font-size:11px;color:#aaa">Alle Termine in den Kalender ALLER Teammitglieder eintragen (Policy 7.8 / 15.2).</div>';
