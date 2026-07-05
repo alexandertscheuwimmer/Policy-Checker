@@ -300,6 +300,21 @@
   ein 30+-Woerter-Befund wird NIE durch den Deckel entfernt (konsistent zur
   Leitstern-Regel). Gilt ausschliesslich fuer Modul A; Modul B/C unberuehrt.
   Die Render-Schleife selbst bleibt byte-identisch (Netz nur vorgeschaltet).
+
+  --- BUILD 05.07.2026 (Modul-B-Gravitaet praezisiert, 2 Massgaben) ---
+  Zwei Praezisierungen der Grave-Definition in MODUL B (Systemprompt,
+  Abschnitt 'Gravierend in MODUL B als FEHLER'):
+  (1) Nicht-stuetzender Rechtssatz ist nur noch dann gravierend, wenn er die
+  Aussage OFFENSICHTLICH nicht stuetzt (genaues Gegenteil oder voellig
+  anderer Sachverhalt). Bloss mittelbare, schwaechere oder unvollstaendige
+  Stuetzung ist ausdruecklich NICHT gravierend (vorher pauschal 'in Wahrheit
+  nicht stuetzt').
+  (2) Verstoss gegen Verwaltungsstrafrecht oder Kriminalstrafrecht wurde von
+  der blossen Beispiel-Aufzaehlung zu einer AUSNAHMSLOSEN Regel hochgestuft:
+  IMMER gravierend ([!]), nicht bloss ein Beispiel.
+  Reine Prompt-Textaenderung in MODUL B; keine Code-/Logikaenderung, kein
+  Einfluss auf MODUL A oder C, Invarianten unberuehrt. Wirkung nur im echten
+  Betrieb pruefbar (kein deterministischer Unit-Test moeglich).
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1002,7 +1017,7 @@ auslandHinweis+'\n'+
 'Stelle einer Zeile die Markierung "[!]" voran (ganz am Zeilenanfang, VOR der ersten Spalte), wenn der Befund ein gravierender, gröberer Fehler ist – niemals bei gewöhnlichen oder lässlichen Befunden. Beispielzeile: "[!]Textausschnitt|||Problem|||Vorschlag". Setze die Markierung grundsätzlich sparsam und nur bei wirklich schwerwiegenden Fällen. AUSNAHME OHNE ERMESSEN: Ein Satz mit 30 oder mehr Wörtern ist AUSNAHMSLOS gravierend und erhält IMMER ein "[!]" – die Anweisung, sparsam zu markieren, gilt hierfür NICHT und darf dieses "[!]" nie verhindern, egal wie viele andere Befunde es gibt. Zähle bei jedem beanstandeten langen Satz die Wörter; ab 30 Wörtern setzt du zwingend ein "[!]".\n'+
 'Gravierend in MODUL A (Policy & Stil) ist z.B.: ein Satz mit 30 oder mehr Wörtern (Punkt 10.9); eine so unhöfliche Aussage, dass sie fast beleidigend wirkt (Punkt 10.8); ein juristischer Fachbegriff, den ein Nicht-Jurist nicht kennt, ohne Erklärung in Klammer (Punkt 10.5); eine Warnung vor Rechtsfolgen ohne den nach Punkt 14.3 zwingenden Beleg.\n'+
 'Gravierend in MODUL B als LÜCKE ist z.B.: der Klient hat mehrfach nach derselben Sache gefragt und immer noch keine Antwort erhalten; eine Frage wurde nur nach einem Gesetz beantwortet, nicht aber nach einem zweiten einschlägigen (z.B. nach dem FBG, aber nicht nach dem GmbHG); eine zwingende einschlägige Norm wurde völlig übersehen (z.B. die Meldepflicht nach dem WiEReG bei einer GmbH-Gründung).\n'+
-'Gravierend in MODUL B als FEHLER ist z.B.: eine Auskunft, die dem Gesetzeswortlaut direkt und eklatant widerspricht (z.B. widerspricht "Die Gesellschaft darf ihre eigenen Gründungskosten uneingeschränkt selbst tragen." direkt dem § 7 GmbHG); eine Auskunft, deren Befolgung verwaltungsstrafrechtliche oder kriminalstrafrechtliche Rechtsfolgen herbeiführt; ein zitierter Rechtssatz oder eine zitierte Entscheidung, die die behauptete Aussage in Wahrheit nicht stützt (Punkt 14.4); eine falsch berechnete Frist, deren Befolgung zum Versäumen einer Gerichtsfrist führt.\n'+
+'Gravierend in MODUL B als FEHLER ist z.B.: eine Auskunft, die dem Gesetzeswortlaut direkt und eklatant widerspricht (z.B. widerspricht "Die Gesellschaft darf ihre eigenen Gründungskosten uneingeschränkt selbst tragen." direkt dem § 7 GmbHG); ein zitierter Rechtssatz oder eine zitierte Entscheidung, die die behauptete Aussage OFFENSICHTLICH nicht stützt, etwa weil sie das genaue Gegenteil aussagt oder einen völlig anderen Sachverhalt betrifft; bloß mittelbare, schwächere oder unvollständige Stützung ist hierfür NICHT gravierend (Punkt 14.4); eine falsch berechnete Frist, deren Befolgung zum Versäumen einer Gerichtsfrist führt. OHNE AUSNAHME und IMMER gravierend (Markierung [!]) ist jede Auskunft, deren Befolgung gegen Verwaltungsstrafrecht oder Kriminalstrafrecht verstößt oder verwaltungsstrafrechtliche bzw. kriminalstrafrechtliche Rechtsfolgen herbeiführt; das gilt ausnahmslos, nicht bloß als Beispiel.\n'+
 'Wichtig: Das "[!]" ist nur eine Markierung – es darf im sichtbaren Text der Spalten NICHT auftauchen, sondern steht ausschließlich ganz am Zeilenanfang.\n\n'+
 'Kein sonstiger einleitender Text. Beginne mit ===VORAB_START===.\n'+
 'Sprache des gesamten Outputs: '+p.lang+'.'+
