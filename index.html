@@ -315,6 +315,32 @@
   Reine Prompt-Textaenderung in MODUL B; keine Code-/Logikaenderung, kein
   Einfluss auf MODUL A oder C, Invarianten unberuehrt. Wirkung nur im echten
   Betrieb pruefbar (kein deterministischer Unit-Test moeglich).
+
+  --- BUILD 05.07.2026 (Review-Runde: 2 Fehler + 4 Verbesserungen) ---
+  Fix 1 (DOCX Tracked Changes): docxToText loeste nachverfolgte Aenderungen
+  nicht auf -> geloeschter UND eingefuegter Text landeten vermischt im Text.
+  Jetzt: <w:del>/<w:moveFrom>-Bloecke (Quelltext) werden entfernt, <w:ins>
+  bleibt -> angenommene Endfassung. Selbstschliessende Marker zuerst, dann
+  Bloecke (sonst Fehlpaarung). DESIGN-ENTSCHEIDUNG: Dokument wird als 'alle
+  Aenderungen angenommen' bewertet (Endfassung), nicht als Redline.
+  Fix 3 (DOCX Fuss-/Endnoten): docxToText las nur word/document.xml; Zitate
+  in word/footnotes.xml/endnotes.xml waren unsichtbar. Jetzt werden sie mit
+  extrahiert und unter '[Fuss-/Endnoten des Dokuments]' angehaengt (Separator-
+  Fussnoten ohne Text fallen leer weg). Gemeinsamer Helfer xmlToText.
+  Fix 2 (Trunkierung sichtbar): stop_reason='max_tokens' aus Pass 1/2/3
+  wurde nur in die Konsole geloggt; der Nutzer sah einen evtl. unvollstaen-
+  digen Bericht (z.B. fehlendes Modul C) ohne Warnung. Jetzt: roter Banner
+  ueber dem Bericht bei Trunkierung (Variable 'truncated'; s2.stopReason wird
+  jetzt ausgewertet).
+  Fix 5 (Uebersetzung bei Uploads): Pass 3 haengte an p.docText und lief
+  daher nie bei hochgeladenen Dateien. Jetzt speist docTextForTranslation
+  auch DOCX-/TXT-Extrakt (PDF hat keinen Clienttext -> weiter ausgenommen).
+  Fix 4 (Prompt-Cap konsistent): 'Maximal 6 Zeilen pro Modul' widersprach der
+  5er-Gewichtung fuer Modul A. Jetzt: 6 fuer B/C, 5 fuer A, gravierende
+  koennen 5 ueberschreiten (deckt sich mit dem Top-5-Code-Netz).
+  Reine Code-/Prompt-Aenderungen; Modell/Aufwand/Streaming/forceRestoreBlock/
+  Modul-A-B-C-Struktur unveraendert. Fix 4 nur im Betrieb pruefbar; Rest per
+  Node getestet (docxToText mit Tracked Changes + Fussnote).
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -635,7 +661,9 @@ async function docxToText(arrayBuffer){
   for(var i=n-22;i>=0 && i>=n-22-65557;i--){ if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;} }
   if(eocd<0) throw new Error('kein ZIP-Endverzeichnis gefunden');
   var cdCount=dv.getUint16(eocd+10,true), cdOffset=dv.getUint32(eocd+16,true);
-  var off=cdOffset, target=null, dec=new TextDecoder('utf-8');
+  var off=cdOffset, dec=new TextDecoder('utf-8');
+  // Zieldateien: Haupttext (Pflicht) + Fuss-/Endnoten (optional; Zitate stehen oft in Fussnoten).
+  var wanted={'word/document.xml':null,'word/footnotes.xml':null,'word/endnotes.xml':null};
   for(var e=0;e<cdCount;e++){
     if(dv.getUint32(off,true)!==0x02014b50) break;
     var method=dv.getUint16(off+10,true);
@@ -645,30 +673,44 @@ async function docxToText(arrayBuffer){
     var commLen=dv.getUint16(off+32,true);
     var lho=dv.getUint32(off+42,true);
     var name=dec.decode(u8.subarray(off+46,off+46+nameLen));
-    if(name==='word/document.xml'){target={method:method,compSize:compSize,lho:lho};break;}
+    if((name in wanted) && wanted[name]===null){ wanted[name]={method:method,compSize:compSize,lho:lho}; }
     off+=46+nameLen+extraLen+commLen;
   }
-  if(!target) throw new Error('word/document.xml nicht gefunden');
-  if(dv.getUint32(target.lho,true)!==0x04034b50) throw new Error('ungültiger lokaler Header');
-  var lNameLen=dv.getUint16(target.lho+26,true), lExtraLen=dv.getUint16(target.lho+28,true);
-  var dataStart=target.lho+30+lNameLen+lExtraLen;
-  var comp=u8.subarray(dataStart,dataStart+target.compSize), xmlBytes;
-  if(target.method===0){ xmlBytes=comp; }
-  else if(target.method===8){
-    if(typeof DecompressionStream==='undefined') throw new Error('Browser unterstützt DecompressionStream nicht');
-    var ds=new DecompressionStream('deflate-raw');
-    var stream=new Response(comp).body.pipeThrough(ds);
-    xmlBytes=new Uint8Array(await new Response(stream).arrayBuffer());
-  } else { throw new Error('unbekannte Kompressionsmethode '+target.method); }
-  var xml=dec.decode(xmlBytes);
-  xml=xml.replace(/<w:tab\b[^>]*\/?>/g,'\t').replace(/<w:br\b[^>]*\/?>/g,'\n').replace(/<w:cr\b[^>]*\/?>/g,'\n');
-  xml=xml.replace(/<\/w:p>/g,'\u0001');
-  var text=xml.replace(/<[^>]+>/g,'')
-    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
-    .replace(/&#(\d+);/g,function(m,d){return String.fromCharCode(parseInt(d,10));})
-    .replace(/&#x([0-9a-fA-F]+);/g,function(m,h){return String.fromCharCode(parseInt(h,16));});
-  var paras=text.split('\u0001').map(function(s){return s.replace(/[ \t]+/g,' ').trim();}).filter(function(s){return s.length;});
-  return paras.join('\n\n');
+  if(!wanted['word/document.xml']) throw new Error('word/document.xml nicht gefunden');
+  async function entryToXml(t){
+    if(dv.getUint32(t.lho,true)!==0x04034b50) throw new Error('ungültiger lokaler Header');
+    var lNameLen=dv.getUint16(t.lho+26,true), lExtraLen=dv.getUint16(t.lho+28,true);
+    var dataStart=t.lho+30+lNameLen+lExtraLen;
+    var comp=u8.subarray(dataStart,dataStart+t.compSize), xmlBytes;
+    if(t.method===0){ xmlBytes=comp; }
+    else if(t.method===8){
+      if(typeof DecompressionStream==='undefined') throw new Error('Browser unterstützt DecompressionStream nicht');
+      var ds=new DecompressionStream('deflate-raw');
+      var stream=new Response(comp).body.pipeThrough(ds);
+      xmlBytes=new Uint8Array(await new Response(stream).arrayBuffer());
+    } else { throw new Error('unbekannte Kompressionsmethode '+t.method); }
+    return dec.decode(xmlBytes);
+  }
+  function xmlToText(xml){
+    // Nachverfolgte Loeschungen/Verschiebungen (Quelltext) ENTFERNEN -> angenommene Endfassung.
+    // Erst selbstschliessende Marker (z.B. geloeschte Absatzmarke), dann Bloecke mit Inhalt.
+    xml=xml.replace(/<w:del\b[^>]*\/>/g,'').replace(/<w:del\b[^>]*>[\s\S]*?<\/w:del>/g,'');
+    xml=xml.replace(/<w:moveFrom\b[^>]*\/>/g,'').replace(/<w:moveFrom\b[^>]*>[\s\S]*?<\/w:moveFrom>/g,'');
+    xml=xml.replace(/<w:tab\b[^>]*\/?>/g,'\t').replace(/<w:br\b[^>]*\/?>/g,'\n').replace(/<w:cr\b[^>]*\/?>/g,'\n');
+    xml=xml.replace(/<\/w:p>/g,'\u0001');
+    var text=xml.replace(/<[^>]+>/g,'')
+      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+      .replace(/&#(\d+);/g,function(m,d){return String.fromCharCode(parseInt(d,10));})
+      .replace(/&#x([0-9a-fA-F]+);/g,function(m,h){return String.fromCharCode(parseInt(h,16));});
+    return text.split('\u0001').map(function(s){return s.replace(/[ \t]+/g,' ').trim();}).filter(function(s){return s.length;});
+  }
+  var bodyParas=xmlToText(await entryToXml(wanted['word/document.xml']));
+  var noteParas=[];
+  if(wanted['word/footnotes.xml']) noteParas=noteParas.concat(xmlToText(await entryToXml(wanted['word/footnotes.xml'])));
+  if(wanted['word/endnotes.xml']) noteParas=noteParas.concat(xmlToText(await entryToXml(wanted['word/endnotes.xml'])));
+  var out=bodyParas.join('\n\n');
+  if(noteParas.length) out+='\n\n[Fuss-/Endnoten des Dokuments]\n'+noteParas.join('\n\n');
+  return out;
 }
 
 // ─── Gepasteten/eingetippten Prüftext normalisieren (verhindert falsche 10.2-Befunde) ──
@@ -1011,7 +1053,7 @@ auslandHinweis+'\n'+
 '[Kurzbeschreibung]|||[Gerichtsfrist/Urgenz Gegner/Urgenz Klient/Urgenz Interessent/Physisch]|||[TT.MM.JJJJ oder Zeitangabe]|||[z.B. auch eine Woche vorher; physisch vor Ort]\n'+
 '===MODUL_C_END===\n\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
-'Maximal 6 Zeilen pro Modul. Nur die wichtigsten Punkte.\n'+
+'Maximal 6 Zeilen pro Modul B und C. Fuer Modul A gilt die Gewichtung oben: hoechstens 5 Befunde (die 5 schwersten); gravierende Befunde ([!]) bleiben aber immer erhalten und koennen diese Zahl im Ausnahmefall ueberschreiten. Nur die wichtigsten Punkte.\n'+
 'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "Compliant", "Compliant.", "OK", "No issues", "Looks good", "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Akzeptabel", "Unauffaellig", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
 'GRAVITAETS-MARKIERUNG (gravierende Befunde hervorheben):\n'+
 'Stelle einer Zeile die Markierung "[!]" voran (ganz am Zeilenanfang, VOR der ersten Spalte), wenn der Befund ein gravierender, gröberer Fehler ist – niemals bei gewöhnlichen oder lässlichen Befunden. Beispielzeile: "[!]Textausschnitt|||Problem|||Vorschlag". Setze die Markierung grundsätzlich sparsam und nur bei wirklich schwerwiegenden Fällen. AUSNAHME OHNE ERMESSEN: Ein Satz mit 30 oder mehr Wörtern ist AUSNAHMSLOS gravierend und erhält IMMER ein "[!]" – die Anweisung, sparsam zu markieren, gilt hierfür NICHT und darf dieses "[!]" nie verhindern, egal wie viele andere Befunde es gibt. Zähle bei jedem beanstandeten langen Satz die Wörter; ab 30 Wörtern setzt du zwingend ein "[!]".\n'+
@@ -1111,18 +1153,21 @@ async function runReview(){
 
   // Build message content
   var content=[];
+  var docTextForTranslation='';   // Fix 5: Klartext fuer Pass-3 (Paste + DOCX/TXT; PDF ausgenommen)
   if(storedFiles.length>0){
     storedFiles.forEach(function(f){
       var mtype=f.type;
       if(mtype==='docx'||typeof f.extractedText==='string'){
         // DOCX: clientseitig extrahierter Text (API akzeptiert docx nicht als document-Block)
         content.push({type:'text',text:'[Datei (DOCX): '+f.name+']\n\n'+(f.extractedText||'')});
+        if(f.extractedText) docTextForTranslation+=(docTextForTranslation?'\n\n':'')+f.extractedText;
       } else if(mtype==='application/pdf'||f.name.match(/\.pdf$/i)){
         content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.base64}});
       } else {
         try{
           var decoded=atob(f.base64);
           content.push({type:'text',text:'[Datei: '+f.name+']\n'+decoded});
+          docTextForTranslation+=(docTextForTranslation?'\n\n':'')+decoded;
         }catch(e){
           content.push({type:'text',text:'[Datei: '+f.name+' – konnte nicht dekodiert werden]'});
         }
@@ -1131,6 +1176,7 @@ async function runReview(){
   }
   if(p.docText){
     content.push({type:'text',text:'ZU PRUEFENDES DOKUMENT:\n\n'+p.docText});
+    docTextForTranslation+=(docTextForTranslation?'\n\n':'')+p.docText;
   }
 
   try{
@@ -1216,6 +1262,7 @@ async function runReview(){
     });
     var s2=await readStream(r2);
     var finalText=s2.text;
+    var truncated=(s1.stopReason==='max_tokens')||(s2.stopReason==='max_tokens');   // Fix 2: Trunkierung sichtbar machen
 
     // SICHERHEITSNETZ: Modul B und C duerfen durch Pass 2 NIEMALS veraendert oder verloren gehen.
     // Wir ersetzen sie hart durch die Originalbloecke aus Pass 1, unabhaengig davon was Pass 2 geliefert hat.
@@ -1225,15 +1272,15 @@ async function runReview(){
 
     // Pass 3 (nur wenn Ausgabesprache ≠ Dokumentsprache): Übersetzung des geprüften Textes
     var translatedText='';
-    var docLangGuess=guessLang(p.docText);          // 'de'|'en'|'ja'|'ko'|'zh'
+    var docLangGuess=guessLang(docTextForTranslation);          // 'de'|'en'|'ja'|'ko'|'zh'
     var outMap={'Deutsch':'de','English':'en','日本語':'ja','한국어':'ko'};
     var outLang=outMap[p.lang]||'de';
     var outputLangCode=p.lang;
     // Uebersetzung des Originaldokuments, sobald Dokument- und Ausgabesprache
     // verschieden sind. Deckt jetzt zh-Quelle sowie ja/ko-Quelle -> de/en mit
     // ab (fruehere Luecken). Ausgabesprachen nur de/en/ja/ko (kein zh-Ziel).
-    var needsTranslation=!!p.docText && docLangGuess!==outLang;
-    if(needsTranslation&&p.docText){
+    var needsTranslation=!!docTextForTranslation && docLangGuess!==outLang;
+    if(needsTranslation&&docTextForTranslation){
       resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 3 von 3 – Übersetzung in '+outputLangCode+'…</p></div></div></div>';
       var transBody={
         model:model,
@@ -1245,7 +1292,7 @@ async function runReview(){
           (outputLangCode!=='Deutsch'?' Verwende KEINE deutschen Begriffe (z.B. "Klient", "Firmenbuch") im Fliesstext – nutze den dortigen Begriff. Fuege nach Fachausdruecken den deutschen Originalbegriff (falls vorhanden) in Klammer und KURSIV hinzu, z.B. "company register extract (*Firmenbuchauszug*)". Muss ein deutscher Begriff ausnahmsweise im Fliesstext stehen, setze ihn kursiv.':'')+
           (outputLangCode==='English'?' Stelle alle Gesetzeszitate gemaess Punkt 14.5 der Policy ins Englische um: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq.; das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB".':'')+
           ' Gib nur den übersetzten Text aus – keinen Kommentar, keine Erklärung.',
-        messages:[{role:'user',content:'ZU ÜBERSETZENDER TEXT:\n\n'+p.docText}]
+        messages:[{role:'user',content:'ZU ÜBERSETZENDER TEXT:\n\n'+docTextForTranslation}]
       };
       try{
         var r3=await fetch(PROXY_URL,{
@@ -1255,6 +1302,7 @@ async function runReview(){
         });
         var s3=await readStream(r3);
         translatedText=s3.text;
+        if(s3.stopReason==='max_tokens') truncated=true;
       }catch(transErr){
         // Uebersetzung ist optional – ein Fehler hier darf die Pruefung nicht abbrechen.
         console.warn('Uebersetzung (Pass 3) fehlgeschlagen:',transErr.message);
@@ -1264,6 +1312,9 @@ async function runReview(){
     }
 
     renderResult(finalText,model,p.lang,translatedText,needsTranslation,buildIntro(p));
+    if(truncated){
+      resultWrap.insertAdjacentHTML('afterbegin','<div style="background:#fdecea;border-left:3px solid #d33;border-radius:4px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#7a1c14;line-height:1.5">Achtung: Die Antwort war möglicherweise unvollständig (Token-Limit erreicht). Einzelne Befunde oder Fristen könnten fehlen. Bitte das Dokument kürzen oder erneut prüfen; im Wichtig-Modus steht mehr Budget zur Verfügung.</div>');
+    }
 
   }catch(err){
     var m=err&&err.message?err.message:String(err);
