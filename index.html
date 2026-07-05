@@ -341,6 +341,43 @@
   Reine Code-/Prompt-Aenderungen; Modell/Aufwand/Streaming/forceRestoreBlock/
   Modul-A-B-C-Struktur unveraendert. Fix 4 nur im Betrieb pruefbar; Rest per
   Node getestet (docxToText mit Tracked Changes + Fussnote).
+
+  --- BUILD 05.07.2026 (2. Review-Runde: 2 Fehler + 4 Verbesserungen) ---
+  Fix 1 (TXT-Mojibake): atob(f.base64) dekodierte TXT-Uploads als Latin-1;
+  UTF-8-Umlaute wurden zu "Ã¤" etc. und der kaputte Text floss auch in
+  guessLang/Uebersetzung. Neue Funktion decodeBase64Text: Bytes -> TextDecoder
+  utf-8 (fatal) -> Fallback windows-1252 -> Fallback Rohstring. UTF-16-
+  Textdateien weiterhin nicht unterstuetzt.
+  Fix 2 (HEUTIGES DATUM - wichtigster Zweck-Fund): Der Systemprompt enthielt
+  NIRGENDS das aktuelle Datum; das Modell kann es nicht wissen. Folgen: Modul C
+  konnte Richtwerte ("2 Wochen") nicht in korrekte konkrete Daten umrechnen
+  (Halluzinationsgefahr Trainingsdatum), 13.8-Ueberfaelligkeitspruefung
+  unmoeglich. Jetzt: buildSystemPrompt berechnet heuteStr (Wochentag,
+  TT.MM.JJJJ) und stellt ihn als erste KONTEXT-Zeile ein; Modul C erhaelt
+  FRISTBERECHNUNG-Absatz (heute als Anker; Hinweis auf faellig/ueberfaellig).
+  NIE entfernen - ohne Datumsanker sind Modul-C-Daten unzuverlaessig.
+  Fix 3 (Satzsegmentierung): maxSentenceWordCount splittete an JEDEM Punkt
+  (auch z.B./bzw./Datumsangaben) -> 30-Woerter-Netz unterempfindlich. Jetzt
+  Satzende nur bei .!? vor Whitespace+Grossbuchstabe/Ziffer oder Textende;
+  :;/Zeilenumbruch bleiben Trenner. Restunschaerfe: Titel (Dr. X) splitten
+  weiter (nur unterempfindlich, nie ueberempfindlich). Betrifft Render-Netz
+  UND Top-5-Netz (gleiche Funktion).
+  Fix 4 (Upload-Feedback): Dateien erschienen erst NACH asynchroner Verar-
+  beitung in der Liste; Klick auf Pruefen in der Zwischenzeit ergab die irre-
+  fuehrende Meldung 'Bitte Text einfuegen...'. Jetzt: pendingExtractions-
+  Zaehler, sofortiger 'Datei wird gelesen...'-Platzhalter in der Liste,
+  runReview blockt mit klarer Meldung solange >0, onerror-Handler an beiden
+  FileReadern.
+  Fix 5 (Fristen-Badges mehrsprachig): renderFristen klassifizierte Badges
+  nur ueber deutsche Schluesselwoerter; bei en/ja/ko-Output fiel alles auf die
+  Klient-Badge zurueck. Jetzt hasAny-Listen mit en/ja/ko-Begriffen (rein
+  kosmetisch, Default weiterhin Klient).
+  Fix 6 (PDF-Groessencheck): PDFs > 30 MB werden vor dem Einlesen mit klarer
+  Meldung abgelehnt (API-Limit 32 MB / 100 Seiten; 30-MB-Schwelle wegen
+  Base64-Overhead).
+  Getestet in Node: decodeBase64Text (UTF-8 + windows-1252-Fallback),
+  maxSentenceWordCount (Abkuerzungen/Daten/Mehrsatz), Regression aller
+  frueheren Suiten. Invarianten unveraendert.
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -650,6 +687,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 <script>
 // ─── Stored files ───────────────────────────────────────────────────
 var storedFiles = []; // [{name, base64, type}] bzw. {name, type:'docx', extractedText}
+var pendingExtractions=0; // Fix 4: laufende Datei-Lesevorgaenge (sofortiges UI-Feedback + Pruef-Sperre)
 
 // ─── DOCX -> Text (dependency-frei: ZIP-Central-Directory + DecompressionStream) ──
 // Die Anthropic-API akzeptiert als document-Block nur application/pdf. DOCX wird daher
@@ -739,7 +777,14 @@ function normalizeReviewText(t){
 function maxSentenceWordCount(t){
   if(!t) return 0;
   var max=0;
-  t.split(/[.!?:;\n]+/).forEach(function(s){
+  // Fix 3 (BUILD 05.07.2026 Runde 2): frueher wurde an JEDEM Punkt gesplittet,
+  // also auch bei "z.B.", "bzw." und in Daten (01.03.2026) - lange Saetze
+  // zerfielen in kurze Fragmente und das 30-Woerter-Netz griff nicht.
+  // Jetzt: Satzende bei .!? nur vor Whitespace+Grossbuchstabe/Ziffer (optional
+  // oeffnende Interpunktion) oder am Textende; : ; und Zeilenumbruch bleiben
+  // Trenner. Restunschaerfe: Titel ("Dr. Scheuwimmer") splitten weiterhin ->
+  // Netz bleibt dort unterempfindlich, nie ueberempfindlich.
+  t.split(/[:;\n]+|[.!?]+(?=\s+["„»(]?[A-ZÄÖÜ0-9])|[.!?]+(?=\s*$)/).forEach(function(s){
     var w=s.trim().split(/\s+/).filter(function(x){return x.length;}).length;
     if(w>max) max=w;
   });
@@ -822,20 +867,32 @@ function handleFiles(files){
     }
     var isDocx=(f.type.indexOf('word')>=0)||/\.docx?$/i.test(f.name);
     if(isDocx){
+      pendingExtractions++;renderFileList();
       var rd=new FileReader();
+      rd.onerror=function(){pendingExtractions--;renderFileList();alert('Datei "'+f.name+'" konnte nicht gelesen werden.');};
       rd.onload=function(ev){
         docxToText(ev.target.result).then(function(txt){
+          pendingExtractions--;
           storedFiles.push({name:f.name,type:'docx',extractedText:txt});
           renderFileList();
         }).catch(function(err){
+          pendingExtractions--;renderFileList();
           alert('DOCX konnte nicht gelesen werden ('+err.message+').\n\nBitte den Text direkt in das Feld einfügen oder die Datei als PDF hochladen.');
         });
       };
       rd.readAsArrayBuffer(f);
     } else {
+      // Fix 6: PDF-Groessencheck VOR dem Einlesen (API-Limit 32 MB / 100 Seiten);
+      // 30 MB Schwelle wegen Base64-Overhead.
+      if((f.type==='application/pdf'||/\.pdf$/i.test(f.name))&&f.size>30*1024*1024){
+        alert('Die PDF-Datei "'+f.name+'" ist groesser als 30 MB und ueberschreitet damit das API-Limit (32 MB, max. 100 Seiten). Bitte die Datei verkleinern oder aufteilen.');return;
+      }
+      pendingExtractions++;renderFileList();
       var reader=new FileReader();
+      reader.onerror=function(){pendingExtractions--;renderFileList();alert('Datei "'+f.name+'" konnte nicht gelesen werden.');};
       reader.onload=function(ev){
         var b64=ev.target.result.split(',')[1];
+        pendingExtractions--;
         storedFiles.push({name:f.name,base64:b64,type:f.type||'application/octet-stream'});
         renderFileList();
       };
@@ -853,6 +910,12 @@ function renderFileList(){
     div.innerHTML='<span>'+escHtml(f.name)+note+'</span><button class="file-remove" onclick="removeFile('+i+')" title="Entfernen">×</button>';
     list.appendChild(div);
   });
+  for(var pi=0;pi<pendingExtractions;pi++){
+    var pdiv=document.createElement('div');
+    pdiv.className='file-item';
+    pdiv.innerHTML='<span style="color:#888;font-style:italic">Datei wird gelesen…</span>';
+    list.appendChild(pdiv);
+  }
 }
 function removeFile(i){storedFiles.splice(i,1);renderFileList();}
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -880,6 +943,19 @@ function clearAll(){
 }
 
 // ─── Build params ────────────────────────────────────────────────────
+// Fix 1 (BUILD 05.07.2026 Runde 2): atob liefert Latin-1-Rohbytes; UTF-8-
+// Umlaute in TXT-Dateien wurden dadurch zu Mojibake ("Ã¤" statt "ä").
+// Jetzt: Bytes sammeln und als UTF-8 dekodieren; ist die Datei kein
+// gueltiges UTF-8 (z.B. echtes Windows-1252), Fallback auf windows-1252.
+// (UTF-16-Textdateien werden weiterhin nicht unterstuetzt.)
+function decodeBase64Text(b64){
+  var bin=atob(b64);
+  var bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  try{return new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch(e){}
+  try{return new TextDecoder('windows-1252').decode(bytes);}catch(e){return bin;}
+}
+
 function buildParams(){
   var rgs=Array.from(document.querySelectorAll('.chip input:checked')).map(function(c){return c.value;});
   var rgFrei=document.getElementById('rg-frei').value.trim();
@@ -905,6 +981,13 @@ function buildParams(){
 
 // ─── System prompt ───────────────────────────────────────────────────
 function buildSystemPrompt(p){
+  // Fix 2 (BUILD 05.07.2026 Runde 2): Das Modell kennt das heutige Datum nicht
+  // von selbst. Ohne diesen Anker kann Modul C Richtwerte ("2 Wochen") nicht in
+  // korrekte konkrete Daten umrechnen und die 13.8-Ueberfaelligkeitspruefung
+  // ist unmoeglich. Wochentag hilft bei Werktags-Fristen.
+  var _wt=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+  var _now=new Date();
+  var heuteStr=_wt[_now.getDay()]+', '+('0'+_now.getDate()).slice(-2)+'.'+('0'+(_now.getMonth()+1)).slice(-2)+'.'+_now.getFullYear();
   var rsvHinweis=p.rsv
     ?'Der Klient hat eine Rechtsschutzversicherung. Beachte: Bei Forderungsbetreibungen Beratungspauschale und Deckung anfragen (Policy 17.3).'
     :'Der Klient hat KEINE Rechtsschutzversicherung.';
@@ -954,6 +1037,7 @@ function buildSystemPrompt(p){
 
   return 'Du bist der TAIYO ReviewAssistant – das interne Qualitaetspruefungstool der Wiener Kanzlei TAIYO Legal – Rechtsanwalts GmbH.\n\n'+
 'KONTEXT:\n'+
+'Heutiges Datum: '+heuteStr+' – verbindlicher Anker fuer alle Fristberechnungen (Modul C) und Ueberfaelligkeits-Pruefungen (z.B. Policy 13.8 Zwischenbericht alle 14 Tage).\n'+
 'Dokumenttyp: '+p.dtype+'\n'+
 'Rechtsgebiet(e): '+p.rgs+'\n'+
 'Klient: '+p.klient+'\n'+
@@ -1025,7 +1109,8 @@ auslandHinweis+'\n'+
 '(a) Gerichts-/Behoerdenfrist: konkretes Datum aus Schriftstueck\n'+
 '(b) Urgenz beim Gegner: Standard 2 Wochen\n'+
 '(c) Urgenz beim Klienten: Dringend = 1-2 Werktage | Standard = 1 Woche | Nicht eilig = 2 Wochen\n'+
-'(d) Urgenz beim Interessenten: Beauftragt = 1-2 Wochen | Keine Antwort = 1-2 Monate | Absage = 6-12 Monate\n\n'+
+'(d) Urgenz beim Interessenten: Beauftragt = 1-2 Wochen | Keine Antwort = 1-2 Monate | Absage = 6-12 Monate\n'+
+'FRISTBERECHNUNG: Verwende fuer alle Berechnungen das heutige Datum aus dem KONTEXT als "heute". Rechne Richtwerte in konkrete Daten (TT.MM.JJJJ) um; ist das massgebliche Ereignis (z.B. Versand, letzte Antwort) aelter, weise darauf hin, wenn eine Urgenz bereits faellig oder ueberfaellig ist.\n\n'+
 'DOPPELKALIENDERUNG (Policy 7.3 letzter Satz): Termine fuer die etwas vorbereitet werden muss (z.B. Schriftsatz, Dokument), auch eine Woche vorher kalendieren.\n'+
 'PHYSISCHE TERMINE (Policy 7.3 erster Satz): Wenn ein Termin physisch stattfindet (Gericht, Behoerde, Antragstellung, Besprechung), in der Liste explizit erwaehnen.\n'+
 'ALLE Termine gehoeren in den Kalender ALLER Teammitglieder (Policy 7.8 und 15.2).\n\n'+
@@ -1137,6 +1222,7 @@ async function runReview(){
     }
   }
   var p=buildParams();
+  if(pendingExtractions>0){alert('Eine hochgeladene Datei wird noch gelesen – bitte einen Moment warten und dann erneut auf "Dokument prüfen" klicken.');return;}
   if(!p.docText&&storedFiles.length===0){alert('Bitte Text einfügen oder Datei hochladen.');return;}
 
   var btn=document.getElementById('submit-btn');
@@ -1165,7 +1251,7 @@ async function runReview(){
         content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.base64}});
       } else {
         try{
-          var decoded=atob(f.base64);
+          var decoded=decodeBase64Text(f.base64);   // Fix 1: UTF-8 statt Latin-1
           content.push({type:'text',text:'[Datei: '+f.name+']\n'+decoded});
           docTextForTranslation+=(docTextForTranslation?'\n\n':'')+decoded;
         }catch(e){
@@ -1572,10 +1658,13 @@ function renderFristen(raw){
     var datum=parts[2]?parts[2].trim().replace(/\[!\]/g,''):'';
     var hinweis=parts[3]?parts[3].trim().replace(/\[!\]/g,''):'';
     var badgeClass='urgenz-klient';
-    if(typ.toLowerCase().indexOf('gericht')>=0||typ.toLowerCase().indexOf('behoerde')>=0||typ.toLowerCase().indexOf('frist')>=0)badgeClass='court';
-    else if(typ.toLowerCase().indexOf('gegner')>=0)badgeClass='urgenz-gegner';
-    else if(typ.toLowerCase().indexOf('interessent')>=0)badgeClass='urgenz-interessent';
-    else if(typ.toLowerCase().indexOf('physisch')>=0)badgeClass='physisch';
+    // Fix 5: Badge-Klassifikation auch bei fremdsprachigem Output (en/ja/ko).
+    var tl=typ.toLowerCase();
+    function hasAny(list){for(var hi=0;hi<list.length;hi++){if(tl.indexOf(list[hi])>=0)return true;}return false;}
+    if(hasAny(['gericht','behoerde','frist','court','deadline','authority','裁判','期限','법원','기한']))badgeClass='court';
+    else if(hasAny(['gegner','opponent','counterpart','opposing','相手方','상대방']))badgeClass='urgenz-gegner';
+    else if(hasAny(['interessent','prospect','見込','잠재']))badgeClass='urgenz-interessent';
+    else if(hasAny(['physisch','physical','in person','on-site','vor ort','対面','대면']))badgeClass='physisch';
     html+='<li'+(grave?' style="background:#fff5f5"':'')+'><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
     html+='<span><strong>'+escHtml(bezeichnung)+'</strong>';
     if(datum)html+=' <span style="color:#888;font-size:12px">→ '+escHtml(datum)+'</span>';
