@@ -35,6 +35,11 @@
   - In E-Mails/Aktenvermerken: bloßer Rechtssatz (z.B. RS0069706) als
     Beleg ausreichend — Gericht/Datum/GZ NICHT verlangen (nur in
     Schriftsätzen/Legal Opinions zwingend).
+  - In INTERNEN AKTENVERMERKEN: juristische Fachbegriffe (auch
+    juristische Abkürzungen und lateinische Fachausdrücke) ohne
+    Erklärung zulässig — dort NIE ein 10.5-Befund, weder lässlich noch
+    gravierend (seit BUILD 09.07.2026; übrige 10.5-Regeln gelten dort
+    weiter).
   - Honorarnote als Anhang erwähnt/beigefügt: Zahlungsfrist/Kontonummer
     müssen NICHT im Haupttext wiederholt werden.
 
@@ -418,6 +423,61 @@
   Dateien hochladen oder hierher ziehen'.
   P6: Feld Vorkorrespondenz/Sachverhalt min-height 80px -> 160px (gleich
   gross wie das Feld fuer den zu pruefenden Text).
+
+  --- BUILD 09.07.2026 (vier Wuensche Dr. Scheuwimmer) ---
+  W1 GESAMTBEWERTUNG BEI BESONDERS MUEHSAMEM TEXT: Neuer DRITTER
+     Vorspann-Ausloeser (3) im Systemprompt. Erscheint im bestehenden
+     VORAB-Block, also unmittelbar nach dem Einleitungssatz "Geprueft
+     wird ..." (amber). Nur bei BESONDERS muehsam geschriebenen Texten,
+     je Muster eine Zeile, ZUSAETZLICH zu den Einzelbefunden in Modul A:
+     (a) mehrere antiquierte Floskeln (Richtwert >=3), (b) mehrere
+     unnoetige Wiederholungen (Richtwert >=3), (c) Themen-Zersplitterung
+     (EIN Thema an >=3 Stellen ODER mehrere Themen an je >=2 Stellen;
+     Thema wird konkret benannt). Formulierung uebernimmt die Dokument-
+     art ("Im E-Mail ...", "Im Schriftsatz ..."), jeder Satz max. 15
+     Woerter. Nur maessig muehsame Texte (z.B. zwei Floskeln) loesen
+     NICHTS aus. Nutzt die bestehende VORAB-Infrastruktur (Pass-2-
+     Durchreichung zeichengenau + forceRestoreBlock) - kein neuer Block,
+     kein neues Rendering, kein Worker-Deploy. Richtwert >=3 fuer
+     (a)/(b) ist Design-Entscheidung Claudes - von Dr. Scheuwimmer noch
+     NICHT ausdruecklich bestaetigt.
+  W2 INTERNER AKTENVERMERK - FACHBEGRIFFE ZULAESSIG: Ausnahme zu Punkt
+     10.5 an drei Stellen verankert: (i) 10.5-Policy-Zeile, (ii)
+     DOKUMENTTYP-REGELN (Interner Aktenvermerk), (iii) Grave-Definition
+     Modul A ("gilt NICHT bei einem internen Aktenvermerk"). Fehlende
+     Erklaerung juristischer Fachbegriffe (auch jur. Abkuerzungen und
+     lateinische Ausdruecke) ist dort NIE ein Befund. Uebrige 10.5-
+     Regeln (nicht-jur. Abkuerzungen; kursiver deutscher Originalbegriff
+     in fremdsprachigen Texten) gelten unveraendert weiter.
+  W3 PUNKT 10.2 NUMMERIERUNG - IMMER FLAGGEN: 10.2-Policy-Zeile um die
+     Nummerierungsregel ergaenzt: zulaessig NUR 1., 2., 3. mit Unter-
+     punkten 1.1, 1.2, 1.3 (1.1.1 usw.); A./B./C., a)/b)/c) bzw.
+     a./b./c., roemische Ziffern, 1)/2)/3) und Mischsysteme sind bei
+     JEDER Dokumentart IMMER ein Befund; mehrere Verstoesse in EINEM
+     Befund buendeln. Ausnahmen: Gesetzes-/Entscheidungszitate (Abs, Z,
+     lit) und Wiedergabe der Nummerierung FREMDER Dokumente. Prompt-
+     Texte zum Top-5-Deckel angepasst (10.2 nie opfern). ZUSAETZLICH
+     deterministisches Netz: der Top-5-Deckel in renderModule verschont
+     jetzt auch Zeilen, deren Spalte 2 "10.2" nennt (Regex
+     /10\.2(?![0-9])/ gegen Fehltreffer wie "10.25" oder "...15.10.
+     2026"; Fehltreffer wirken nur behaltend, nie loeschend; Kennung
+     ueberlebt en/ja/ko-Output, weil die Policy-Nummer formatbedingt in
+     Spalte 2 steht). 10.2-Befunde werden dadurch NICHT automatisch
+     gravierend/[!] - sie sind nur vor dem Deckel geschuetzt.
+  W4 SO-WHAT-PRUEFUNG (PUNKT 13.5) AKTIV: 13.5-Zeile erweitert: JEDE
+     Aussage aktiv auf Relevanz und Aussagegehalt im konkreten Dokument
+     pruefen; eine richtige, aber fuer das Dokument nutzlose Aussage
+     oder eine Aussage, die erkennbar nicht zum Rest passt, ist ein
+     13.5-Befund. Guard gegen Fehlalarme: Anrede, Dank/Bezugnahme,
+     Gruss-/Schlussformeln und Rueckfragen-Angebot sind NIE So-What-
+     Befunde (Punkt 10.8 verlangt diese Elemente).
+  Getestet in Node (deterministisch): Top-5-Netz behaelt eine 10.2-
+  Zeile auch als 6. von 7 laesslichen; Datums-Fehltreffer "15.10.2026"
+  in Spalte 2 schuetzt NICHT; 6 gravierende + 1x 10.2 = alle 7 Zeilen
+  bleiben; buildSystemPrompt enthaelt alle neuen Abschnitte (inkl.
+  Aktenvermerk-Weiche je Dokumenttyp) und alle bisherigen Kernmarker.
+  node --check auf dem Gesamt-Script ok. Modelle/Streaming/max_tokens/
+  forceRestoreBlock/Feldlisten/Feedback-Loop unveraendert.
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1089,7 +1149,8 @@ function buildSystemPrompt(p){
     dtypeRules='DOKUMENTTYP-REGELN (Interner Aktenvermerk):\n'+
       '– Strukturiert: Vorfrage und Hauptfrage, formelle und materielle Frage (Policy 14.8).\n'+
       '– Am Ende Zusammenfassung der Arbeit (Policy 8.7).\n'+
-      '– Rechercheergebnisse immer sofort in Aktenvermerk (Policy 8.7, 14.9).';
+      '– Rechercheergebnisse immer sofort in Aktenvermerk (Policy 8.7, 14.9).\n'+
+      '– Juristische Fachbegriffe (auch juristische Abkuerzungen und lateinische Fachausdruecke) sind hier OHNE Erklaerung zulaessig – fehlende Erklaerungen NIE als Befund flaggen (Ausnahme zu Policy 10.5).';
   } else if(p.dtype.indexOf('Legal Opinion')>=0){
     dtypeRules='DOKUMENTTYP-REGELN (Legal Opinion / Externes Memo):\n'+
       '– Alle Judikaturzitate mit Gericht, Datum und GZ – blosse Rechtsstaetze genuegen NICHT.\n'+
@@ -1118,13 +1179,13 @@ auslandHinweis+'\n'+
 
 'MODUL A – POLICY & STIL:\n'+
 'Prüfe ausschliesslich gegen folgende Policy-Punkte:\n'+
-'10.2: Keine Absaetze mit nur einem Satz. ABSATZ-DEFINITION (wichtig gegen Fehlalarme): Ein Absatz ist ein durch eine LEERZEILE abgetrennter Textblock. Mehrere aufeinanderfolgende Saetze OHNE Leerzeile dazwischen bilden EINEN Absatz – unabhaengig von der Satzanzahl und unabhaengig von einem einfachen Zeilenumbruch. Werte einen einfachen Zeilenumbruch NICHT als Absatzgrenze. Flagge 10.2 nur, wenn ein durch Leerzeilen klar abgegrenzter Absatz tatsaechlich nur einen einzigen Satz enthaelt; im Zweifel KEIN 10.2-Befund. Schlage ein Zusammenfuehren von Absaetzen nur vor, wenn wirklich mehrere durch Leerzeilen getrennte Ein-Satz-Absaetze vorliegen. Chronologische Gliederung. Datum IMMER im Format TT.MM.JJJJ – flagge jedes andere Datumsformat im geprueften Dokument (z.B. "1. Maerz 2026", "2026-03-01", "01/03/2026") als Befund und schreibe in eigenen Vorschlaegen stets TT.MM.JJJJ.\n'+
-'10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung. In fremdsprachigen Texten nach einem Fachausdruck den deutschen Originalbegriff (falls es einen gibt) in Klammer und KURSIV hinzufuegen – z.B. englisch "company register extract (*Firmenbuchauszug*)", "business register excerpt (*GISA-Auszug*)". Flagge fremdsprachige Dokumente, in denen ein solcher Fachausdruck (z.B. Firmenbuchauszug, GISA-Auszug) OHNE den deutschen Originalbegriff in kursiver Klammer vorkommt, als Befund.\n'+
+'10.2: Keine Absaetze mit nur einem Satz. ABSATZ-DEFINITION (wichtig gegen Fehlalarme): Ein Absatz ist ein durch eine LEERZEILE abgetrennter Textblock. Mehrere aufeinanderfolgende Saetze OHNE Leerzeile dazwischen bilden EINEN Absatz – unabhaengig von der Satzanzahl und unabhaengig von einem einfachen Zeilenumbruch. Werte einen einfachen Zeilenumbruch NICHT als Absatzgrenze. Flagge 10.2 nur, wenn ein durch Leerzeilen klar abgegrenzter Absatz tatsaechlich nur einen einzigen Satz enthaelt; im Zweifel KEIN 10.2-Befund. Schlage ein Zusammenfuehren von Absaetzen nur vor, wenn wirklich mehrere durch Leerzeilen getrennte Ein-Satz-Absaetze vorliegen. Chronologische Gliederung. Datum IMMER im Format TT.MM.JJJJ – flagge jedes andere Datumsformat im geprueften Dokument (z.B. "1. Maerz 2026", "2026-03-01", "01/03/2026") als Befund und schreibe in eigenen Vorschlaegen stets TT.MM.JJJJ. NUMMERIERUNG (ebenfalls Punkt 10.2): Nummerierte Gliederungen verwenden AUSSCHLIESSLICH arabische Ziffern mit Punkt (1., 2., 3.); Unterpunkte als 1.1, 1.2, 1.3; tiefere Ebenen 1.1.1 usw. JEDE andere Nummerierung der EIGENEN Gliederung des geprueften Dokuments ist ein Befund und wird bei JEDER Dokumentart IMMER geflaggt – zum Beispiel Grossbuchstaben (A., B., C.), Kleinbuchstaben (a), b), c) oder a., b., c.), roemische Ziffern (I., II., III.), Ziffern mit Klammer (1), 2), 3)) oder gemischte Systeme. Buendle mehrere Nummerierungs-Verstoesse desselben Dokuments in EINEM Befund und nenne Beispiele. Dieser Befund faellt NIE dem Top-5-Deckel zum Opfer. KEIN Nummerierungs-Verstoss sind Zitate aus Gesetzen und Entscheidungen (z.B. § 879 Abs 2 Z 1a lit a) sowie die blosse Wiedergabe der Nummerierung eines FREMDEN Dokuments (z.B. Punkt III des gegnerischen Vertrags).\n'+
+'10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung. In fremdsprachigen Texten nach einem Fachausdruck den deutschen Originalbegriff (falls es einen gibt) in Klammer und KURSIV hinzufuegen – z.B. englisch "company register extract (*Firmenbuchauszug*)", "business register excerpt (*GISA-Auszug*)". Flagge fremdsprachige Dokumente, in denen ein solcher Fachausdruck (z.B. Firmenbuchauszug, GISA-Auszug) OHNE den deutschen Originalbegriff in kursiver Klammer vorkommt, als Befund. AUSNAHME – INTERNER AKTENVERMERK: In einem internen Aktenvermerk sind juristische Fachbegriffe (auch juristische Abkuerzungen und lateinische Fachausdruecke) OHNE Erklaerung zulaessig – fehlende Erklaerungen dort NIE als Befund flaggen, weder laesslich noch gravierend. Die uebrigen Regeln dieses Punktes (nicht-juristische Abkuerzungen; kursiver deutscher Originalbegriff in fremdsprachigen Texten) gelten auch im internen Aktenvermerk.\n'+
 '10.7: Dokument muss Standalone sein – vollstaendig verstaendlich ohne Vorkenntnis. Das bedeutet NICHT, dass bereits erörterte Themen wortwörtlich wiederholt werden müssen: eine Kurzzusammenfassung mit Verweis auf das frühere E-Mail (z.B. "wie im E-Mail vom TT.MM.JJJJ") reicht in der Regel aus.\n'+
 '10.8: Bei Klienten-E-Mails: Eroeffnung mit Dank/Bezugnahme. Ende mit Angebot fuer Rueckfragen.\n'+
 '10.9: Max 15 Woerter pro Satz. Eine Aussage pro Satz. Keine Floskeln (z.B. "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen", "Ich erlaube mir"). Leichtverstaendlich. Konjunktiv ist NICHT verboten.\n'+
 'SATZLÄNGE AKTIV PRÜFEN (zu Punkt 10.9): Überschlage bei JEDEM Satz die Wortzahl. Mehr als 15 Wörter = Befund. Etwa 30 oder mehr Wörter = IMMER ein gravierender Befund (Markierung [!] am Zeilenanfang), der NIE weggelassen werden darf – auch nicht durch den Top-5-Deckel und nie als lässlich. Heuristik ohne genaues Zählen: Ein Satz, der über mehr als zwei Zeilen läuft oder mehrere eingeschobene Nebensätze enthält, ist fast immer zu lang. Beispiel für einen klar zu langen, gravierenden Satz (35 Wörter): "Wir möchten Ihnen in diesem Zusammenhang mitteilen, dass die von Ihnen übermittelten Unterlagen nach eingehender Prüfung durch unsere Kanzlei grundsätzlich vollständig erscheinen, wobei jedoch einzelne Punkte noch einer abschließenden Klärung bedürfen, die wir in den kommenden Tagen vornehmen werden." Solche Sätze in Spalte 3 in mehrere kurze Sätze (je höchstens 15 Wörter) zerlegen.\n'+
-'13.5: Keine So-What-Aussagen (richtig aber nutzlos fuer den Empfaenger). Keine Wiederholungen. Das Wesentliche in den Vordergrund.\n'+
+'13.5: Keine So-What-Aussagen (richtig aber nutzlos fuer den Empfaenger). Keine Wiederholungen. Das Wesentliche in den Vordergrund. SO-WHAT-PRUEFUNG AKTIV DURCHFUEHREN: Gehe JEDE Aussage des geprueften Dokuments durch und frage: Hat diese Aussage fuer den Empfaenger in DIESEM Dokument Relevanz und Aussagegehalt? Eine Aussage, die zwar richtig ist, aber zum Zweck des Dokuments nichts beitraegt oder erkennbar nicht zum Rest passt, ist ein Befund gegen Punkt 13.5 – flagge sie. Prueffrage: Bliebe der Empfaenger mit der Frage \"Und was bedeutet das fuer mich?\" zurueck, ohne dass das Dokument sie beantwortet? Dann flaggen. KEINE So-What-Aussagen sind: Anrede, Dank oder Bezugnahme, Gruss- und Schlussformeln und das Angebot fuer Rueckfragen – diese Elemente verlangt Punkt 10.8.\n'+
 '13.6: Nie "Das habe ich schon erklaert". Wenn eine Wiederholung tatsaechlich erforderlich ist (gemeinsam mit 10.7 zu lesen), gilt: sie soll hoeflich sein, sachlich sein, andere Worte verwenden, wenn moeglich einfacher sein, keine wortwoertliche Wiederholung wenn vermeidbar, keine Vorwuerfe, und einen Verweis auf das fruehere E-Mail in Klammer sofort nach der Aussage. WICHTIG: Sei hier nicht paepstlicher als der Papst. Wenn eine Wiederholung grosso modo diesen Kriterien entspricht, gilt 13.6 als erfuellt – pruefe nicht pedantisch jedes einzelne der sieben Elemente.\n'+
 '13.9: Service-orientiert. Dem Klienten Arbeit abnehmen. Optionen mit Vor-/Nachteilen. Nichts ist unmoeglich – hoechstens zu teuer.\n'+
 '13.10: Umfassend (nie nur einen Aspekt behandeln). Pro-aktiv (Gesetzesaenderungen etc. erkennen). Gruendlich (auch implizit beantwortete Fragen eroertern). Praktisch (konkretes Problem loesen, nicht nur Theorie).\n'+
@@ -1143,7 +1204,7 @@ auslandHinweis+'\n'+
 '– Korrekte deutsche Umlaute (ae/oe/ue/ss ist verboten – schreibe ae→ä, oe→ö, ue→ü, ss→ß).\n'+
 '– § und §§ verwenden (nie "Paragraph").\n'+
 '– Verjährung nur flaggen wenn realistisches Risiko besteht.\n'+
-'– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern. Gravierende Befunde (insbesondere ein Satz mit 30 oder mehr Wörtern) zählen IMMER zu den schlimmsten und werden NIE durch den Top-5-Deckel weggelassen.\n'+
+'– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern. Gravierende Befunde (insbesondere ein Satz mit 30 oder mehr Wörtern) zählen IMMER zu den schlimmsten und werden NIE durch den Top-5-Deckel weggelassen. Ein Befund zu Punkt 10.2 (insbesondere zur Nummerierung) wird ebenfalls NIE durch den Top-5-Deckel weggelassen, auch wenn er nur lässlich ist.\n'+
 '– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung. Die Adresse von TAIYO Offices in der Schreibweise "Schwedenpl.5 (Eing. Dominikanerb.21)" – diese abgekürzte Form ist eine Ausnahme von Punkt 10.9 und KEIN Befund. Eine Einleitung mit Wohlbefinden-Wunsch ("We hope you are doing well.", "Wir hoffen, es geht Ihnen gut.") ist als E-Mail-Einleitung grundsätzlich zulässig (Punkt 10.8) – nur im konkreten Einzelfall ausnahmsweise unpassend, sonst nie ein Befund. Eine "jeder/jede/jedes"-Formulierung im gepruefen Dokument (z.B. "jeder Vertragspartner", "jede Frist") ist KEIN Befund und insbesondere KEIN Verstoss gegen Punkt 10.9; "ein/e" ist dort nicht besser als "jeder/jede".\n'+
 '– VERSCHÄRFTE BELEGPFLICHT (Punkt 14.3): Jede Warnung an den Klienten vor Rechtsfolgen (Haftung, Verwaltungsstrafe, gerichtliche Strafe) ist eine "wichtige Aussage" im Sinne Punkt 14.3 und muss zwingend einen Beleg in Klammer haben. Fehlt der Beleg bei einer solchen Warnung: das ist ein gewichtiger Befund, nicht lässlich.\n'+
 '– Achte auf gute Sprache in deinem eigenen Output: öffne nie eine Klammer oder ein Anführungszeichen ohne es auch zu schließen.\n\n'+
@@ -1177,15 +1238,16 @@ auslandHinweis+'\n'+
 'PHYSISCHE TERMINE (Policy 7.3 erster Satz): Wenn ein Termin physisch stattfindet (Gericht, Behoerde, Antragstellung, Besprechung), in der Liste explizit erwaehnen.\n'+
 'ALLE Termine gehoeren in den Kalender ALLER Teammitglieder (Policy 7.8 und 15.2).\n\n'+
 
-'VORSPANN (===VORAB_START=== / ===VORAB_END===) – ganz am Anfang, VOR Modul A. Gib hier NUR in diesen beiden Faellen je eine Zeile aus, sonst genau KEIN_BEFUND:\n'+
+'VORSPANN (===VORAB_START=== / ===VORAB_END===) – ganz am Anfang, VOR Modul A. Gib hier NUR in diesen drei Faellen je eine Zeile aus, sonst genau KEIN_BEFUND:\n'+
 '(1) WIEDERHOLTE GRAVIERENDE KATEGORIE: Kommt DIESELBE Kategorie eines gravierenden ([!]) Befundes MEHR ALS DREI MAL im gepruefen Text vor (z.B. mehr als drei Saetze mit je 30 oder mehr Woertern; oder mehr als drei Warnungen vor Rechtsfolgen ohne Beleg; oder mehr als drei unerklaerte Fachbegriffe), gib EINE mit "Vorab:" eingeleitete Zeile aus, die generell auf diese Kategorie hinweist – NICHT die Einzelfaelle aufzaehlen. Beispiel: "Vorab: Der Text enthaelt mehrere Saetze mit 30 oder mehr Woertern – bitte durchgehend auf kurze Saetze (hoechstens 15 Woerter) achten." Sind mehrere Kategorien betroffen, je eine eigene "Vorab:"-Zeile. Die Schwelle ist STRENG: erst ab dem VIERTEN Vorkommen DERSELBEN Kategorie; drei oder weniger loesen keine Zeile aus. Bloss insgesamt viele gravierende Befunde UNTERSCHIEDLICHER Kategorien loesen ebenfalls keine Zeile aus.\n'+
 '(2) VIP-FALL OHNE WICHTIG-MODUS: NUR wenn der Wichtig-Modus NICHT aktiv ist UND die Angaben (insbesondere "Zusaetzliche Informationen zum zu pruefenden Text/Dokument" oder "Zusaetzlicher Kontext") nahelegen, dass es sich um einen besonders wichtigen Fall oder besonders wichtigen Klienten (VIP) handelt, gib EINE Zeile aus, die den Wichtig-Modus empfiehlt. Beispiel: "Hinweis: Die Angaben deuten auf einen besonders wichtigen Fall hin. Fuer eine vertiefte Analyse empfiehlt sich der Wichtig-Modus." Ist der Wichtig-Modus bereits aktiv, gib diese Zeile NIE aus.\n'+
-'Trifft keiner der beiden Faelle zu: schreibe nach ===VORAB_START=== nur KEIN_BEFUND (in einer eigenen Zeile).\n\n'+
+'(3) GESAMTBEWERTUNG BEI BESONDERS MUEHSAM GESCHRIEBENEM TEXT: Faellt der gepruefte Text stilistisch BESONDERS negativ auf (besonders muehsam geschrieben), gib je zutreffendem Muster EINE Zeile mit einer generellen Bewertung aus – ZUSAETZLICH zu den Einzelbefunden in Modul A; die Einzelstellen werden dort weiterhin geflaggt (Floskeln: Punkt 10.9; Wiederholungen und Zersplitterung: in der Regel Punkt 13.5). Die drei Muster: (a) MEHRERE antiquierte Floskeln (Richtwert: drei oder mehr; z.B. "Wir wuerden Ihnen gerne mitteilen wie folgt:") – Zeile sinngemaess: "Im E-Mail fallen mehrere antiquierte Floskeln auf." (b) MEHRERE unnoetige Wiederholungen (Richtwert: drei oder mehr) – Zeile sinngemaess: "Im E-Mail fallen mehrere unnoetige Wiederholungen auf." (c) THEMEN-ZERSPLITTERUNG: EIN Thema wird an drei oder mehr Stellen behandelt statt an einer Stelle, ODER mehrere Themen werden an jeweils zwei oder mehr Stellen behandelt – Zeile sinngemaess: "Im E-Mail wird das Thema XXX unnoetig zersplittert." Benenne das Thema konkret; bei mehreren zersplitterten Themen entweder eine gemeinsame Zeile oder je Thema eine Zeile. Ersetze "E-Mail" durch die tatsaechliche Dokumentart (z.B. "Im Schriftsatz", "Im Aktenvermerk", "Im Vertrag"). Jeder Satz hoechstens 15 Woerter. STRENGE SCHWELLE: Diese Zeilen NUR bei besonders muehsam geschriebenen Texten – ein nur maessig muehsamer Text (z.B. bloss zwei Floskeln, eine einzelne Wiederholung, ein Thema an nur zwei Stellen) loest KEINE Gesamtbewertung aus.\n'+
+'Trifft keiner der drei Faelle zu: schreibe nach ===VORAB_START=== nur KEIN_BEFUND (in einer eigenen Zeile).\n\n'+
 
 'AUSGABEFORMAT – DREI-SPALTEN-TABELLE:\n'+
 'Gib deinen Output in folgendem Format aus – exakt so, keine Abweichungen:\n\n'+
 '===VORAB_START===\n'+
-'[nur bei Fall (1) und/oder (2) je eine Zeile – sonst KEIN_BEFUND]\n'+
+'[nur bei Fall (1), (2) und/oder (3) je eine Zeile – sonst KEIN_BEFUND]\n'+
 '===VORAB_END===\n\n'+
 '===MODUL_A_START===\n'+
 'TEXTAUSSCHNITT|||PROBLEM|||VORSCHLAG\n'+
@@ -1200,11 +1262,11 @@ auslandHinweis+'\n'+
 '[Kurzbeschreibung]|||[Gerichtsfrist/Urgenz Gegner/Urgenz Klient/Urgenz Interessent/Physisch]|||[TT.MM.JJJJ oder Zeitangabe]|||[z.B. auch eine Woche vorher; physisch vor Ort]\n'+
 '===MODUL_C_END===\n\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
-'Maximal 6 Zeilen pro Modul B und C. Fuer Modul A gilt die Gewichtung oben: hoechstens 5 Befunde (die 5 schwersten); gravierende Befunde ([!]) bleiben aber immer erhalten und koennen diese Zahl im Ausnahmefall ueberschreiten. Nur die wichtigsten Punkte.\n'+
+'Maximal 6 Zeilen pro Modul B und C. Fuer Modul A gilt die Gewichtung oben: hoechstens 5 Befunde (die 5 schwersten); gravierende Befunde ([!]) bleiben aber immer erhalten und koennen diese Zahl im Ausnahmefall ueberschreiten; ein Befund zu Punkt 10.2 (Nummerierung) bleibt ebenfalls immer erhalten. Nur die wichtigsten Punkte.\n'+
 'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "Compliant", "Compliant.", "OK", "No issues", "Looks good", "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Akzeptabel", "Unauffaellig", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
 'GRAVITAETS-MARKIERUNG (gravierende Befunde hervorheben):\n'+
 'Stelle einer Zeile die Markierung "[!]" voran (ganz am Zeilenanfang, VOR der ersten Spalte), wenn der Befund ein gravierender, gröberer Fehler ist – niemals bei gewöhnlichen oder lässlichen Befunden. Beispielzeile: "[!]Textausschnitt|||Problem|||Vorschlag". Setze die Markierung grundsätzlich sparsam und nur bei wirklich schwerwiegenden Fällen. AUSNAHME OHNE ERMESSEN: Ein Satz mit 30 oder mehr Wörtern ist AUSNAHMSLOS gravierend und erhält IMMER ein "[!]" – die Anweisung, sparsam zu markieren, gilt hierfür NICHT und darf dieses "[!]" nie verhindern, egal wie viele andere Befunde es gibt. Zähle bei jedem beanstandeten langen Satz die Wörter; ab 30 Wörtern setzt du zwingend ein "[!]".\n'+
-'Gravierend in MODUL A (Policy & Stil) ist z.B.: ein Satz mit 30 oder mehr Wörtern (Punkt 10.9); eine so unhöfliche Aussage, dass sie fast beleidigend wirkt (Punkt 10.8); ein juristischer Fachbegriff, den ein Nicht-Jurist nicht kennt, ohne Erklärung in Klammer (Punkt 10.5); eine Warnung vor Rechtsfolgen ohne den nach Punkt 14.3 zwingenden Beleg.\n'+
+'Gravierend in MODUL A (Policy & Stil) ist z.B.: ein Satz mit 30 oder mehr Wörtern (Punkt 10.9); eine so unhöfliche Aussage, dass sie fast beleidigend wirkt (Punkt 10.8); ein juristischer Fachbegriff, den ein Nicht-Jurist nicht kennt, ohne Erklärung in Klammer (Punkt 10.5; gilt NICHT bei einem internen Aktenvermerk); eine Warnung vor Rechtsfolgen ohne den nach Punkt 14.3 zwingenden Beleg.\n'+
 'Gravierend in MODUL B als LÜCKE ist z.B.: der Klient hat mehrfach nach derselben Sache gefragt und immer noch keine Antwort erhalten; eine Frage wurde nur nach einem Gesetz beantwortet, nicht aber nach einem zweiten einschlägigen (z.B. nach dem FBG, aber nicht nach dem GmbHG); eine zwingende einschlägige Norm wurde völlig übersehen (z.B. die Meldepflicht nach dem WiEReG bei einer GmbH-Gründung).\n'+
 'Gravierend in MODUL B als FEHLER ist z.B.: eine Auskunft, die dem Gesetzeswortlaut direkt und eklatant widerspricht (z.B. widerspricht "Die Gesellschaft darf ihre eigenen Gründungskosten uneingeschränkt selbst tragen." direkt dem § 7 GmbHG); ein zitierter Rechtssatz oder eine zitierte Entscheidung, die die behauptete Aussage OFFENSICHTLICH nicht stützt, etwa weil sie das genaue Gegenteil aussagt oder einen völlig anderen Sachverhalt betrifft; bloß mittelbare, schwächere oder unvollständige Stützung ist hierfür NICHT gravierend (Punkt 14.4); eine falsch berechnete Frist, deren Befolgung zum Versäumen einer Gerichtsfrist führt. OHNE AUSNAHME und IMMER gravierend (Markierung [!]) ist jede Auskunft, deren Befolgung gegen Verwaltungsstrafrecht oder Kriminalstrafrecht verstößt oder verwaltungsstrafrechtliche bzw. kriminalstrafrechtliche Rechtsfolgen herbeiführt; das gilt ausnahmslos, nicht bloß als Beispiel.\n'+
 'Wichtig: Das "[!]" ist nur eine Markierung – es darf im sichtbaren Text der Spalten NICHT auftauchen, sondern steht ausschließlich ganz am Zeilenanfang.\n\n'+
@@ -1542,7 +1604,7 @@ function buildIntro(p){
   return s;
 }
 
-// ─── Vorspann (Vorab-Hinweis / VIP-Empfehlung) – erscheint nach dem Einleitungssatz ──
+// ─── Vorspann (Vorab-Hinweis / VIP-Empfehlung / Gesamtbewertung bei besonders muehsamem Text) – erscheint nach dem Einleitungssatz ──
 function renderVorab(raw){
   var tag='===VORAB_START===';
   var s=raw.indexOf(tag);
@@ -1571,7 +1633,7 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
     html+='<div style="background:#f0f4fa;border-left:3px solid #1F3865;border-radius:4px;padding:9px 12px;margin-bottom:16px;font-size:12px;color:#444;line-height:1.5">'+escHtml(intro)+'</div>';
   }
 
-  // Vorspann (Vorab-Hinweis bei wiederholter gravierender Kategorie / VIP-Empfehlung) – direkt nach dem Einleitungssatz.
+  // Vorspann (Vorab-Hinweis bei wiederholter gravierender Kategorie / VIP-Empfehlung / Gesamtbewertung bei besonders muehsamem Text) – direkt nach dem Einleitungssatz.
   html+=renderVorab(raw);
 
   html+=renderModule(raw,'MODUL_A','Policy & Stil',
@@ -1731,21 +1793,31 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
   // Verworfen werden die spaetesten laesslichen Befunde oberhalb des Budgets
   // (5 minus Anzahl gravierender). Grave-Erkennung spiegelt exakt die
   // Render-Schleife unten (fuehrendes [!] bzw. maxSentenceWordCount>=30).
+  // Seit BUILD 09.07.2026 zusaetzlich: Zeilen mit Punkt-10.2-Bezug in Spalte 2
+  // werden ebenfalls nie gekuerzt (Wunsch 3, Nummerierung immer flaggen).
   if(modKey==='MODUL_A'){
     var classified=lines.map(function(l){
       var g=/^\s*\[!\]\s*/.test(l);
       var cols=l.replace(/^\s*\[!\]\s*/,'').split('|||');
       var valid=cols.length>=2;
       if(!g&&valid&&maxSentenceWordCount(cols[0])>=30)g=true;
-      return {line:l,grave:g,valid:valid};
+      // BUILD 09.07.2026 (Wunsch 3): Punkt-10.2-Befunde (v.a. Nummerierung)
+      // muessen IMMER erhalten bleiben. Erkennung ueber die Policy-Nummer in
+      // Spalte 2 (PROBLEM) - sie steht dort formatbedingt ("Policy-Punkt in
+      // Klammer") und ueberlebt als Ziffernfolge auch en/ja/ko-Output.
+      // (?![0-9]) vermeidet Fehltreffer wie "10.25" oder "...15.10.2026";
+      // ein Fehltreffer wuerde eine Zeile ohnehin nur zusaetzlich BEHALTEN,
+      // nie faelschlich entfernen.
+      var keep=g||(valid&&/10\.2(?![0-9])/.test(cols[1]||''));
+      return {line:l,grave:g,keep:keep,valid:valid};
     });
     var validCount=0;classified.forEach(function(c){if(c.valid)validCount++;});
     if(validCount>5){
-      var graveCount=0;classified.forEach(function(c){if(c.valid&&c.grave)graveCount++;});
-      var venialBudget=Math.max(0,5-graveCount);
+      var keepCount=0;classified.forEach(function(c){if(c.valid&&c.keep)keepCount++;});
+      var venialBudget=Math.max(0,5-keepCount);
       lines=classified.filter(function(c){
         if(!c.valid)return true;
-        if(c.grave)return true;
+        if(c.keep)return true;
         if(venialBudget>0){venialBudget--;return true;}
         return false;
       }).map(function(c){return c.line;});
