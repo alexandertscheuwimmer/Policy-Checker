@@ -75,10 +75,15 @@
     sofort message_start/ping/Delta-Bytes -> Verbindung bleibt am Leben.
     Seit BUILD 02.08.2026 zusaetzlich clientseitiger WAECHTER gegen still
     abgerissene Streams: callClaude() kapselt alle drei Aufrufe, bricht
-    nach WATCHDOG_MS (90 s) ohne empfangene Bytes via AbortController ab
-    und wiederholt EINMAL automatisch (nur bei Waechter-Abbruch, Netz-
-    fehler, HTTP 5xx/529, Overloaded; NIE bei HTTP 4xx). NIE entfernen;
-    functions/api.js blieb dabei unveraendert.
+    ohne empfangene Bytes via AbortController ab und wiederholt EINMAL
+    automatisch (nur bei Waechter-Abbruch, Netzfehler, HTTP 5xx/529,
+    Overloaded; NIE bei HTTP 4xx). ZWEI Fenster (seit Nachtrag 2 vom
+    selben Tag; die urspruenglichen 90 s bis zum ersten Byte waren im
+    Probelauf zu knapp): WATCHDOG_FIRST_MS=240 s bis zum ERSTEN Byte
+    (Upload grosser PDFs/lange Eingangsverarbeitung), danach
+    WATCHDOG_MS=120 s zwischen Bytes. NIE entfernen und das erste
+    Fenster NIE unter das zweite senken; functions/api.js blieb dabei
+    unveraendert.
   - API-Key-Problem (Browser-Passwortmanager-Interferenz, "invalid
     x-api-key") — NICHT als final gelöst markieren ohne ausdrückliche
     Bestätigung durch Dr. Scheuwimmer.
@@ -480,10 +485,11 @@
      aktualisiert; Build-Historie unangetastet.
   2. GEGEN AUFHAENGEN - WAECHTER + AUTO-RETRY: Neue Funktion
      callClaude() kapselt alle drei API-Aufrufe. AbortController-
-     Waechter bricht ab, wenn WATCHDOG_MS (90 s) lang KEINE Bytes
-     ankommen (die API sendet waehrend des Denkens laufend ping-/
-     thinking-Events; laengere Stille = abgerissene Verbindung), danach
-     EIN automatischer Wiederholungsversuch. Wiederholt wird nur bei
+     Waechter bricht ab, wenn laengere Zeit KEINE Bytes ankommen (die
+     API sendet waehrend des Denkens laufend ping-/thinking-Events;
+     laengere Stille = abgerissene Verbindung), danach EIN
+     automatischer Wiederholungsversuch. (Urspruenglich ein Fenster von
+     90 s; seit Nachtrag 2 unten zwei Fenster 240 s/120 s.) Wiederholt wird nur bei
      Waechter-Abbruch, Netzfehler, HTTP 5xx/529, Overloaded - NIE bei
      HTTP 4xx (Retry dort sinnlos). readStream um OPTIONALE hooks
      (onChunk/onThinking/onText) erweitert, Signatur rueckwaerts-
@@ -565,6 +571,61 @@
      unsichtbar. Fix: clear-btn ist waehrend der Pruefung gesperrt
      (wie submit-btn, inkl. :disabled-Style) und wird im finally wieder
      freigegeben.
+  9. NACHTRAG 2 (Feedback Dr. Scheuwimmer aus den ersten Probelaeufen,
+     gleicher Tag):
+     (a) FEHLER VERSTAENDLICH ERKLAEREN: Neue Funktion
+         classifyReviewError() uebersetzt die rohe Fehlermeldung in
+         Titel + deutsche Erklaerung. Faelle: fehlendes API-Guthaben
+         ("credit balance"/"billing"/"purchase credits" -> Hinweis auf
+         console.anthropic.com, Plans and Billing - DER Anlassfall),
+         ungueltiger Key (invalid x-api-key/401), Rate-Limit (429),
+         Ueberlastung (overloaded/529), Dokument zu umfangreich
+         (prompt is too long u.ae. -> kuerzen statt wiederholen),
+         Verbindungsproblem (Timeout/Netz/Waechter; 524 nur mit
+         Wortgrenze \b524\b, sonst matchen Tokenzahlen wie 215243),
+         sonst generisch. Technische Originalmeldung
+         bleibt immer sichtbar ("Technische Meldung: ..."). Der alte
+         Pauschal-Titel "Verbindungsfehler:" entfaellt.
+     (b) BERICHTSKOPF ENTSCHLACKT: Die Angabe "claude-... · Zwei-/
+         Drei-Pass" im Pruefbericht-Header ist ENTFERNT (fuer Anwender
+         nutzlos; konsistent mit der Wichtig-Modus-Regel "keine
+         Modell-Details anzeigen"). CSS-Klasse .pass-indicator bleibt
+         ungenutzt stehen (minimaler Diff, wie seinerzeit .kanji).
+     (c) KURSIV-BEFUNDE NUR WO PRUEFBAR: Annahme von Dr. Scheuwimmer
+         technisch verifiziert und ERWEITERT - nicht nur eingefuegter
+         Text verliert Formatierung, auch DOCX/TXT (docxToText
+         extrahiert reinen Text; nur PDF geht als document-Block mit
+         sichtbarem Layout an die API). Neuer FORMATIERUNGS-VORBEHALT
+         in der 10.5-Zeile + AUSNAHME im Klient/kursiv-Bullet:
+         fehlende KURSIVSETZUNG eines vorhandenen deutschen Begriffs
+         wird bei eingefuegtem Text und DOCX-/TXT-Extrakten NIE
+         moniert; FEHLT der deutsche Originalbegriff ganz, bleibt es
+         ein Befund; nur bei PDF ist Kursivschrift pruefbar.
+     (d) EIGENER STIL FUER ALLE MODULE: Der Bericht verletzte selbst
+         Punkt 10.9 (Beispiel: 21-Woerter-Satz in Modul B). Neuer
+         Prompt-Abschnitt EIGENER STIL: max 15 Woerter pro Satz, eine
+         Aussage pro Satz, keine Schachtelsaetze - ausdruecklich auch
+         fuer Modul B (BEFUND/EMPFEHLUNG), Modul C (HINWEIS) und
+         VORAB; zitierte Textausschnitte (Spalte 1) ausgenommen.
+         Grund: Modul B/C werden von Pass 2 BEWUSST zeichengenau
+         durchgereicht (forceRestoreBlock-Leitstern) - die Regel muss
+         daher in Pass 1 sitzen. Pass-2-Spalte-2-Regeln ergaenzend um
+         "max 15 Woerter" erweitert. Nur im Betrieb pruefbar.
+     (e) LIVE-ANZEIGE IN ANWENDERSPRACHE: "Pass 1 von 2 - Analyse
+         (Module A, B, C)" ersetzt durch sprechende Texte: "Schritt x
+         von y: Das Dokument wird geprueft / Die Befunde werden
+         qualitaetsgeprueft / Der gepruefte Text wird uebersetzt";
+         Abschnitts-Namen in der Detailzeile = Berichts-Ueberschriften
+         (Policy & Stil / Inhaltliche Vollstaendigkeit / Termine &
+         Fristen), kein Modul-A/B/C-Jargon mehr.
+     (f) WAECHTER-FENSTER ANGEPASST (Vorfall 2. Probelauf: beide
+         Versuche nach 90 s ohne Byte abgebrochen): Bis zum ersten
+         Byte zaehlen Upload, Warteschlange und Eingangsverarbeitung
+         langer Dokumente - 90 s koennen dort zu knapp sein und der
+         Waechter wuerde gesunde, bloss langsame Pruefungen abschiessen.
+         Jetzt WATCHDOG_FIRST_MS=240 s (bis erstes Byte) und
+         WATCHDOG_MS=120 s (zwischen Bytes); Fehlertext entsprechend
+         dynamisch. Echte Haenger werden weiterhin sicher beendet.
   Getestet in Node (deterministisch): readStream-Parsing (SSE-Deltas,
   stop_reason aus message_delta, error-Event), callClaude-Waechter
   (Stall -> Abort -> automatischer Retry -> Erfolg; HTTP 400 -> genau
@@ -1224,7 +1285,7 @@ auslandHinweis+'\n'+
 'MODUL A – POLICY & STIL:\n'+
 'Prüfe ausschliesslich gegen folgende Policy-Punkte:\n'+
 '10.2: Keine Absaetze mit nur einem Satz. ABSATZ-DEFINITION (wichtig gegen Fehlalarme): Ein Absatz ist ein durch eine LEERZEILE abgetrennter Textblock. Mehrere aufeinanderfolgende Saetze OHNE Leerzeile dazwischen bilden EINEN Absatz – unabhaengig von der Satzanzahl und unabhaengig von einem einfachen Zeilenumbruch. Werte einen einfachen Zeilenumbruch NICHT als Absatzgrenze. Flagge 10.2 nur, wenn ein durch Leerzeilen klar abgegrenzter Absatz tatsaechlich nur einen einzigen Satz enthaelt; im Zweifel KEIN 10.2-Befund. Schlage ein Zusammenfuehren von Absaetzen nur vor, wenn wirklich mehrere durch Leerzeilen getrennte Ein-Satz-Absaetze vorliegen. Chronologische Gliederung. Datum IMMER im Format TT.MM.JJJJ – flagge jedes andere Datumsformat im geprueften Dokument (z.B. "1. Maerz 2026", "2026-03-01", "01/03/2026") als Befund und schreibe in eigenen Vorschlaegen stets TT.MM.JJJJ. NUMMERIERUNG (ebenfalls Punkt 10.2): Nummerierte Gliederungen verwenden AUSSCHLIESSLICH arabische Ziffern mit Punkt (1., 2., 3.); Unterpunkte als 1.1, 1.2, 1.3; tiefere Ebenen 1.1.1 usw. JEDE andere Nummerierung der EIGENEN Gliederung des geprueften Dokuments ist ein Befund und wird bei JEDER Dokumentart IMMER geflaggt – zum Beispiel Grossbuchstaben (A., B., C.), Kleinbuchstaben (a), b), c) oder a., b., c.), roemische Ziffern (I., II., III.), Ziffern mit Klammer (1), 2), 3)) oder gemischte Systeme. Buendle mehrere Nummerierungs-Verstoesse desselben Dokuments in EINEM Befund und nenne Beispiele. Dieser Befund faellt NIE dem Top-5-Deckel zum Opfer. KEIN Nummerierungs-Verstoss sind Zitate aus Gesetzen und Entscheidungen (z.B. § 879 Abs 2 Z 1a lit a) sowie die blosse Wiedergabe der Nummerierung eines FREMDEN Dokuments (z.B. Punkt III des gegnerischen Vertrags).\n'+
-'10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung. In fremdsprachigen Texten nach einem Fachausdruck den deutschen Originalbegriff (falls es einen gibt) in Klammer und KURSIV hinzufuegen – z.B. englisch "company register extract (*Firmenbuchauszug*)", "business register excerpt (*GISA-Auszug*)". Flagge fremdsprachige Dokumente, in denen ein solcher Fachausdruck (z.B. Firmenbuchauszug, GISA-Auszug) OHNE den deutschen Originalbegriff in kursiver Klammer vorkommt, als Befund. AUSNAHME – INTERNER AKTENVERMERK: In einem internen Aktenvermerk sind juristische Fachbegriffe (auch juristische Abkuerzungen und lateinische Fachausdruecke) OHNE Erklaerung zulaessig – fehlende Erklaerungen dort NIE als Befund flaggen, weder laesslich noch gravierend. Die uebrigen Regeln dieses Punktes (nicht-juristische Abkuerzungen; kursiver deutscher Originalbegriff in fremdsprachigen Texten) gelten auch im internen Aktenvermerk.\n'+
+'10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung. In fremdsprachigen Texten nach einem Fachausdruck den deutschen Originalbegriff (falls es einen gibt) in Klammer und KURSIV hinzufuegen – z.B. englisch "company register extract (*Firmenbuchauszug*)", "business register excerpt (*GISA-Auszug*)". Flagge fremdsprachige Dokumente, in denen ein solcher Fachausdruck (z.B. Firmenbuchauszug, GISA-Auszug) OHNE den deutschen Originalbegriff in kursiver Klammer vorkommt, als Befund. FORMATIERUNGS-VORBEHALT (Kursivschrift): Eingefuegter Text sowie DOCX-/TXT-Dateien erreichen dich als reiner Text OHNE Formatierung – Kursivschrift ist dort technisch NICHT erkennbar. Moniere in solchen Inhalten NIEMALS, dass ein vorhandener deutscher Begriff nicht kursiv gesetzt sei. FEHLT der deutsche Originalbegriff dagegen zur Gaenze, bleibt das ein Befund. Nur in hochgeladenen PDF-Dateien ist Kursivschrift sichtbar und pruefbar. AUSNAHME – INTERNER AKTENVERMERK: In einem internen Aktenvermerk sind juristische Fachbegriffe (auch juristische Abkuerzungen und lateinische Fachausdruecke) OHNE Erklaerung zulaessig – fehlende Erklaerungen dort NIE als Befund flaggen, weder laesslich noch gravierend. Die uebrigen Regeln dieses Punktes (nicht-juristische Abkuerzungen; kursiver deutscher Originalbegriff in fremdsprachigen Texten) gelten auch im internen Aktenvermerk.\n'+
 '10.7: Dokument muss Standalone sein – vollstaendig verstaendlich ohne Vorkenntnis. Das bedeutet NICHT, dass bereits erörterte Themen wortwörtlich wiederholt werden müssen: eine Kurzzusammenfassung mit Verweis auf das frühere E-Mail (z.B. "wie im E-Mail vom TT.MM.JJJJ") reicht in der Regel aus.\n'+
 '10.8: Bei Klienten-E-Mails: Eroeffnung mit Dank/Bezugnahme. Ende mit Angebot fuer Rueckfragen.\n'+
 '10.9: Max 15 Woerter pro Satz. Eine Aussage pro Satz. Keine Floskeln (z.B. "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen", "Ich erlaube mir"). Leichtverstaendlich. Konjunktiv ist NICHT verboten.\n'+
@@ -1240,7 +1301,7 @@ auslandHinweis+'\n'+
 '14.5: NUR bei Ausgabesprache English – Gesetzeszitate ins Englische umstellen (§ -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director); das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" -> "Sec 879 para 2 no 1a ABGB".\n'+
 '14.9: Ueber Recherchen sofort Aktenvermerk anlegen.\n\n'+
 'WICHTIG fuer Modul A:\n'+
-'– Im deutschsprachigen Text einheitlich "Klient" verwenden (NIEMALS "Mandant"). In einem fremdsprachigen Text den dortigen Begriff verwenden (z.B. englisch "client") – KEINE deutschen Begriffe wie "Klient" oder "Firmenbuch" im fremdsprachigen Fliesstext; ist ein deutscher Begriff aus Lesbarkeitsgruenden ausnahmsweise noetig, MUSS er kursiv stehen (idealerweise in Klammer nach dem fremdsprachigen Begriff). Flagge deutschsprachige Begriffe, die in einem fremdsprachigen Dokument nicht-kursiv im Fliesstext stehen, als Befund.\n'+
+'– Im deutschsprachigen Text einheitlich "Klient" verwenden (NIEMALS "Mandant"). In einem fremdsprachigen Text den dortigen Begriff verwenden (z.B. englisch "client") – KEINE deutschen Begriffe wie "Klient" oder "Firmenbuch" im fremdsprachigen Fliesstext; ist ein deutscher Begriff aus Lesbarkeitsgruenden ausnahmsweise noetig, MUSS er kursiv stehen (idealerweise in Klammer nach dem fremdsprachigen Begriff). Flagge deutschsprachige Begriffe, die in einem fremdsprachigen Dokument nicht-kursiv im Fliesstext stehen, als Befund. AUSNAHME: Bei eingefuegtem Text und DOCX-/TXT-Extrakten ist Kursivschrift technisch nicht erkennbar – dort eine (vermeintlich) fehlende Kursivsetzung NIE monieren; pruefbar ist das nur in PDF-Dateien (siehe FORMATIERUNGS-VORBEHALT bei Punkt 10.5).\n'+
 '– Kein Doppelpunkt am Beginn von Spalte 2 oder 3.\n'+
 '– Keine "jede/r/s"-Formulierungen – stattdessen "ein/e".\n'+
 '– Keine Abkuerzungen in Spalten 2 und 3.\n'+
@@ -1305,6 +1366,7 @@ auslandHinweis+'\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
 'Maximal 6 Zeilen pro Modul B und C. Fuer Modul A gilt die Gewichtung oben: hoechstens 5 Befunde (die 5 schwersten); gravierende Befunde ([!]) bleiben aber immer erhalten und koennen diese Zahl im Ausnahmefall ueberschreiten; ein Befund zu Punkt 10.2 (Nummerierung) bleibt ebenfalls immer erhalten; die Tippfehler-Sammelzeile (mehr als drei Typos) bleibt ebenfalls immer erhalten. Nur die wichtigsten Punkte.\n'+
 'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "Compliant", "Compliant.", "OK", "No issues", "Looks good", "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Akzeptabel", "Unauffaellig", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
+'EIGENER STIL (gilt fuer JEDEN Text, den du selbst schreibst – ALLE Module, ALLE Spalten und die VORAB-Zeilen): hoechstens 15 Woerter pro Satz; eine Aussage pro Satz; keine Schachtelsaetze; lieber zwei kurze Saetze als ein langer. Das gilt ausdruecklich auch fuer Modul B (Spalten BEFUND und EMPFEHLUNG) und Modul C (Spalte HINWEIS) – der Bericht selbst muss der Policy genuegen, die er prueft. Zitierte Textausschnitte aus dem Dokument (Spalte 1) sind davon ausgenommen.\n'+
 'GRAVITAETS-MARKIERUNG (gravierende Befunde hervorheben):\n'+
 'Stelle einer Zeile die Markierung "[!]" voran (ganz am Zeilenanfang, VOR der ersten Spalte), wenn der Befund ein gravierender, gröberer Fehler ist – niemals bei gewöhnlichen oder lässlichen Befunden. Beispielzeile: "[!]Textausschnitt|||Problem|||Vorschlag". Setze die Markierung grundsätzlich sparsam und nur bei wirklich schwerwiegenden Fällen. AUSNAHME OHNE ERMESSEN: Ein Satz mit 30 oder mehr Wörtern ist AUSNAHMSLOS gravierend und erhält IMMER ein "[!]" – die Anweisung, sparsam zu markieren, gilt hierfür NICHT und darf dieses "[!]" nie verhindern, egal wie viele andere Befunde es gibt. Zähle bei jedem beanstandeten langen Satz die Wörter; ab 30 Wörtern setzt du zwingend ein "[!]".\n'+
 'Gravierend in MODUL A (Policy & Stil) ist z.B.: ein Satz mit 30 oder mehr Wörtern (Punkt 10.9); eine so unhöfliche Aussage, dass sie fast beleidigend wirkt (Punkt 10.8); ein juristischer Fachbegriff, den ein Nicht-Jurist nicht kennt, ohne Erklärung in Klammer (Punkt 10.5; gilt NICHT bei einem internen Aktenvermerk); eine Warnung vor Rechtsfolgen ohne den nach Punkt 14.3 zwingenden Beleg.\n'+
@@ -1420,7 +1482,13 @@ async function readStream(response,hooks){
 // Netzfehlern, HTTP 5xx/529 und "Overloaded" – NIE bei HTTP 4xx (z.B.
 // ungueltiger Key oder zu grosses Dokument, dort waere ein Retry sinnlos).
 // Rein clientseitig; functions/api.js (Worker) bleibt unveraendert.
-var WATCHDOG_MS=90000;
+// NACHTRAG 2 (02.08.2026): ZWEI Fenster statt einem. Bis zum ERSTEN Byte
+// grosszuegig (Upload grosser PDFs, Warteschlange und die Verarbeitung langer
+// Dokumente koennen dauern, ohne dass etwas haengt - 90 s waren im Probelauf
+// zu knapp); SOBALD Bytes fliessen, ist Stille ein klares Fehlersignal, weil
+// die API laufend ping-/thinking-Events sendet.
+var WATCHDOG_FIRST_MS=240000;   // bis zum ersten empfangenen Byte
+var WATCHDOG_MS=120000;         // zwischen empfangenen Bytes
 function isRetryableError(err){
   var m=(err&&err.message)?err.message:String(err);
   if(err&&err.taiyoWatchdog)return true;
@@ -1430,15 +1498,51 @@ function isRetryableError(err){
   if(/Failed to fetch|NetworkError|load failed|network|abort/i.test(m))return true;
   return false;
 }
+// ─── BUILD 02.08.2026 (Nachtrag 2): Fehler in verstaendlichem Deutsch ────────
+// Klassifiziert die rohe Fehlermeldung und liefert Titel + Erklaerung fuer die
+// Fehlerbox. Anlass: Beim ersten Probelauf scheiterte die Pruefung an fehlendem
+// API-Guthaben, und der Nutzer konnte die englische API-Meldung unter dem Titel
+// "Verbindungsfehler" nicht zuordnen. Die technische Originalmeldung bleibt
+// darunter fuer die Diagnose sichtbar.
+function classifyReviewError(m){
+  if(/credit balance|billing|purchase credits|credits? to access/i.test(m)){
+    return {titel:'Kein Guthaben am Anthropic-API-Konto',
+      hint:'Die Prüfung wurde abgelehnt, weil das Guthaben des API-Kontos aufgebraucht ist. Bitte unter console.anthropic.com (Plans and Billing) Guthaben aufladen. Danach die Prüfung einfach erneut starten.'};
+  }
+  if(/invalid x-api-key|authentication|HTTP 401/i.test(m)){
+    return {titel:'API-Key wurde nicht akzeptiert',
+      hint:'Bitte den API-Key oben rechts neu eingeben und speichern. Achtung: Browser-Passwortmanager fügen manchmal einen falschen Wert in das Feld ein.'};
+  }
+  if(/rate.?limit|HTTP 429/i.test(m)){
+    return {titel:'Zu viele Anfragen',
+      hint:'Das API-Konto hat vorübergehend sein Anfrage-Limit erreicht. Bitte kurz warten und die Prüfung erneut starten.'};
+  }
+  if(/overloaded|HTTP 529/i.test(m)){
+    return {titel:'Server derzeit überlastet',
+      hint:'Die Server von Anthropic sind gerade überlastet. Der ReviewAssistant hat es bereits automatisch ein zweites Mal versucht. Bitte in einigen Minuten erneut prüfen.'};
+  }
+  if(/prompt is too long|too many total text bytes|exceeds? the maximum|context window|input is too long/i.test(m)){
+    return {titel:'Dokument zu umfangreich',
+      hint:'Das geprüfte Dokument ist samt Kontext für eine einzelne Prüfung zu groß. Bitte das Dokument kürzen oder in Teilen prüfen. Ein bloßes Wiederholen hilft hier nicht.'};
+  }
+  if(/\b524\b|timeout|timed out|Zeitüberschreitung|Zeitueberschreitung|Failed to fetch|NetworkError|load failed|abort/i.test(m)){
+    return {titel:'Verbindungsproblem',
+      hint:'Es kamen längere Zeit keine Daten vom Server. Mögliche Ursachen: instabile Internetverbindung, ein sehr großes Dokument oder eine momentane Störung. Der ReviewAssistant hat es bereits automatisch ein zweites Mal versucht. Meist genügt es, die Prüfung noch einmal zu starten.'};
+  }
+  return {titel:'Fehler bei der Prüfung',hint:'Bitte die Prüfung erneut starten. Tritt der Fehler wiederholt auf, bitte die technische Meldung unten an Dr. Scheuwimmer weiterleiten.'};
+}
 async function callClaude(body,key,onStatus){
   var lastErr=null;
   for(var attempt=1;attempt<=2;attempt++){
     var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
     var timer=null;
+    var gotBytes=false;
+    var armedMs=0;
     var armWatchdog=function(){
       if(!ctrl)return;
       if(timer)clearTimeout(timer);
-      timer=setTimeout(function(){ try{ctrl.abort();}catch(e){} },WATCHDOG_MS);
+      armedMs=gotBytes?WATCHDOG_MS:WATCHDOG_FIRST_MS;
+      timer=setTimeout(function(){ try{ctrl.abort();}catch(e){} },armedMs);
     };
     try{
       if(onStatus){try{onStatus({phase:'connect',attempt:attempt});}catch(e){}}
@@ -1451,7 +1555,7 @@ async function callClaude(body,key,onStatus){
       });
       armWatchdog();
       var result=await readStream(resp,{
-        onChunk:function(){armWatchdog();if(onStatus){try{onStatus({phase:'stream',attempt:attempt});}catch(e){}}},
+        onChunk:function(){gotBytes=true;armWatchdog();if(onStatus){try{onStatus({phase:'stream',attempt:attempt});}catch(e){}}},
         onThinking:function(){if(onStatus){try{onStatus({phase:'thinking',attempt:attempt});}catch(e){}}},
         onText:function(delta,sofar){if(onStatus){try{onStatus({phase:'text',attempt:attempt,delta:delta,sofar:sofar});}catch(e){}}}
       });
@@ -1460,7 +1564,7 @@ async function callClaude(body,key,onStatus){
     }catch(err){
       if(timer)clearTimeout(timer);
       if(err&&err.name==='AbortError'){
-        err=new Error('Zeitueberschreitung: '+Math.round(WATCHDOG_MS/1000)+' Sekunden lang keine Daten vom Server empfangen (Verbindung vermutlich abgerissen).');
+        err=new Error('Zeitüberschreitung: '+Math.round((armedMs||WATCHDOG_MS)/1000)+' Sekunden lang keine Daten vom Server empfangen.');
         err.taiyoWatchdog=true;
       }
       lastErr=err;
@@ -1483,9 +1587,12 @@ async function callClaude(body,key,onStatus){
 var liveTicker=null;
 var liveState=null;
 function stopLiveStatus(){ if(liveTicker){clearInterval(liveTicker);liveTicker=null;} liveState=null; }
-function startPassStatus(passNo,totalPasses,label,writeVerb){
+// NACHTRAG 2 (02.08.2026): Texte in Anwendersprache statt "Pass x von y" –
+// die Schritt-Namen sagen, WAS gerade passiert; die Abschnitts-Namen
+// entsprechen den Ueberschriften des spaeteren Berichts.
+function startPassStatus(passNo,totalPasses,phaseName,mode){
   var resultWrap=document.getElementById('result-wrap');
-  liveState={passNo:passNo,total:totalPasses,label:label,writeVerb:writeVerb||'Der Bericht wird geschrieben',phase:'connect',attempt:1,module:'',t0:Date.now()};
+  liveState={passNo:passNo,total:totalPasses,phaseName:phaseName,mode:mode||'analyse',phase:'connect',attempt:1,module:'',t0:Date.now()};
   resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px" id="live-pass"></p><p style="margin-top:6px;font-size:12px;color:#a8a8a4" id="live-detail"></p></div></div></div>';
   if(!liveTicker)liveTicker=setInterval(renderLiveStatus,1000);
   renderLiveStatus();
@@ -1497,12 +1604,21 @@ function renderLiveStatus(){
   if(!elP||!elD)return;
   var secs=Math.floor((Date.now()-liveState.t0)/1000);
   var mm=Math.floor(secs/60), ss=('0'+(secs%60)).slice(-2);
-  elP.textContent='Prüfung läuft – Pass '+liveState.passNo+' von '+liveState.total+' – '+liveState.label+' ('+mm+':'+ss+')';
+  elP.textContent='Prüfung läuft – Schritt '+liveState.passNo+' von '+liveState.total+': '+liveState.phaseName+' ('+mm+':'+ss+')';
   var d='';
+  var mo=liveState.mode;
   if(liveState.phase==='connect')d='Verbindung wird aufgebaut …';
   else if(liveState.phase==='stream')d='Antwort beginnt …';
-  else if(liveState.phase==='thinking')d='Der ReviewAssistant denkt nach (adaptives Denken) …';
-  else if(liveState.phase==='text')d=liveState.writeVerb+(liveState.module?' – gerade: '+liveState.module:'')+' …';
+  else if(liveState.phase==='thinking'){
+    d=(mo==='kontrolle')?'Die Befunde werden noch einmal durchdacht …'
+      :(mo==='uebersetzung')?'Die Übersetzung wird vorbereitet …'
+      :'Das Dokument wird gelesen und durchdacht …';
+  }
+  else if(liveState.phase==='text'){
+    if(mo==='uebersetzung')d='Die Übersetzung wird geschrieben …';
+    else if(mo==='kontrolle')d=liveState.module?'Der Abschnitt "'+liveState.module+'" wird gegengelesen …':'Die Befunde werden gegengelesen und sprachlich geglättet …';
+    else d=liveState.module?'Gerade entsteht der Abschnitt "'+liveState.module+'" …':'Die Befunde werden geschrieben …';
+  }
   else if(liveState.phase==='retry')d='Verbindung unterbrochen – zweiter Versuch läuft automatisch …';
   elD.textContent=d+(liveState.attempt>1&&liveState.phase!=='retry'?' (2. Versuch)':'');
 }
@@ -1514,13 +1630,14 @@ function liveOnStatus(st){
   else if(st.phase==='thinking'){if(liveState.phase!=='text')liveState.phase='thinking';}
   else if(st.phase==='text'){
     liveState.phase='text';
-    // Modul-Erkennung: nur bei Deltas mit '='-Zeichen im letzten Antwortstueck
-    // nachsehen (guenstig; ein leicht verspaetetes Label ist unkritisch).
+    // Abschnitts-Erkennung: nur bei Deltas mit '='-Zeichen im letzten
+    // Antwortstueck nachsehen (guenstig; ein leicht verspaetetes Label ist
+    // unkritisch). Namen = Ueberschriften des spaeteren Berichts.
     if(st.delta&&st.delta.indexOf('=')>=0&&st.sofar){
       var tail=st.sofar.slice(-400);
-      if(tail.indexOf('===MODUL_C_START===')>=0)liveState.module='Modul C (Termine und Fristen)';
-      else if(tail.indexOf('===MODUL_B_START===')>=0)liveState.module='Modul B (Inhaltliche Vollständigkeit)';
-      else if(tail.indexOf('===MODUL_A_START===')>=0)liveState.module='Modul A (Policy und Stil)';
+      if(tail.indexOf('===MODUL_C_START===')>=0)liveState.module='Termine & Fristen';
+      else if(tail.indexOf('===MODUL_B_START===')>=0)liveState.module='Inhaltliche Vollständigkeit';
+      else if(tail.indexOf('===MODUL_A_START===')>=0)liveState.module='Policy & Stil';
     }
   }
   else if(st.phase==='stream'){if(liveState.phase==='connect')liveState.phase='stream';}
@@ -1610,7 +1727,7 @@ async function runReview(){
       system:sysPrompt,
       messages:[{role:'user',content:content}]
     };
-    startPassStatus(1,totalPasses,'Analyse (Module A, B, C)');
+    startPassStatus(1,totalPasses,'Das Dokument wird geprüft','analyse');
     var s1=await callClaude(body1,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
     var pass1Text=s1.text;
     // DIAGNOSE Modul C: rohen Pass-1-Output und Block-Praesenz protokollieren.
@@ -1628,7 +1745,7 @@ async function runReview(){
       console.warn('WARNUNG: Modul C fehlt bereits im Pass-1-Output. stop_reason='+s1.stopReason+' – bei "max_tokens" wurde der Output abgeschnitten.');
     }
     // Pass 2: Policy control – correct columns 2+3
-    startPassStatus(2,totalPasses,'Policy-Kontrolle');
+    startPassStatus(2,totalPasses,'Die Befunde werden qualitätsgeprüft','kontrolle');
     var pass2Prompt='Du bist Qualitaetskontrolleur fuer den TAIYO ReviewAssistant.\n'+
       'Der folgende Output wurde von einem Erstpruefungsdurchlauf erzeugt und enthaelt die Bloecke: ===VORAB_START/END===, ===MODUL_A_START/END===, ===MODUL_B_START/END===, ===MODUL_C_START/END===.\n\n'+
       'KRITISCHE REGEL – UNBEDINGT BEFOLGEN:\n'+
@@ -1637,6 +1754,7 @@ async function runReview(){
       'Die Bloecke ===VORAB_START=== bis ===VORAB_END===, ===MODUL_B_START=== bis ===MODUL_B_END=== und ===MODUL_C_START=== bis ===MODUL_C_END=== musst du ZEICHENGENAU UNVERAENDERT aus dem Original kopieren – jede Zeile, jedes Zeichen, ohne Kuerzung, ohne Auslassung, ohne Umformulierung. Diese Bloecke sind fuer dich nur durchzureichender Text, den du nicht inhaltlich bewertest.\n\n'+
       'KORREKTURREGELN fuer Modul-A-Spalte 2 (Problem):\n'+
       '– Kurz, freundlich, loesungsorientiert – sagt was gefordert ist, nicht was falsch ist.\n'+
+      '– Hoechstens 15 Woerter pro Satz; lange Saetze in zwei kurze zerlegen.\n'+
       '– Im deutschen Text einheitlich "Klient" (nie "Mandant"); im fremdsprachigen Output den dortigen Begriff (z.B. "client"), deutsche Begriffe nur kursiv.\n'+
       '– Keine "jede/r/s"-Formulierungen (stattdessen "ein/e").\n'+
       '– Kein Doppelpunkt am Anfang.\n'+
@@ -1676,7 +1794,7 @@ async function runReview(){
     // Uebersetzungs-Regel selbst ist unveraendert.
     var translatedText='';
     if(needsTranslation&&docTextForTranslation){
-      startPassStatus(3,totalPasses,'Übersetzung in '+outputLangCode,'Die Übersetzung wird geschrieben');
+      startPassStatus(3,totalPasses,'Der geprüfte Text wird übersetzt ('+outputLangCode+')','uebersetzung');
       var transBody={
         model:model,
         max_tokens:p.wichtig?16000:12000,
@@ -1707,11 +1825,13 @@ async function runReview(){
     }
   }catch(err){
     var m=err&&err.message?err.message:String(err);
-    var hint='';
-    if(/524|timeout|timed out|Zeitueberschreitung|Failed to fetch|NetworkError|load failed|abort/i.test(m)){
-      hint='<div style="margin-top:8px;font-size:12px;color:#666">Die Verbindung wurde unterbrochen oder hat zu lange gedauert. Der ReviewAssistant hat den Versuch bereits einmal automatisch wiederholt. Bitte danach erneut prüfen; bei langen Dokumenten kann die Prüfung einige Minuten dauern.</div>';
-    }
-    resultWrap.innerHTML='<div class="error-box">Verbindungsfehler: '+escHtml(m)+hint+'</div>';
+    // BUILD 02.08.2026 (Nachtrag 2): klassifizierte, verstaendliche Fehlerbox
+    // (insbesondere fehlendes API-Guthaben klar benennen); technische
+    // Originalmeldung bleibt fuer die Diagnose sichtbar.
+    var cls=classifyReviewError(m);
+    resultWrap.innerHTML='<div class="error-box"><strong>'+escHtml(cls.titel)+'</strong>'+
+      '<div style="margin-top:6px">'+escHtml(cls.hint)+'</div>'+
+      '<div style="margin-top:8px;font-size:11.5px;color:#a66">Technische Meldung: '+escHtml(m)+'</div></div>';
   }finally{
     stopLiveStatus();   // BUILD 02.08.2026: Live-Anzeige beenden (Bericht/Fehler ueberschreiben sie ohnehin vollstaendig)
     btn.disabled=false;btn.textContent='Dokument prüfen';
@@ -1797,8 +1917,11 @@ function renderVorab(raw){
 function renderResult(raw,model,lang,translatedText,showTranslation,intro){
   reviewFindings=[];   // Feedback-Loop: bei jedem neuen Bericht zuruecksetzen
   var html='<div class="result-card">';
-  var passLabel=showTranslation?'Drei-Pass':'Zwei-Pass';
-  html+='<div class="result-header">Prüfbericht<span class="pass-indicator">'+model+' · '+passLabel+'</span></div>';
+  // BUILD 02.08.2026 (Nachtrag 2): Modell-/Pass-Angabe im Berichtskopf entfernt
+  // (fuer den Anwender nutzlos; passt zur Wichtig-Modus-Regel, keine Modell-
+  // Details anzuzeigen). Parameter model/showTranslation bleiben fuer den
+  // uebrigen Ablauf unveraendert erhalten.
+  html+='<div class="result-header">Prüfbericht</div>';
   html+='<div class="result-body">';
   // Einleitungssatz (Item 3): kurz, was geprueft wird – damit ein
   // Missverstaendnis (z.B. falscher Dokumenttyp) sofort auffaellt.
