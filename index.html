@@ -686,6 +686,26 @@
           Fetch in try/catch, Netzfehler Richtung Anthropic werden als
           502 MIT CORS-Headern gemeldet (sonst saehe der Browser nur
           "Failed to fetch").
+  11. NACHTRAG 4 (Feedback Dr. Scheuwimmer nach Worker-Deploy, gleicher
+      Tag):
+      (a) STREAM-PHASE EBENFALLS ZEITBASIERT: Nach dem Worker-Fix stand
+          die Anzeige minutenlang auf "Antwort beginnt ..." - waehrend
+          der Denkphase sendet die API oft nur Lebenszeichen (Pings)
+          ohne Denk-/Text-Deltas, die Phase blieb also 'stream'. Die
+          zeitbasierten Wartetexte gelten jetzt fuer 'connect' UND
+          'stream' (stream: bis 10 s "Antwort beginnt ...", dann je
+          Schritt der Arbeitstext, ab 90 s der Minuten-Zusatz). Der
+          Betrieb ist damit funktional in Ordnung (Streaming aktiv,
+          Waechter wird durch Pings zurueckgesetzt, keine Abbrueche).
+      (b) 3.7-SCHLUSSZEILE: Neuer Ein-Satz-Wortlaut von Dr. Scheuwimmer
+          uebernommen ("Feedback gruendlich umsetzen (nicht mit
+          moeglichst wenig Aufwand), dann alles noch einmal Korrektur
+          lesen und zuletzt freigeben lassen (Punkt 3.7 der Policy).",
+          156 statt 157 Zeichen). Ziel "EINE Zeile" erreicht ueber
+          Schriftgroesse der Schlussbox 12px -> 11.5px - per Playwright
+          im Standardlayout gemessen: beide Zeilen UND die
+          Hervorhebungs-Variante ("Alle Befunde bearbeitet ...")
+          einzeilig; bei 12px brach die 3.7-Zeile um.
   Getestet in Node (deterministisch): readStream-Parsing (SSE-Deltas,
   stop_reason aus message_delta, error-Event), callClaude-Waechter
   (Stall -> Abort -> automatischer Retry -> Erfolg; HTTP 400 -> genau
@@ -1677,11 +1697,14 @@ function renderLiveStatus(){
   var d='';
   var mo=liveState.mode;
   // NACHTRAG 3 (02.08.2026): Ehrliche, ZEITBASIERTE Wartetexte, solange (noch)
-  // keine Bytes fliessen. Liefert der Proxy die Antwort als einen Block am
-  // Ende (puffernder Worker), bleibt die Phase technisch 'connect' - dann
-  // stand hier frueher minutenlang irrefuehrend "Verbindung wird aufgebaut".
-  if(liveState.phase==='connect'){
-    if(secs<5)d='Verbindung wird aufgebaut …';
+  // keine Denk-/Text-Deltas eintreffen. Gilt fuer 'connect' (gar keine Bytes,
+  // z.B. puffernder Worker) UND seit Nachtrag 4 auch fuer 'stream': Waehrend
+  // der Denkphase sendet die API oft nur Lebenszeichen (Pings) ohne Deltas -
+  // dann stand hier minutenlang irrefuehrend "Antwort beginnt".
+  if(liveState.phase==='connect'||liveState.phase==='stream'){
+    var frueh=(liveState.phase==='stream')?'Antwort beginnt …':'Verbindung wird aufgebaut …';
+    var schwelle=(liveState.phase==='stream')?10:5;
+    if(secs<schwelle)d=frueh;
     else{
       d=(mo==='kontrolle')?'Die Befunde werden geprüft – der ReviewAssistant arbeitet …'
        :(mo==='uebersetzung')?'Die Übersetzung läuft – der ReviewAssistant arbeitet …'
@@ -1689,7 +1712,6 @@ function renderLiveStatus(){
       if(secs>=90)d+=' Bei längeren Dokumenten kann ein Schritt mehrere Minuten dauern.';
     }
   }
-  else if(liveState.phase==='stream')d='Antwort beginnt …';
   else if(liveState.phase==='thinking'){
     d=(mo==='kontrolle')?'Die Befunde werden noch einmal durchdacht …'
       :(mo==='uebersetzung')?'Die Übersetzung wird vorbereitet …'
@@ -2045,9 +2067,12 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
   // Teil der Befunde, bewusst kompakt gehalten (nicht ueberfrachten). Die
   // 3.7-Zeile wird via updateFeedbackBar hervorgehoben, sobald ALLE Befunde
   // abgehakt sind.
-  html+='<div id="policy-schluss" style="margin-top:12px;border-left:3px solid #1F3865;background:#f0f4fa;border-radius:4px;padding:9px 12px;font-size:12px;color:#444;line-height:1.6">'+
+  // Schriftgroesse 11.5px: gemessen (Playwright, Standardlayout 920px) passt
+  // damit jede der beiden Zeilen inkl. Hervorhebungs-Variante in EINE Zeile
+  // (Wunsch Dr. Scheuwimmer, Nachtrag 4); bei 12px brach die 3.7-Zeile um.
+  html+='<div id="policy-schluss" style="margin-top:12px;border-left:3px solid #1F3865;background:#f0f4fa;border-radius:4px;padding:9px 12px;font-size:11.5px;color:#444;line-height:1.6">'+
     '<div><strong>Vorschläge nie ungeprüft übernehmen.</strong> Kein "blindes" Copy-and-paste. Keine Annahmen – im Zweifel rückfragen (Punkte 2.6 und 2.4 der Policy).</div>'+
-    '<div id="schluss-37" style="margin-top:3px">Feedback gründlich umsetzen – nicht mit möglichst wenig Aufwand. Danach alles noch einmal Korrektur lesen. Erst dann freigeben lassen (Punkt 3.7 der Policy).</div>'+
+    '<div id="schluss-37" style="margin-top:3px">Feedback gründlich umsetzen (nicht mit möglichst wenig Aufwand), dann alles noch einmal Korrektur lesen und zuletzt freigeben lassen (Punkt 3.7 der Policy).</div>'+
     '</div>';
   html+='</div></div>';
   document.getElementById('result-wrap').innerHTML=html;
@@ -2124,7 +2149,7 @@ function updateFeedbackBar(){
       s37.innerHTML='<strong>Alle Befunde bearbeitet – jetzt gemäß Punkt 3.7 der Policy: alles noch einmal Korrektur lesen, dann erst freigeben lassen.</strong>';
       s37.style.color='#1F3865';
     }else{
-      s37.innerHTML='Feedback gründlich umsetzen – nicht mit möglichst wenig Aufwand. Danach alles noch einmal Korrektur lesen. Erst dann freigeben lassen (Punkt 3.7 der Policy).';
+      s37.innerHTML='Feedback gründlich umsetzen (nicht mit möglichst wenig Aufwand), dann alles noch einmal Korrektur lesen und zuletzt freigeben lassen (Punkt 3.7 der Policy).';
       s37.style.color='';
     }
   }
