@@ -83,7 +83,17 @@
     (Upload grosser PDFs/lange Eingangsverarbeitung), danach
     WATCHDOG_MS=120 s zwischen Bytes. NIE entfernen und das erste
     Fenster NIE unter das zweite senken; functions/api.js blieb dabei
-    unveraendert.
+    unveraendert. NACHTRAG 3 (02.08.2026): Erst-Byte-Fenster auf 600 s
+    erhoeht. BETRIEBSBEFUND PUFFERUNG: Im echten Betrieb blieb die
+    Live-Anzeige DAUERHAFT bei "Verbindung wird aufgebaut" und der
+    Waechter schlug trotz gesunder Laeufe zu -> die Antwort kommt als
+    EIN Block am Ende an, der produktive Worker puffert also entgegen
+    dieser Checkliste (der 02.07.-Fix ist dort offenbar nie wirksam
+    geworden). Diagnose per E2E-Test verifiziert: Mit echt streamendem
+    Server zeigt die Anzeige alle Phasen korrekt. Korrigierte,
+    checklisten-konforme api.js am 02.08.2026 an Dr. Scheuwimmer
+    uebergeben (Streaming-Passthrough + CORS/OPTIONS); nach deren
+    Deploy sind die echten Phasen sichtbar - DAS ist der Funktionstest.
   - API-Key-Problem (Browser-Passwortmanager-Interferenz, "invalid
     x-api-key") — NICHT als final gelöst markieren ohne ausdrückliche
     Bestätigung durch Dr. Scheuwimmer.
@@ -626,6 +636,56 @@
          Jetzt WATCHDOG_FIRST_MS=240 s (bis erstes Byte) und
          WATCHDOG_MS=120 s (zwischen Bytes); Fehlertext entsprechend
          dynamisch. Echte Haenger werden weiterhin sicher beendet.
+         (Erst-Byte-Fenster in Nachtrag 3 weiter auf 600 s erhoeht.)
+  10. NACHTRAG 3 (acht Verbesserungsvorschlaege Dr. Scheuwimmer nach
+      weiteren Probelaeufen, gleicher Tag):
+      (a) LIVE-ANZEIGE BLIEB BEI "VERBINDUNG WIRD AUFGEBAUT": Ursache
+          NICHT der Client (E2E-Test mit echt streamendem SSE-Server:
+          alle Phasen erscheinen korrekt), sondern Pufferung auf dem
+          Weg - die Antwort kommt als EIN Block am Ende (siehe
+          BETRIEBSBEFUND im STREAMING-Abschnitt; korrigierte api.js
+          uebergeben). Clientseitig doppelt abgefedert: (i) ehrliche
+          ZEITBASIERTE Wartetexte in der connect-Phase (ab 5 s "Die
+          Pruefung laeuft - der ReviewAssistant liest und analysiert
+          das Dokument ...", ab 90 s Zusatz "kann mehrere Minuten
+          dauern"; je Schritt passend), (ii) Erst-Byte-Fenster auf
+          600 s erhoeht, damit der Waechter gepufferte, gesunde
+          Laeufe nicht mehr abbricht (Abbruch nach ~3-4 Minuten war
+          genau das). Fehlertext nennt Minuten statt Sekunden.
+      (b) SPALTENTITEL VEREINHEITLICHT: Modul A Spalte 2 heisst in der
+          UI jetzt "Befund" (statt "Problem"), Modul B Spalte 3 jetzt
+          "Vorschlag" (statt "Empfehlung") - beide Tabellen zeigen
+          damit Befund/Vorschlag. NUR die sichtbaren Titel; die
+          internen Formatmarker PROBLEM/EMPFEHLUNG im Rohformat und
+          in den Pass-Prompts bleiben UNVERAENDERT (Schnittstelle).
+      (c) 10.2 AUSNAHME JAHRESZAHL: Jaehrlich wiederkehrende Stichtage
+          ohne Jahresbezug (Bilanzstichtag 31.12., Kuendigung zum
+          30.06.) sind KEIN Befund; ein konkretes, einmaliges Datum
+          MUSS dagegen die Jahreszahl tragen.
+      (d) AUFZAEHLUNG STATT TEILUNG: Ist ein zu langer Satz im Kern
+          eine Aufzaehlung gleichrangiger Elemente, schlaegt Spalte 3
+          eine Aufzaehlung mit Aufzaehlungszeichen vor statt einer
+          Satzteilung (Beispiel im Prompt).
+      (e) ZAEHLWEISE BEI EIGENNAMEN + UNVERMEIDBARE LAENGE: Mehrwortige
+          Eigennamen zaehlen sinngemaess als EIN Wort (15er- UND
+          30er-Grenze); ein Satz, der nur wegen solcher Namen ueber
+          15 Woerter liegt und sich nicht sinnvoll kuerzen/teilen/
+          aufzaehlen laesst, ist KEIN Befund. BEWUSST NUR promptseitig:
+          Das deterministische 30-Woerter-Code-Netz zaehlt weiterhin
+          roh (Leitstern unangetastet; moegliche Uebermarkierung wirkt
+          nur farblich und nur auf ohnehin geflaggte Zeilen).
+      (f) SCHLUSSZEILE GEKUERZT (Wortlaut Dr. Scheuwimmer): "Vorschlaege
+          nie ungeprueft uebernehmen. Kein \"blindes\" Copy-and-paste.
+          Keine Annahmen - im Zweifel rueckfragen (Punkte 2.6 und 2.4
+          der Policy)." 3.7-Zeile unveraendert.
+      (g) REVIEW-NACHTRAG (Opus-Gegenpruefung des Deltas, 2 Befunde
+          behoben): (i) connect des zweiten Versuchs loest 'retry' in
+          der Live-Anzeige wieder ab - sonst stuende bei puffernder
+          Verbindung bis zu 10 Minuten statisch "zweiter Versuch
+          laeuft"; Suffix "(2. Versuch)" bleibt. (ii) api.js: Upstream-
+          Fetch in try/catch, Netzfehler Richtung Anthropic werden als
+          502 MIT CORS-Headern gemeldet (sonst saehe der Browser nur
+          "Failed to fetch").
   Getestet in Node (deterministisch): readStream-Parsing (SSE-Deltas,
   stop_reason aus message_delta, error-Event), callClaude-Waechter
   (Stall -> Abort -> automatischer Retry -> Erfolg; HTTP 400 -> genau
@@ -1284,12 +1344,12 @@ auslandHinweis+'\n'+
 'PFLICHTPRUEFUNG – ALLE DREI MODULE IMMER AKTIV:\n\n'+
 'MODUL A – POLICY & STIL:\n'+
 'Prüfe ausschliesslich gegen folgende Policy-Punkte:\n'+
-'10.2: Keine Absaetze mit nur einem Satz. ABSATZ-DEFINITION (wichtig gegen Fehlalarme): Ein Absatz ist ein durch eine LEERZEILE abgetrennter Textblock. Mehrere aufeinanderfolgende Saetze OHNE Leerzeile dazwischen bilden EINEN Absatz – unabhaengig von der Satzanzahl und unabhaengig von einem einfachen Zeilenumbruch. Werte einen einfachen Zeilenumbruch NICHT als Absatzgrenze. Flagge 10.2 nur, wenn ein durch Leerzeilen klar abgegrenzter Absatz tatsaechlich nur einen einzigen Satz enthaelt; im Zweifel KEIN 10.2-Befund. Schlage ein Zusammenfuehren von Absaetzen nur vor, wenn wirklich mehrere durch Leerzeilen getrennte Ein-Satz-Absaetze vorliegen. Chronologische Gliederung. Datum IMMER im Format TT.MM.JJJJ – flagge jedes andere Datumsformat im geprueften Dokument (z.B. "1. Maerz 2026", "2026-03-01", "01/03/2026") als Befund und schreibe in eigenen Vorschlaegen stets TT.MM.JJJJ. NUMMERIERUNG (ebenfalls Punkt 10.2): Nummerierte Gliederungen verwenden AUSSCHLIESSLICH arabische Ziffern mit Punkt (1., 2., 3.); Unterpunkte als 1.1, 1.2, 1.3; tiefere Ebenen 1.1.1 usw. JEDE andere Nummerierung der EIGENEN Gliederung des geprueften Dokuments ist ein Befund und wird bei JEDER Dokumentart IMMER geflaggt – zum Beispiel Grossbuchstaben (A., B., C.), Kleinbuchstaben (a), b), c) oder a., b., c.), roemische Ziffern (I., II., III.), Ziffern mit Klammer (1), 2), 3)) oder gemischte Systeme. Buendle mehrere Nummerierungs-Verstoesse desselben Dokuments in EINEM Befund und nenne Beispiele. Dieser Befund faellt NIE dem Top-5-Deckel zum Opfer. KEIN Nummerierungs-Verstoss sind Zitate aus Gesetzen und Entscheidungen (z.B. § 879 Abs 2 Z 1a lit a) sowie die blosse Wiedergabe der Nummerierung eines FREMDEN Dokuments (z.B. Punkt III des gegnerischen Vertrags).\n'+
+'10.2: Keine Absaetze mit nur einem Satz. ABSATZ-DEFINITION (wichtig gegen Fehlalarme): Ein Absatz ist ein durch eine LEERZEILE abgetrennter Textblock. Mehrere aufeinanderfolgende Saetze OHNE Leerzeile dazwischen bilden EINEN Absatz – unabhaengig von der Satzanzahl und unabhaengig von einem einfachen Zeilenumbruch. Werte einen einfachen Zeilenumbruch NICHT als Absatzgrenze. Flagge 10.2 nur, wenn ein durch Leerzeilen klar abgegrenzter Absatz tatsaechlich nur einen einzigen Satz enthaelt; im Zweifel KEIN 10.2-Befund. Schlage ein Zusammenfuehren von Absaetzen nur vor, wenn wirklich mehrere durch Leerzeilen getrennte Ein-Satz-Absaetze vorliegen. Chronologische Gliederung. Datum IMMER im Format TT.MM.JJJJ – flagge jedes andere Datumsformat im geprueften Dokument (z.B. "1. Maerz 2026", "2026-03-01", "01/03/2026") als Befund und schreibe in eigenen Vorschlaegen stets TT.MM.JJJJ. AUSNAHME JAHRESZAHL: Bezeichnet eine Angabe erkennbar einen jaehrlich wiederkehrenden Stichtag ohne Jahresbezug (z.B. Bilanzstichtag 31.12., Kuendigung jeweils zum 30.06.), ist Tag und Monat OHNE Jahreszahl zulaessig und KEIN Befund. Ist dagegen ein konkretes, einmaliges Datum gemeint, MUSS die Jahreszahl dabeistehen – ein Datum ohne Jahr ist dann ein Befund. NUMMERIERUNG (ebenfalls Punkt 10.2): Nummerierte Gliederungen verwenden AUSSCHLIESSLICH arabische Ziffern mit Punkt (1., 2., 3.); Unterpunkte als 1.1, 1.2, 1.3; tiefere Ebenen 1.1.1 usw. JEDE andere Nummerierung der EIGENEN Gliederung des geprueften Dokuments ist ein Befund und wird bei JEDER Dokumentart IMMER geflaggt – zum Beispiel Grossbuchstaben (A., B., C.), Kleinbuchstaben (a), b), c) oder a., b., c.), roemische Ziffern (I., II., III.), Ziffern mit Klammer (1), 2), 3)) oder gemischte Systeme. Buendle mehrere Nummerierungs-Verstoesse desselben Dokuments in EINEM Befund und nenne Beispiele. Dieser Befund faellt NIE dem Top-5-Deckel zum Opfer. KEIN Nummerierungs-Verstoss sind Zitate aus Gesetzen und Entscheidungen (z.B. § 879 Abs 2 Z 1a lit a) sowie die blosse Wiedergabe der Nummerierung eines FREMDEN Dokuments (z.B. Punkt III des gegnerischen Vertrags).\n'+
 '10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung. In fremdsprachigen Texten nach einem Fachausdruck den deutschen Originalbegriff (falls es einen gibt) in Klammer und KURSIV hinzufuegen – z.B. englisch "company register extract (*Firmenbuchauszug*)", "business register excerpt (*GISA-Auszug*)". Flagge fremdsprachige Dokumente, in denen ein solcher Fachausdruck (z.B. Firmenbuchauszug, GISA-Auszug) OHNE den deutschen Originalbegriff in kursiver Klammer vorkommt, als Befund. FORMATIERUNGS-VORBEHALT (Kursivschrift): Eingefuegter Text sowie DOCX-/TXT-Dateien erreichen dich als reiner Text OHNE Formatierung – Kursivschrift ist dort technisch NICHT erkennbar. Moniere in solchen Inhalten NIEMALS, dass ein vorhandener deutscher Begriff nicht kursiv gesetzt sei. FEHLT der deutsche Originalbegriff dagegen zur Gaenze, bleibt das ein Befund. Nur in hochgeladenen PDF-Dateien ist Kursivschrift sichtbar und pruefbar. AUSNAHME – INTERNER AKTENVERMERK: In einem internen Aktenvermerk sind juristische Fachbegriffe (auch juristische Abkuerzungen und lateinische Fachausdruecke) OHNE Erklaerung zulaessig – fehlende Erklaerungen dort NIE als Befund flaggen, weder laesslich noch gravierend. Die uebrigen Regeln dieses Punktes (nicht-juristische Abkuerzungen; kursiver deutscher Originalbegriff in fremdsprachigen Texten) gelten auch im internen Aktenvermerk.\n'+
 '10.7: Dokument muss Standalone sein – vollstaendig verstaendlich ohne Vorkenntnis. Das bedeutet NICHT, dass bereits erörterte Themen wortwörtlich wiederholt werden müssen: eine Kurzzusammenfassung mit Verweis auf das frühere E-Mail (z.B. "wie im E-Mail vom TT.MM.JJJJ") reicht in der Regel aus.\n'+
 '10.8: Bei Klienten-E-Mails: Eroeffnung mit Dank/Bezugnahme. Ende mit Angebot fuer Rueckfragen.\n'+
 '10.9: Max 15 Woerter pro Satz. Eine Aussage pro Satz. Keine Floskeln (z.B. "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen", "Ich erlaube mir"). Leichtverstaendlich. Konjunktiv ist NICHT verboten.\n'+
-'SATZLÄNGE AKTIV PRÜFEN (zu Punkt 10.9): Überschlage bei JEDEM Satz die Wortzahl. Mehr als 15 Wörter = Befund. Etwa 30 oder mehr Wörter = IMMER ein gravierender Befund (Markierung [!] am Zeilenanfang), der NIE weggelassen werden darf – auch nicht durch den Top-5-Deckel und nie als lässlich. Heuristik ohne genaues Zählen: Ein Satz, der über mehr als zwei Zeilen läuft oder mehrere eingeschobene Nebensätze enthält, ist fast immer zu lang. Beispiel für einen klar zu langen, gravierenden Satz (35 Wörter): "Wir möchten Ihnen in diesem Zusammenhang mitteilen, dass die von Ihnen übermittelten Unterlagen nach eingehender Prüfung durch unsere Kanzlei grundsätzlich vollständig erscheinen, wobei jedoch einzelne Punkte noch einer abschließenden Klärung bedürfen, die wir in den kommenden Tagen vornehmen werden." Solche Sätze in Spalte 3 in mehrere kurze Sätze (je höchstens 15 Wörter) zerlegen.\n'+
+'SATZLÄNGE AKTIV PRÜFEN (zu Punkt 10.9): Überschlage bei JEDEM Satz die Wortzahl. Mehr als 15 Wörter = Befund. Etwa 30 oder mehr Wörter = IMMER ein gravierender Befund (Markierung [!] am Zeilenanfang), der NIE weggelassen werden darf – auch nicht durch den Top-5-Deckel und nie als lässlich. Heuristik ohne genaues Zählen: Ein Satz, der über mehr als zwei Zeilen läuft oder mehrere eingeschobene Nebensätze enthält, ist fast immer zu lang. Beispiel für einen klar zu langen, gravierenden Satz (35 Wörter): "Wir möchten Ihnen in diesem Zusammenhang mitteilen, dass die von Ihnen übermittelten Unterlagen nach eingehender Prüfung durch unsere Kanzlei grundsätzlich vollständig erscheinen, wobei jedoch einzelne Punkte noch einer abschließenden Klärung bedürfen, die wir in den kommenden Tagen vornehmen werden." Solche Sätze in Spalte 3 in mehrere kurze Sätze (je höchstens 15 Wörter) zerlegen. AUFZAEHLUNG STATT TEILUNG: Ist ein zu langer Satz im Kern eine Aufzaehlung gleichrangiger Elemente (z.B. mehrere Gesellschaften, Dokumente oder Fristen), schlage in Spalte 3 KEINE Satzteilung vor, sondern eine Aufzaehlung mit Aufzaehlungszeichen: kurzer Einleitungssatz, dann je Element ein eigener Punkt. Beispiel: "I am following up regarding the annual financial statements for A GmbH, B GmbH, and C S.p.A." laesst sich nicht sinnvoll in zwei Saetze teilen – besser Einleitungssatz plus drei Aufzaehlungspunkte. ZAEHLWEISE BEI EIGENNAMEN: Mehrwortige Eigennamen (Firmenwortlaute wie "ES SHARED SERVICE CENTER SOCIETA PER AZIONI, Branch Austria", Behoerden-, Gesetzes- oder Programmnamen) zaehlen bei der Wortzahl sinngemaess als EIN Wort – sowohl bei der 15-Woerter-Grenze als auch bei der 30-Woerter-Grenze. UNVERMEIDBARE LAENGE: Ueberschreitet ein Satz die 15 Woerter nur wegen solcher unvermeidbarer Namen und laesst er sich weder sinnvoll kuerzen noch teilen noch als Aufzaehlung fassen, ist das KEIN Befund. Beispiel fuer einen zulaessigen Satz: "For ES SHARED SERVICE CENTER SOCIETA PER AZIONI, Branch Austria, we will require the annual financial statements of the Italian company."\n'+
 '13.5: Keine So-What-Aussagen (richtig aber nutzlos fuer den Empfaenger). Keine Wiederholungen. Das Wesentliche in den Vordergrund. SO-WHAT-PRUEFUNG AKTIV DURCHFUEHREN: Gehe JEDE Aussage des geprueften Dokuments durch und frage: Hat diese Aussage fuer den Empfaenger in DIESEM Dokument Relevanz und Aussagegehalt? Eine Aussage, die zwar richtig ist, aber zum Zweck des Dokuments nichts beitraegt oder erkennbar nicht zum Rest passt, ist ein Befund gegen Punkt 13.5 – flagge sie. Prueffrage: Bliebe der Empfaenger mit der Frage \"Und was bedeutet das fuer mich?\" zurueck, ohne dass das Dokument sie beantwortet? Dann flaggen. KEINE So-What-Aussagen sind: Anrede, Dank oder Bezugnahme, Gruss- und Schlussformeln und das Angebot fuer Rueckfragen – diese Elemente verlangt Punkt 10.8.\n'+
 '13.6: Nie "Das habe ich schon erklaert". Wenn eine Wiederholung tatsaechlich erforderlich ist (gemeinsam mit 10.7 zu lesen), gilt: sie soll hoeflich sein, sachlich sein, andere Worte verwenden, wenn moeglich einfacher sein, keine wortwoertliche Wiederholung wenn vermeidbar, keine Vorwuerfe, und einen Verweis auf das fruehere E-Mail in Klammer sofort nach der Aussage. WICHTIG: Sei hier nicht paepstlicher als der Papst. Wenn eine Wiederholung grosso modo diesen Kriterien entspricht, gilt 13.6 als erfuellt – pruefe nicht pedantisch jedes einzelne der sieben Elemente.\n'+
 '13.9: Service-orientiert. Dem Klienten Arbeit abnehmen. Optionen mit Vor-/Nachteilen. Nichts ist unmoeglich – hoechstens zu teuer.\n'+
@@ -1487,7 +1547,14 @@ async function readStream(response,hooks){
 // Dokumente koennen dauern, ohne dass etwas haengt - 90 s waren im Probelauf
 // zu knapp); SOBALD Bytes fliessen, ist Stille ein klares Fehlersignal, weil
 // die API laufend ping-/thinking-Events sendet.
-var WATCHDOG_FIRST_MS=240000;   // bis zum ersten empfangenen Byte
+// NACHTRAG 3 (02.08.2026): Erst-Byte-Fenster auf 10 Minuten erhoeht. Befund
+// aus dem Betrieb: Die Antwort kommt derzeit als EIN Block am Ende an (der
+// Worker puffert offenbar, siehe STREAMING-Abschnitt der Checkliste) - bis
+// dahin zaehlt die GESAMTE Generierungszeit als "kein Byte". 240 s haben
+// dadurch gesunde lange Pruefungen abgeschossen. Streamt der Worker korrekt
+// (api.js vom 02.08.2026), kommt das erste Byte in Sekunden und dieses
+// Fenster spielt keine Rolle mehr.
+var WATCHDOG_FIRST_MS=600000;   // bis zum ersten empfangenen Byte (10 Minuten)
 var WATCHDOG_MS=120000;         // zwischen empfangenen Bytes
 function isRetryableError(err){
   var m=(err&&err.message)?err.message:String(err);
@@ -1564,7 +1631,9 @@ async function callClaude(body,key,onStatus){
     }catch(err){
       if(timer)clearTimeout(timer);
       if(err&&err.name==='AbortError'){
-        err=new Error('Zeitüberschreitung: '+Math.round((armedMs||WATCHDOG_MS)/1000)+' Sekunden lang keine Daten vom Server empfangen.');
+        var _w=armedMs||WATCHDOG_MS;
+        var _wTxt=(_w>=120000)?(Math.round(_w/60000)+' Minuten'):(Math.round(_w/1000)+' Sekunden');
+        err=new Error('Zeitüberschreitung: '+_wTxt+' lang keine Daten vom Server empfangen.');
         err.taiyoWatchdog=true;
       }
       lastErr=err;
@@ -1607,7 +1676,19 @@ function renderLiveStatus(){
   elP.textContent='Prüfung läuft – Schritt '+liveState.passNo+' von '+liveState.total+': '+liveState.phaseName+' ('+mm+':'+ss+')';
   var d='';
   var mo=liveState.mode;
-  if(liveState.phase==='connect')d='Verbindung wird aufgebaut …';
+  // NACHTRAG 3 (02.08.2026): Ehrliche, ZEITBASIERTE Wartetexte, solange (noch)
+  // keine Bytes fliessen. Liefert der Proxy die Antwort als einen Block am
+  // Ende (puffernder Worker), bleibt die Phase technisch 'connect' - dann
+  // stand hier frueher minutenlang irrefuehrend "Verbindung wird aufgebaut".
+  if(liveState.phase==='connect'){
+    if(secs<5)d='Verbindung wird aufgebaut …';
+    else{
+      d=(mo==='kontrolle')?'Die Befunde werden geprüft – der ReviewAssistant arbeitet …'
+       :(mo==='uebersetzung')?'Die Übersetzung läuft – der ReviewAssistant arbeitet …'
+       :'Die Prüfung läuft – der ReviewAssistant liest und analysiert das Dokument …';
+      if(secs>=90)d+=' Bei längeren Dokumenten kann ein Schritt mehrere Minuten dauern.';
+    }
+  }
   else if(liveState.phase==='stream')d='Antwort beginnt …';
   else if(liveState.phase==='thinking'){
     d=(mo==='kontrolle')?'Die Befunde werden noch einmal durchdacht …'
@@ -1641,7 +1722,12 @@ function liveOnStatus(st){
     }
   }
   else if(st.phase==='stream'){if(liveState.phase==='connect')liveState.phase='stream';}
-  else if(st.phase==='connect'){if(liveState.phase!=='retry')liveState.phase='connect';}
+  // NACHTRAG 3 (Review-Fix N3-1): connect des ZWEITEN Versuchs darf 'retry'
+  // abloesen - sonst stuende bei puffernder Verbindung bis zu 10 Minuten
+  // statisch "zweiter Versuch laeuft". Der Retry-Text bleibt nur waehrend
+  // der 1,5-s-Pause sichtbar; danach greifen wieder die zeitbasierten
+  // Wartetexte, erkennbar am Suffix "(2. Versuch)".
+  else if(st.phase==='connect'){liveState.phase='connect';}
   var after=liveState.phase+'|'+liveState.module+'|'+liveState.attempt;
   if(after!==before)renderLiveStatus();
 }
@@ -1934,11 +2020,17 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
   // Gewicht) + Tooltip mit dem Wortlaut beider Policy-Punkte. Zusaetzlich steht
   // eine Schlusszeile am Berichtsende (siehe unten, id="policy-schluss").
   var hinweis26='<span style="font-weight:600;font-size:10px;color:#c9a227" title="Punkt 2.6 der Policy: Nie ungeprüft Informationen oder Unterlagen weiterleiten oder übernehmen (Copy\'n\'Paste), insbesondere bei Unklarheiten – die Quelle ist egal. Punkt 2.4: Annahmen sind gefährlich – lieber rückfragen und prüfen.">(siehe aber Punkte 2.6, 2.4 der Policy)</span>';
+  // NACHTRAG 3 (02.08.2026): Einheitliche, kurze Spaltentitel in BEIDEN
+  // Tabellen - "Befund" statt "Problem" und "Vorschlag" statt "Empfehlung"
+  // (Wunsch Dr. Scheuwimmer: jeweils das kuerzere Wort, beide Male gleich).
+  // Die INTERNEN Formatmarker des Modells (PROBLEM/EMPFEHLUNG in den
+  // Kopfzeilen des Rohformats) bleiben bewusst unveraendert - sie sind
+  // Schnittstelle zu Pass 1/2 und werden beim Rendern ohnehin entfernt.
   html+=renderModule(raw,'MODUL_A','Policy & Stil',
-    ['Textausschnitt','Problem <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag '+hinweis26],
+    ['Textausschnitt','Befund <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag '+hinweis26],
     false);
   html+=renderModule(raw,'MODUL_B','Inhaltliche Vollständigkeit',
-    ['Bereich','Befund','Empfehlung '+hinweis26],false);
+    ['Bereich','Befund','Vorschlag '+hinweis26],false);
   html+=renderFristen(raw);
   // Übersetzung (Punkt H): wenn Ausgabesprache ≠ Textsprache
   if(showTranslation&&translatedText){
@@ -1954,7 +2046,7 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
   // 3.7-Zeile wird via updateFeedbackBar hervorgehoben, sobald ALLE Befunde
   // abgehakt sind.
   html+='<div id="policy-schluss" style="margin-top:12px;border-left:3px solid #1F3865;background:#f0f4fa;border-radius:4px;padding:9px 12px;font-size:12px;color:#444;line-height:1.6">'+
-    '<div><strong>Vorschläge nie ungeprüft übernehmen.</strong> Kein Copy-and-paste ohne eigene Kontrolle. Keine Annahmen – im Zweifel rückfragen (Punkte 2.6 und 2.4 der Policy).</div>'+
+    '<div><strong>Vorschläge nie ungeprüft übernehmen.</strong> Kein "blindes" Copy-and-paste. Keine Annahmen – im Zweifel rückfragen (Punkte 2.6 und 2.4 der Policy).</div>'+
     '<div id="schluss-37" style="margin-top:3px">Feedback gründlich umsetzen – nicht mit möglichst wenig Aufwand. Danach alles noch einmal Korrektur lesen. Erst dann freigeben lassen (Punkt 3.7 der Policy).</div>'+
     '</div>';
   html+='</div></div>';
