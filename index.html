@@ -7,7 +7,6 @@
   werden — NICHT aus dem Gedächtnis behauptet. NIEMALS kürzen oder entfernen.
   Zuletzt abgeglichen mit Dr. Scheuwimmer: 26.06.2026.
 =======================================================================
-
   --- VIER LEITSTERNE (dürfen bei keinem Build regredieren) ---
   1. Modul A: lässlich vs. gravierend gewichtet; max. 5 Befunde
      (Top-5-Deckel nach Gravität).
@@ -19,7 +18,6 @@
      Übersehenes (4a Kommunikationslücken in BEIDE Richtungen + 4b
      juristische Lücken), nur 30% Fehler im Vorhandenen.
      "Vollständigkeit" = was FEHLT, nicht Feinschliff am Vorhandenen.
-
   --- WAS IST AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen) ---
   - "Danke für Ihre Rückmeldung" als E-Mail-Einleitung (10.8 verlangt das).
   - "Akonto" ohne Erklärung — außer Kontext signalisiert ausdrücklich
@@ -42,7 +40,6 @@
     weiter).
   - Honorarnote als Anhang erwähnt/beigefügt: Zahlungsfrist/Kontonummer
     müssen NICHT im Haupttext wiederholt werden.
-
   --- TECHNISCH KRITISCH ---
   - max_tokens für Pass 1 UND Pass 2 NIE unter 8000 setzen (bei zu
     niedrigem Wert wurde Modul C/Gerichtsfrist abgeschnitten). Seit
@@ -51,15 +48,21 @@
     Output aus demselben max_tokens-Budget kommen und der Sonnet-5-
     Tokenizer ~30% mehr Tokens erzeugt (sonst Trunkierungsgefahr).
   - MODELL-KONFIG (seit 01.07.2026, NIE wieder auf budget_tokens/
-    manuelles Denken zurueck — das wirft auf Sonnet 5 UND Opus 4.8 einen
-    400-Fehler): Standard = claude-sonnet-5, Wichtig = claude-opus-4-8.
+    manuelles Denken zurueck — das wirft auf Sonnet 5, Opus 4.8 UND
+    Opus 5 einen 400-Fehler): Standard = claude-sonnet-5, Wichtig =
+    claude-opus-5 (seit BUILD 02.08.2026; davor claude-opus-4-8).
     Aufwand ausschliesslich ueber output_config.effort ('high' Standard,
-    'max' Wichtig). Denken ausschliesslich ueber thinking:{type:
-    'adaptive'} (bei Sonnet 5 ohnehin default-an, bei Opus 4.8 noetig zum
-    Aktivieren). KEINE temperature/top_p/top_k setzen (=> 400 auf Sonnet
+    'max' Wichtig; beides von Opus 5 unterstuetzt, Default dort 'high').
+    Denken ausschliesslich ueber thinking:{type:'adaptive'} (bei Sonnet 5
+    ohnehin default-an, bei Opus 4.8 war es noetig zum Aktivieren; Opus 5
+    unterstuetzt laut Modell-Doku NUR adaptives Denken, kein manuelles).
+    KEINE temperature/top_p/top_k setzen (=> 400 auf Sonnet
     5). KEIN 'anthropic-beta: interleaved-thinking'-Header (Proxy leitet
     ihn ohnehin nicht weiter). Modell-Strings sind KEINE Evergreen-Alias
-    — bei neuem Sonnet/Opus-Release manuell hochziehen.
+    — bei neuem Sonnet/Opus-Release manuell hochziehen (claude-opus-5/
+    claude-sonnet-5 sind laut Doku fixe Snapshots ohne Datums-Suffix;
+    max Output beider Modelle 128k, die max_tokens oben liegen weit
+    darunter).
   - STREAMING PFLICHT (seit 02.07.2026, NIE wieder abschalten): Alle drei
     API-Aufrufe MUESSEN mit stream:true laufen, der Worker (functions/
     api.js) reicht upstream.body UNGEPUFFERT durch (NICHT await
@@ -70,6 +73,12 @@
     an der JSON.parse scheitert ("Unexpected token 'e'..." bzw. Firefox
     "unexpected character at line 1 column 1"). Mit Streaming fliessen
     sofort message_start/ping/Delta-Bytes -> Verbindung bleibt am Leben.
+    Seit BUILD 02.08.2026 zusaetzlich clientseitiger WAECHTER gegen still
+    abgerissene Streams: callClaude() kapselt alle drei Aufrufe, bricht
+    nach WATCHDOG_MS (90 s) ohne empfangene Bytes via AbortController ab
+    und wiederholt EINMAL automatisch (nur bei Waechter-Abbruch, Netz-
+    fehler, HTTP 5xx/529, Overloaded; NIE bei HTTP 4xx). NIE entfernen;
+    functions/api.js blieb dabei unveraendert.
   - API-Key-Problem (Browser-Passwortmanager-Interferenz, "invalid
     x-api-key") — NICHT als final gelöst markieren ohne ausdrückliche
     Bestätigung durch Dr. Scheuwimmer.
@@ -77,7 +86,6 @@
     Ansicht sichern — das baut den DOM neu zusammen und wirft führende
     Kommentare (also genau diese Checkliste) weg. Immer: Download-Button
     im Chat, GitHub-Raw-Download, oder view-source: + Strg+S.
-
   --- VOLLSTÄNDIGE FELDLISTE SCHRITT 1 ---
   Dokumenttyp; Ausgabesprache (Deutsch/English/日本語/한국어, OHNE
   deutsche Zusatzbezeichnung); Rechtsgebiet-Chips (Privatrecht/
@@ -90,18 +98,16 @@
   (Hinweis "für inhaltliche Prüfung entscheidend", Placeholder erwähnt
   explizit, dass komplette Korrespondenz eingefügt werden kann);
   Zusätzlicher Kontext; RSV-Checkbox.
-
   --- VOLLSTÄNDIGE FELDLISTE SCHRITT 2 ---
   Dokumenttyp-Textfeld "Zu prüfender/s Text oder Dokument"; Feld
   "Zusätzliche Informationen zum zu prüfenden Text/Dokument"; Datei-
   Upload (PDF/DOCX/TXT) mit Entfernen-Button OHNE Page-Reload.
-
   --- WICHTIG-MODUS ---
   UI zeigt NUR "Tiefere Analyse, höhere Kosten" — keine Modell-/
-  Einstellungsdetails anzeigen. Intern (seit 01.07.2026): claude-opus-4-8
-  + output_config.effort 'max' + thinking:{type:'adaptive'}
-  (NICHT mehr budget_tokens — siehe MODELL-KONFIG oben).
-
+  Einstellungsdetails anzeigen. Intern (seit BUILD 02.08.2026):
+  claude-opus-5 + output_config.effort 'max' + thinking:{type:'adaptive'}
+  (davor seit 01.07.2026 claude-opus-4-8; NICHT mehr budget_tokens —
+  siehe MODELL-KONFIG oben).
   --- BEKANNTER OFFENER BUG (Stand 25.06.2026) ---
   Modul C (Gerichtsfrist) fehlte bereits im Pass-1-Output, vor jeglichem
   Parsing. Diagnose-Logging: Block-Praesenz (MODUL_A/B/C true/false) +
@@ -109,7 +115,6 @@
   Pass-1-Output nur bei Aufruf mit ?debug=1 (DEBUG_LOG_FULL_OUTPUT,
   Standard AUS, siehe BUILD 05.07.2026). Ursache noch NICHT final
   bestätigt behoben.
-
   --- BUILD-ITEMS A–H (Status zuletzt geprüft 25.06.2026) ---
   A: Bei JEDER Code-Änderung an diesem Tool: Claude arbeitet mit
      aktuellem Opus + Max-Aufwand + Denken (Arbeitsanweisung an Claude,
@@ -122,7 +127,6 @@
   G: RSV-Kontradiktion → Modul B statt Modul A — umgesetzt.
   H: Übersetzungs-Pass (Pass 3 bei Ausgabesprache ≠ Dokumentsprache) —
      umgesetzt.
-
   --- BUILD 26.06.2026 (acht Verbesserungen) ---
   1. Header-Layout: API-Key-Eingabefeld + "Speichern" in der Kopfzeile
      rechts neben dem Titel; Status "Key gespeichert" rechtsbuendig
@@ -145,7 +149,6 @@
      strafrechtliche Folge; mehrfach unbeantwortete Klientenfrage; nur
      FBG statt auch GmbHG; nicht stuetzender Rechtssatz; falsch
      berechnete Frist). renderFristen entfernt versehentliche "[!]".
-
   --- BUILD 26.06.2026 (Nachtrag) ---
   - Logo (logo-badge) deutlich groesser, etwa gleiche Hoehe wie der
     API-Key-Block rechts; "ReviewAssistant"/Untertitel unveraendert.
@@ -162,7 +165,6 @@
     (rg-frei) und "Ausländisches Recht" (auslrecht) bleiben getrennt –
     auslrecht loest im Leerzustand "ausschliesslich oesterreichisches
     Recht" aus; dieses Signal ginge bei einer Verschmelzung verloren.
-
   --- BUILD 28.06.2026 ---
   - Logo-Badge: CSS-Nachbau ("太陽" Kanji + TAIYO/LEGAL Textspans) durch
     das echte TAIYO-Legal-Logo (vom Nutzer hochgeladenes JPG, weiß auf
@@ -184,7 +186,6 @@
   - API-Key-Problem: weiterhin NICHT als final gelöst markiert (siehe
     TECHNISCH KRITISCH oben) — Status unverändert, keine Bestätigung
     durch Dr. Scheuwimmer vorliegend.
-
   --- BUILD 01.07.2026 (acht Verbesserungen) ---
   1. MODELL-UPGRADE auf Sonnet 5: Standard-Modus jetzt claude-sonnet-5
      (statt claude-sonnet-4-6), Wichtig-Modus unveraendert claude-opus-
@@ -256,7 +257,6 @@
   3. Uebersetzung (Pass 3) ist in try/catch gekapselt – ein Fehler dort
      bricht die Pruefung nicht mehr ab.
   4. Klarere Fehleranzeige bei Timeout/Netzfehler.
-
   --- BUILD 05.07.2026 (Vertraulichkeit: Roh-Output-Logging, Punkt 4) ---
   Problem: console.log des VOLLSTAENDIGEN rohen Pass-1-Outputs (enthaelt
   Mandantendokument-Inhalt inkl. woertlicher Textausschnitte) lief bei
@@ -270,7 +270,6 @@
   wiederholen. Reiner Schutz-/Diagnose-Diff: KEINE Aenderung an Modell
   (claude-opus-4-8/claude-sonnet-5), Aufwand/effort, Streaming, max_tokens,
   Modullogik, forceRestoreBlock oder Prompts.
-
   --- BUILD 05.07.2026 (Spracherkennung guessLang + Uebersetzung, Punkt 2) ---
   Problem A: guessLang zaehlte Kana UND CJK-Ideogramme zusammen als
   'japanisch'. Chinesischer Text (Hanzi, keine Kana) wurde daher als
@@ -291,7 +290,6 @@
   (p.docText), nicht hochgeladene Dateien - unveraendert, kein Teil dieses
   Fixes. Chinesisch-Quelle laeuft ueber den generischen Juristen-Uebersetzer-
   Prompt (keine zh-spezifische Policy-Regel wie 14.5 fuer EN).
-
   --- BUILD 05.07.2026 (Top-5-Deckel Modul A als Code-Sicherheitsnetz) ---
   Bisher hing der Top-5-Deckel (max. 5 Modul-A-Befunde) NUR am Systemprompt;
   kein Code erzwang ihn - anders als beim 30-Woerter-Netz. Jetzt determi-
@@ -305,7 +303,6 @@
   ein 30+-Woerter-Befund wird NIE durch den Deckel entfernt (konsistent zur
   Leitstern-Regel). Gilt ausschliesslich fuer Modul A; Modul B/C unberuehrt.
   Die Render-Schleife selbst bleibt byte-identisch (Netz nur vorgeschaltet).
-
   --- BUILD 05.07.2026 (Modul-B-Gravitaet praezisiert, 2 Massgaben) ---
   Zwei Praezisierungen der Grave-Definition in MODUL B (Systemprompt,
   Abschnitt 'Gravierend in MODUL B als FEHLER'):
@@ -320,7 +317,6 @@
   Reine Prompt-Textaenderung in MODUL B; keine Code-/Logikaenderung, kein
   Einfluss auf MODUL A oder C, Invarianten unberuehrt. Wirkung nur im echten
   Betrieb pruefbar (kein deterministischer Unit-Test moeglich).
-
   --- BUILD 05.07.2026 (Review-Runde: 2 Fehler + 4 Verbesserungen) ---
   Fix 1 (DOCX Tracked Changes): docxToText loeste nachverfolgte Aenderungen
   nicht auf -> geloeschter UND eingefuegter Text landeten vermischt im Text.
@@ -346,7 +342,6 @@
   Reine Code-/Prompt-Aenderungen; Modell/Aufwand/Streaming/forceRestoreBlock/
   Modul-A-B-C-Struktur unveraendert. Fix 4 nur im Betrieb pruefbar; Rest per
   Node getestet (docxToText mit Tracked Changes + Fussnote).
-
   --- BUILD 05.07.2026 (2. Review-Runde: 2 Fehler + 4 Verbesserungen) ---
   Fix 1 (TXT-Mojibake): atob(f.base64) dekodierte TXT-Uploads als Latin-1;
   UTF-8-Umlaute wurden zu "Ã¤" etc. und der kaputte Text floss auch in
@@ -383,7 +378,6 @@
   Getestet in Node: decodeBase64Text (UTF-8 + windows-1252-Fallback),
   maxSentenceWordCount (Abkuerzungen/Daten/Mehrsatz), Regression aller
   frueheren Suiten. Invarianten unveraendert.
-
   --- BUILD 05.07.2026 (Feedback-Loop / Selbstoptimierung) ---
   Neben jedem Befund (Modul A, B UND C) drei sich gegenseitig ausschliessende
   Status-Buttons: Umgesetzt / Falsch / zur Kenntnis genommen (Labels in
@@ -405,7 +399,6 @@
   (Buttons je <li>), renderResult (reset + feedback-bar + updateFeedbackBar),
   runReview (lastReviewMeta). Grave-Erkennung/Top-5-Netz/Modul-Struktur
   unveraendert. Node-getestet: buildFeedbackText, Status-Toggle, mailto-Laenge.
-
   --- BUILD 05.07.2026 (UX-Feinschliff, 6 Punkte) ---
   P1: Status-Buttons in Modul C (Termine & Fristen) jetzt rechtsbuendig
   (Inhalts-Span flex:1) statt direkt nach dem Termin - konsistent mit der
@@ -423,7 +416,6 @@
   Dateien hochladen oder hierher ziehen'.
   P6: Feld Vorkorrespondenz/Sachverhalt min-height 80px -> 160px (gleich
   gross wie das Feld fuer den zu pruefenden Text).
-
   --- BUILD 09.07.2026 (vier Wuensche Dr. Scheuwimmer) ---
   W1 GESAMTBEWERTUNG BEI BESONDERS MUEHSAMEM TEXT: Neuer DRITTER
      Vorspann-Ausloeser (3) im Systemprompt. Erscheint im bestehenden
@@ -478,17 +470,120 @@
   Aktenvermerk-Weiche je Dokumenttyp) und alle bisherigen Kernmarker.
   node --check auf dem Gesamt-Script ok. Modelle/Streaming/max_tokens/
   forceRestoreBlock/Feldlisten/Feedback-Loop unveraendert.
+  --- BUILD 02.08.2026 (sieben Wuensche Dr. Scheuwimmer) ---
+  1. WICHTIG-MODUS AUF OPUS 5: Modellstring claude-opus-4-8 ->
+     claude-opus-5 (laut Modell-Doku fixer Snapshot ohne Datums-Suffix;
+     unterstuetzt output_config.effort inkl. 'max', NUR adaptives
+     Denken, max Output 128k). Standard-Modus unveraendert
+     claude-sonnet-5; max_tokens/effort/thinking/Streaming unveraendert.
+     Normative Abschnitte MODELL-KONFIG und WICHTIG-MODUS oben
+     aktualisiert; Build-Historie unangetastet.
+  2. GEGEN AUFHAENGEN - WAECHTER + AUTO-RETRY: Neue Funktion
+     callClaude() kapselt alle drei API-Aufrufe. AbortController-
+     Waechter bricht ab, wenn WATCHDOG_MS (90 s) lang KEINE Bytes
+     ankommen (die API sendet waehrend des Denkens laufend ping-/
+     thinking-Events; laengere Stille = abgerissene Verbindung), danach
+     EIN automatischer Wiederholungsversuch. Wiederholt wird nur bei
+     Waechter-Abbruch, Netzfehler, HTTP 5xx/529, Overloaded - NIE bei
+     HTTP 4xx (Retry dort sinnlos). readStream um OPTIONALE hooks
+     (onChunk/onThinking/onText) erweitert, Signatur rueckwaerts-
+     kompatibel. Klarere Fehlermeldung bei Zeitueberschreitung. Rein
+     clientseitig; functions/api.js UNVERAENDERT, kein Worker-Deploy.
+  3. NUTZER-ERKENNUNG + PROFIL-NUANCEN (nur bei VOELLIGER Sicherheit):
+     buildUserNuancePrompt() haengt an jeden Pass-1-Systemprompt eine
+     DESTILLIERTE Mitarbeiterliste (Name/Alternativschreibweisen/
+     E-Mail/Deutschniveau; USER_PROFILES_B64, Base64 = reiner
+     Sichtschutz) plus strenge Regeln: Erkennung NUR aus den Eingaben
+     (z.B. Signatur des eigenen Entwurfs, ausdrueckliche Angabe);
+     Schreibstil, office@-Sammeladresse, blosse Namensnennung Dritter
+     und Klient/Empfaenger genuegen NIE; im Zweifel NICHT erkannt ->
+     exakt NICHTS aendert sich. Bei sicherer Erkennung passt das Modell
+     NUR Ton und Einfachheit der an den Mitarbeiter gerichteten
+     Erklaertexte an dessen Deutschniveau an (gering: sehr einfach /
+     mittel: einfach / hoch: klar / sehr hoch+muttersprache: KEINE
+     Anpassung). ABSOLUTE GRENZEN im Prompt verankert: niemals
+     Pruefumfang, Befundauswahl, Gewichtung, Module, Formatmarker,
+     Fristen-Richtwerte oder Top-5-Deckel aendern; Modul-A-Spalte-3-
+     Dokumenttext bleibt voellig unberuehrt; Erkennung/Niveaus/Liste
+     NIE erwaehnen; NIE Aufgabenzuweisung an Mitarbeiter vorschlagen.
+     Pass 2 erhielt NUR die generische Regel, erkennbar einfache
+     Erklaersaetze nicht komplexer umzuschreiben - KEINE Profildaten in
+     Pass 2 oder Pass 3. VERTRAULICHKEIT (bewusste Minimal-Variante,
+     Rueckfrage vom 02.08.2026): NIEMALS Schwaechen, Motivatoren oder
+     sonstige Profilinhalte in die Datei einbetten - Quelltext und
+     API-Request sind fuer jeden Nutzer einsehbar; eingebettet ist nur
+     die obige Minimalliste. KEINE neuen UI-Felder (Feldlisten Schritt
+     1/2 unveraendert).
+  4. LIVE-STATUSANZEIGE WAEHREND DER PRUEFUNG: startPassStatus/
+     renderLiveStatus/liveOnStatus/stopLiveStatus zeigen in der
+     Wartezeit "Pass x von y" (Passzahl wird seit diesem Build VOR
+     Pass 1 berechnet - Uebersetzungsregel unveraendert, Berechnung nur
+     vorgezogen), Verbindungs-/Denk-/Schreibphase, das gerade
+     entstehende Modul (Marker-Erkennung im Stream), die Laufzeit mm:ss
+     und einen etwaigen zweiten Versuch. Verschwindet VOLLSTAENDIG,
+     sobald renderResult oder die Fehlerbox rendert (stopLiveStatus im
+     finally) - reine Wartezeit-Anzeige, nie Teil des Berichts.
+  5. TIPPFEHLER-SAMMELZEILE (Diagnose Dr. Scheuwimmer bestaetigt:
+     Typos fielen der Top-5-Gewichtung zum Opfer): Prompt weist an,
+     aktiv nach Tippfehlern zu suchen. 1-3 Typos = normale
+     Einzelbefunde (in der Regel laesslich). MEHR ALS DREI Typos =
+     EINE Sammelzeile: Spalte 1 alle Stellen woertlich (Semikolon),
+     Spalte 2 Anzahl + Wort "Tippfehler" (en "typos", ja 誤字, ko 오타),
+     Spalte 3 alle Korrekturen; zaehlt als EIN Befund und faellt NIE
+     dem Top-5-Deckel zum Opfer. Deterministisches Netz im Deckel:
+     Zeilen mit tippfehler/typo/誤字/タイプミス/오타 in Spalte 2 werden nie
+     gekuerzt (wirken wie das 10.2-Netz nur BEHALTEND). Bewusste
+     Design-Entscheidung Claudes: schuetzt damit auch einzelne
+     Typo-Zeilen (1-3 Typos) - noch nicht ausdruecklich von
+     Dr. Scheuwimmer bestaetigt, liegt aber auf der Linie der
+     Beanstandung ("Typos werden uebersehen").
+  6. PUNKT 2.6/2.4 PROMINENTER (Wortlaut von Dr. Scheuwimmer am
+     02.08.2026 uebermittelt): Spaltenkopf-Hinweis "(siehe aber Punkte
+     2.6, 2.4 der Policy)" farblich verstaerkt (gold, halbfett) +
+     title-Tooltip mit dem Wortlaut (2.6: nie ungeprueft Informationen/
+     Unterlagen weiterleiten oder uebernehmen, Copy'n'Paste, Quelle
+     egal; 2.4: Annahmen sind gefaehrlich, lieber rueckfragen/pruefen).
+     Zusaetzlich Schlusszeile am Berichtsende (id policy-schluss,
+     DETERMINISTISCH client-gerendert, nicht vom Modell): "Vorschlaege
+     nie ungeprueft uebernehmen. ..." - bewusst kompakt (Vorgabe:
+     Ergebnis nicht ueberfrachten).
+  7. PUNKT 3.7 IM ERGEBNIS: Zweite Schlusszeile (id schluss-37):
+     Feedback gruendlich umsetzen - nicht mit moeglichst wenig Aufwand;
+     danach alles noch einmal Korrektur lesen; erst dann freigeben
+     lassen (Punkt 3.7 der Policy). Sobald ALLE Befunde ueber die
+     Status-Buttons bearbeitet sind, hebt updateFeedbackBar die Zeile
+     hervor ("Alle Befunde bearbeitet - jetzt ..."). Ebenfalls bewusst
+     kompakt.
+  8. REVIEW-NACHTRAG (Opus-Gegenpruefung dieses Builds, 2 Befunde
+     behoben): (a) office@taiyolegal.at aus dem Profil-Eintrag von Frau
+     Olgun ENTFERNT (m:"") - die Sammeladresse haette sonst trotz der
+     "identifiziert NIEMANDEN"-Regel eine 1:1-Zuordnung nahegelegt;
+     Erkennung von Frau Olgun jetzt nur noch ueber den Namen. NIE
+     wieder office@ einem einzelnen Profil zuordnen. (b) Vorbestehender
+     Bug: "Alles zuruecksetzen" waehrend laufender Pruefung setzte
+     result-wrap auf display:none, der fertige Bericht landete
+     unsichtbar. Fix: clear-btn ist waehrend der Pruefung gesperrt
+     (wie submit-btn, inkl. :disabled-Style) und wird im finally wieder
+     freigegeben.
+  Getestet in Node (deterministisch): readStream-Parsing (SSE-Deltas,
+  stop_reason aus message_delta, error-Event), callClaude-Waechter
+  (Stall -> Abort -> automatischer Retry -> Erfolg; HTTP 400 -> genau
+  1 Versuch), Top-5-Netz inkl. Typo-Schutz (de/en/ja/ko) und alle
+  10.2-Regressionsfaelle, maxSentenceWordCount-Regression,
+  buildSystemPrompt-Marker (saemtliche Alt-Marker + NUTZER-ERKENNUNG +
+  TIPPFEHLER + Datumsanker), Profil-Dekodierung (14 Eintraege,
+  Round-Trip). node --check auf dem Gesamt-Script ok. Feldlisten/
+  forceRestoreBlock/max_tokens/stream:true(3x)/Feedback-Loop
+  unveraendert.
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TAIYO ReviewAssistant</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
 .app{max-width:920px;margin:0 auto;padding:24px 20px 60px}
-
 /* Header */
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid #e0e0da;gap:18px}
 .header-left{display:flex;align-items:center;gap:10px}
@@ -499,7 +594,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .logo-badge .name span:last-child{color:rgba(255,255,255,.75);font-size:9px;letter-spacing:3px}
 .header-title{font-size:16px;font-weight:600;color:#1F3865;letter-spacing:.01em}
 .header-title small{display:block;font-size:11px;font-weight:400;color:#888;margin-top:1px;letter-spacing:0}
-
 /* API Key (in Kopfzeile rechts) */
 .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:320px}
 .key-row{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:8px 10px;width:100%}
@@ -514,11 +608,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .header-right{align-items:stretch;min-width:0}
   .key-status{align-self:flex-end}
 }
-
 /* Form card */
 .card{background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:18px 20px;margin-bottom:16px}
 .card-title{font-size:12px;font-weight:700;color:#1F3865;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
-
 /* Fields */
 .field{margin-bottom:13px}
 .field:last-child{margin-bottom:0}
@@ -528,22 +620,18 @@ input[type=text],textarea,select{width:100%;border:1px solid #ddd;border-radius:
 input[type=text]:focus,textarea:focus,select:focus{border-color:#1F3865}
 textarea{resize:vertical;line-height:1.5}
 select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-
 /* Two-col */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:520px){.two-col{grid-template-columns:1fr}}
-
 /* Chips / pills */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border:1px solid #ddd;border-radius:20px;font-size:12px;cursor:pointer;color:#555;background:#fff;transition:all .15s;user-select:none}
 .chip:hover{border-color:#1F3865;color:#1F3865}
 .chip.active{background:#1F3865;border-color:#1F3865;color:#fff}
 .chip input[type=checkbox]{display:none}
-
 /* Checkbox row */
 .cb-row{display:flex;align-items:center;gap:7px;font-size:13px;color:#555;cursor:pointer;margin-top:8px}
 .cb-row input{accent-color:#1F3865;width:14px;height:14px;cursor:pointer}
-
 /* Upload area */
 .upload-area{border:1.5px dashed #ccc;border-radius:6px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
 .upload-area:hover{border-color:#1F3865;background:#f8f9fc}
@@ -554,7 +642,6 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .file-item{display:flex;align-items:center;justify-content:space-between;background:#f0f4fa;border-radius:4px;padding:5px 9px;font-size:12px;color:#333}
 .file-remove{background:none;border:none;color:#999;cursor:pointer;font-size:15px;padding:0 2px;line-height:1}
 .file-remove:hover{color:#c44}
-
 /* Wichtig toggle */
 .wichtig-section{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;border:1px solid #e8e8e4;border-radius:8px;margin-bottom:16px}
 .wichtig-label{font-size:13px;color:#555}
@@ -569,20 +656,18 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .toggle-wrap input:checked+.toggle-slider{background:#1F3865}
 .toggle-wrap input:checked+.toggle-slider:before{transform:translateX(20px)}
-
 /* Submit button */
 .submit-btn{width:100%;background:#1F3865;color:#fff;border:none;border-radius:7px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;letter-spacing:.01em}
 .submit-btn:hover{background:#2a4d85}
 .submit-btn:disabled{background:#aaa;cursor:not-allowed}
 .clear-btn{width:100%;background:#fff;color:#1F3865;border:1px solid #c9d3e4;border-radius:7px;padding:10px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-top:9px}
 .clear-btn:hover{background:#f0f4fa;border-color:#1F3865}
-
+.clear-btn:disabled{color:#aaa;border-color:#ddd;cursor:not-allowed;background:#fff}
 /* Results */
 .result-wrap{margin-top:40px}
 .result-card{background:#fff;border:1px solid #e8e8e4;border-radius:8px;overflow:hidden}
 .result-header{background:#1F3865;color:#fff;padding:12px 18px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
 .result-body{padding:18px 20px}
-
 /* Table */
 .review-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .review-table th{text-align:left;font-weight:600;font-size:11px;color:#1F3865;padding:7px 10px;border-bottom:2px solid #1F3865;background:#f0f4fa;text-transform:uppercase;letter-spacing:.04em}
@@ -595,10 +680,8 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .review-table tr.grave td{background:#fff5f5}
 .review-table tr.grave td:first-child{border-left:3px solid #c00}
 .review-table tr.grave:hover td{background:#fdecec}
-
 /* Module separator */
 .mod-sep{padding:8px 10px;background:#f5f5f3;font-size:11px;font-weight:700;color:#1F3865;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid #e8e8e4}
-
 /* Fristen list */
 .fristen-list{list-style:none;padding:0}
 .fristen-list li{padding:8px 10px;border-bottom:1px solid #eee;font-size:13px;display:flex;align-items:flex-start;gap:8px}
@@ -609,17 +692,14 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
 .frist-badge.urgenz-klient{background:#e8f4fd;color:#0c5a8a}
 .frist-badge.urgenz-interessent{background:#e8f6ee;color:#1a6b35}
 .frist-badge.physisch{background:#f3e8ff;color:#6b21a8}
-
 /* Loading */
 .loading{padding:30px;text-align:center;color:#888;font-size:14px}
 .loading-dots span{display:inline-block;width:6px;height:6px;background:#1F3865;border-radius:50%;margin:0 2px;animation:bounce .9s infinite}
 .loading-dots span:nth-child(2){animation-delay:.15s}
 .loading-dots span:nth-child(3){animation-delay:.3s}
 @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
-
 /* Error */
 .error-box{background:#fde8e8;border:1px solid #f5c2c2;border-radius:6px;padding:12px 14px;font-size:13px;color:#c00;margin-top:10px}
-
 /* Pass indicator */
 .pass-indicator{font-size:11px;color:rgba(255,255,255,.7);font-weight:400}
 /* Feedback-Loop: Status-Buttons je Befund + optische Abarbeitung */
@@ -644,12 +724,11 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
 </head>
 <body>
 <div class="app">
-
   <!-- Header (mit API-Key rechts) -->
   <div class="header">
     <div class="header-left">
       <div class="logo-badge" style="background:none;padding:0">
-        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAFZAZADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD5Cooor9NPlAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAK674ZfCXxb8YtfOjeD9Fn1m+VPMlEZVI4UzjdI7EKoz6nntXI1+o//BL3w1pun/A/WNagKSanqeryR3TDG6NYlURofwZm/wCB1w43EPDUXUSuzooUlVnys+YLj/gmt8Z4dPFwlvodxOQCbSPUgJB7ZKhf/Hq+f/iH8MPFXwo146N4t0S60TUdu9Y7hRtlXONyOCVdfcE1+8+K+Nf+Conh3Tb34H6LrE7Rx6pp+sRx2pYjfIkqOJEHr91W/wCAV42EzSrVrRp1ErM7q2EhGDlHofl1RRRX055IUUUUAFFFFABRRRQAUUDkjufSuuuvg/48stI/tW48F+IIdN2CT7W+mTCPaejbtvT3qXKMd2NJvY5GikBzS1QgooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACuk8G/Evxb8O5Jn8L+JtW8PNMQ0o067eESEdCwU4P4iubpCGYYUZY8Ae9KUVJWkroabWx+4H7MPirWvG/wB8Da54huTeaxfaaktxcMADKckBzjjJUAn3NfB/8AwU9+Jf8AwkfxT0Lwja3DPZ6DZtNPGCQv2mVu49Qirz/tGv0P+GOjReAvhL4X0yVVhj0rRreKUKOAY4V3n8wTX4vfHv4gw/FH4xeLfFFvlbLUL93tQ2eIR8qcHpkDOOxJr5PLKaqYqdRLRX/E9jFScaSj1ZwVFe0/Bz9j/wCJ3xsMFxpOgvpmiyH/AJC+r5t7fHqgI3Sf8BBHvX298Mf+Cdvwy+FmnNrfxA1EeKp7ZPNmk1BxaadAB1JTdyB6uxHtXu18fQoa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9AB2ri/hl4e1LTtM1zx1/Y7XunaFbfuWubRpbaW5lby0DDGGCgyOew8sZ617D8Jddvfjv8E/iZ8Ov7B0+1ubK2TxLo66Np4t0NzAQJYyF4LvHwO5wa4a03GSmtovX5/5aHRTimnF7s+XKKfPBLazPDPE8EyHDxyqVZT6EHkGmV3HOb3gO/On+M9FkNta3iPeQxSQXtuk8UiM6hgUcEcgnnqO1dz+1PBZ6X8e/GWjaZplhpGlaTqElnaWmn2qQIka4xnaAWPucmuG8A6Xeaz430G1sLWa9uWv7ciKCMu2PNXJwO3vXsX7Ufwu8Y6t+0544Sx8Lavd/wBpauz2ckNlI8c6vt2srgbSOeueO9cknGNdXfR/mjZJum/U+f6Kua1ph0XWL/T2mjuHtJ3t2lhOUcoxUlT6ZFU66076mQUUUUCCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAqa3vrmzDC3uZrcN97ypGTP1weahooavuMty6xqE8bRyX93JGwwUedypHoQTVSiii3YApySPHnY7ITwdpxTaKBEn2ibGPOkx6bzUdFFAwooooETWl9dafIz2lzPauwwWgkZCfqQRTbi6mvJTLcTSXEp6vK5dj+JqOiiy3HcKKKKBE6ahdx25gS6nSAggxLKwQ568ZxzSW19c2YYW9zNbhvveVIyZ+uDUNFKyGOlleaRpJHaSRjlnckkn3JptFFMRJb3M1pJ5kE0kEmMb4nKnH1FWRrmpgY/tK8x6faH/AMapUUmk9x3AnJyeTRRRTEFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAf/2Q==" alt="TAIYO Legal" style="height:74px;width:auto;border-radius:8px;display:block">
+        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAFZAZADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD5Cooor9NPlAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAK674ZfCXxb8YtfOjeD9Fn1m+VPMlEZVI4UzjdI7EKoz6nntXI1+o//BL3w1pun/A/WNagKSanqeryR3TDG6NYlURofwZm/wCB1w43EPDUXUSuzooUlVnys+YLj/gmt8Z4dPFwlvodxOQCbSPUgJB7ZKhf/Hq+f/iH8MPFXwo146N4t0S60TUdu9Y7hRtlXONyOCVdfcE1+8+K+Nf+Conh3Tb34H6LrE7Rx6pp+sRx2pYjfIkqOJEHr91W/wCAV42EzSrVrRp1ErM7q2EhGDlHofl1RRRX055IUUUUAFFFFABRRRQAUUDkjufSuuuvg/48stI/tW48F+IIdN2CT7W+mTCPaejbtvT3qXKMd2NJvY5GikBzS1QgooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACuk8G/Evxb8O5Jn8L+JtW8PNMQ0o067eESEdCwU4P4iubpCGYYUZY8Ae9KUVJWkroabWx+4H7MPirWvG/wB8Da54huTeaxfaaktxcMADKckBzjjJUAn3NfB/8AwU9+Jf8AwkfxT0Lwja3DPZ6DZtNPGCQv2mVu49Qirz/tGv0P+GOjReAvhL4X0yVVhj0rRreKUKOAY4V3n8wTX4vfHv4gw/FH4xeLfFFvlbLUL93tQ2eIR8qcHpkDOOxJr5PLKaqYqdRLRX/E9jFScaSj1ZwVFe0/Bz9j/wCJ3xsMFxpOgvpmiyH/AJC+r5t7fHqgI3Sf8BBHvX298Mf+Cdvwy+FmnNrfxA1EeKp7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Txv4Ms1ttNnin0HVCvJkvrdyfOc+sqkt9AB2ri/hl4e1LTtM1zx1/Y7XunaFbfuWubRpbaW5lby0DDGGCgyOew8sZ617D8Jddvfjv8E/iZ8Ov7B0+1ubK2TxLo66Np4t0NzAQJYyF4LvHwO5wa4a03GSmtovX5/5aHRTimnF7s+XKKfPBLazPDPE8EyHDxyqVZT6EHkGmV3HOb3gO/On+M9FkNta3iPeQxSQXtuk8UiM6hgUcEcgnnqO1dz+1PBZ6X8e/GWjaZplhpGlaTqElnaWmn2qQIka4xnaAWPucmuG8A6Xeaz430G1sLWa9uWv7ciKCMu2PNXJwO3vXsX7Ufwu8Y6t+0544Sx8Lavd/wBpauz2ckNlI8c6vt2srgbSOeueO9cknGNdXfR/mjZJum/U+f6Kua1ph0XWL/T2mjuHtJ3t2lhOUcoxUlT6ZFU66076mQUUUUCCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAqa3vrmzDC3uZrcN97ypGTP1weahooavuMty6xqE8bRyX93JGwwUedypHoQTVSiii3YApySPHnY7ITwdpxTaKBEn2ibGPOkx6bzUdFFAwooooETWl9dafIz2lzPauwwWgkZCfqQRTbi6mvJTLcTSXEp6vK5dj+JqOiiy3HcKKKKBE6ahdx25gS6nSAggxLKwQ568ZxzSW19c2YYW9zNbhvveVIyZ+uDUNFKyGOlleaRpJHaSRjlnckkn3JptFFMRJb3M1pJ5kE0kEmMb4nKnH1FWRrmpgY/tK8x6faH/AMapUUmk9x3AnJyeTRRRTEFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAf/2Q==" alt="TAIYO Legal" style="height:74px;width:auto;border-radius:8px;display:block">
       </div>
       <div class="header-title">
         ReviewAssistant
@@ -665,11 +744,9 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
       <div id="origin-diag" style="font-size:10px;color:#bbb">Aktuelle Adresse: file:///C:/Users/RADrAlexanderTScheuw/Downloads/index.html</div>
     </div>
   </div>
-
   <!-- Schritt 1: Dokument -->
   <div class="card">
     <div class="card-title">Schritt 1 — Zu prüfender/s Text oder Dokument</div>
-
     <div class="two-col">
       <div class="field">
         <label class="field-label">Dokumenttyp</label>
@@ -693,11 +770,9 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
         </select>
       </div>
     </div>
-
     <div class="field">
       <textarea id="doctext" style="min-height:160px" placeholder="Zu prüfenden Text hier einfügen…"></textarea>
     </div>
-
     <div class="field">
       <div class="upload-area" id="upload-area">
         <input type="file" id="file-input" multiple="" accept=".pdf,.docx,.txt,.doc">
@@ -706,17 +781,14 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
       </div>
       <div class="file-list" id="file-list"></div>
     </div>
-
     <div class="field">
       <label class="field-label">Zusätzliche Informationen zum zu prüfenden Text/Dokument <span class="opt">optional</span></label>
       <textarea id="dokinfo" style="min-height:44px" placeholder="z.B. Die Änderungen im Markup dieser docx stammen vom ReviewAssistant (bitte nicht als meinen Fehler werten, sondern die überarbeitete Fassung prüfen). Oder: Dies ist erst ein Entwurf, der Betreff fehlt noch."></textarea>
     </div>
   </div>
-
   <!-- Schritt 2: Kontext -->
   <div class="card">
     <div class="card-title">Schritt 2 — Kontext</div>
-
     <div class="field">
       <label class="field-label">Rechtsgebiet(e)</label>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -729,12 +801,10 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
         <input type="text" id="rg-frei" placeholder="Hinweis auf besondere Rechtsgebiete…" style="flex:1;min-width:200px;font-size:12px;padding:5px 8px">
       </div>
     </div>
-
     <div class="field">
       <label class="field-label">Ausländisches Recht <span class="opt">optional – falls relevant</span></label>
       <input type="text" id="auslrecht" placeholder="z.B. Chinesisches Recht, Deutsches Recht…">
     </div>
-
     <div class="two-col">
       <div class="field">
         <label class="field-label">Klient</label>
@@ -745,7 +815,6 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
         <input type="text" id="empf" placeholder="z.B. Gericht, Behörde, Klient, Geschäftsführer…">
       </div>
     </div>
-
     <!-- Klient-Eigenschaften: beide Regler nebeneinander, linksbündig (dürfen unter Empfänger reichen) -->
     <div class="field" style="display:flex;gap:34px;flex-wrap:wrap;align-items:center;margin-top:-2px">
       <div class="slider-row" style="margin-top:0">
@@ -769,19 +838,15 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
         Klient hat Rechtsschutzversicherung
       </label>
     </div>
-
     <div class="field">
       <label class="field-label">Vorkorrespondenz / Sachverhalt <span class="opt">optional, aber für inhaltliche Prüfung entscheidend</span></label>
       <textarea id="historie" style="min-height:160px" placeholder="Kurze Zusammenfassung ODER die gesamte bisherige Korrespondenz im Original (beides funktioniert gleich gut): Was wurde bisher besprochen? Welche Fragen hat der Klient gestellt? Was haben wir dem Klienten gefragt oder erbeten? Was ist der Hintergrund?"></textarea>
     </div>
-
     <div class="field">
       <label class="field-label">Zusätzlicher Kontext <span class="opt">optional</span></label>
       <textarea id="zusatz" style="min-height:44px" placeholder="z.B. Klient ist nervös, bitte sachlicher Ton. Verjährungsfrist läuft 30.06.2026 ab."></textarea>
     </div>
-
   </div>
-
   <!-- Wichtig-Modus -->
   <div class="wichtig-section">
     <div class="wichtig-label">
@@ -793,14 +858,11 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
       <span class="toggle-slider"></span>
     </label>
   </div>
-
   <!-- Submit -->
   <button class="submit-btn" id="submit-btn" onclick="runReview()">Dokument prüfen</button>
   <button class="clear-btn" id="clear-btn" onclick="clearAll()">Alles zurücksetzen (neue Prüfung)</button>
-
   <!-- Result -->
   <div class="result-wrap" id="result-wrap" style="display:none"></div>
-
 </div>
 <script>
 // ─── Stored files ───────────────────────────────────────────────────
@@ -810,7 +872,6 @@ var reviewFindings=[];   // Feedback-Loop: je Befund {fid,module,grave,cells,hea
 var lastReviewMeta=null; // {dtype,lang} des letzten Laufs (fuer die Feedback-Mail)
 var FEEDBACK_EMAIL='a.scheuwimmer@taiyolegal.at';   // Ziel der "Falsch"-Feedback-Mail (leicht aenderbar)
 var FB_LABELS={umgesetzt:'Umgesetzt',falsch:'Falsch',kenntnis:'zur Kenntnis genommen'};
-
 // ─── DOCX -> Text (dependency-frei: ZIP-Central-Directory + DecompressionStream) ──
 // Die Anthropic-API akzeptiert als document-Block nur application/pdf. DOCX wird daher
 // clientseitig zu Text extrahiert und als Text-Block gesendet. Getestet gegen echte docx.
@@ -872,7 +933,6 @@ async function docxToText(arrayBuffer){
   if(noteParas.length) out+='\n\n[Fuss-/Endnoten des Dokuments]\n'+noteParas.join('\n\n');
   return out;
 }
-
 // ─── Gepasteten/eingetippten Prüftext normalisieren (verhindert falsche 10.2-Befunde) ──
 // Einfache Zeilenumbrüche innerhalb eines Absatzes werden zu Fließtext zusammengeführt;
 // nur Leerzeilen trennen Absätze. Listen/Aufzählungen/§-Zeilen behalten ihren Umbruch.
@@ -894,7 +954,6 @@ function normalizeReviewText(t){
   }).filter(function(b){return b.length;});
   return out.join('\n\n');
 }
-
 // ─── Längster Satz (Wortzahl) in einem Textausschnitt – für Gravitäts-Sicherheitsnetz ──
 function maxSentenceWordCount(t){
   if(!t) return 0;
@@ -912,7 +971,6 @@ function maxSentenceWordCount(t){
   });
   return max;
 }
-
 // ─── Key management ─────────────────────────────────────────────────
 function saveKey(){
   var k=document.getElementById('api-key').value.trim();
@@ -923,9 +981,9 @@ function saveKey(){
   setKeyStatus('✓ Key gespeichert','ok');
 }
 function sanitizeKey(k){
-  k=k.replace(/[\u2018\u2019\u201A\u201B]/g,"'")
-     .replace(/[\u201C\u201D\u201E\u201F]/g,'"')
-     .replace(/[\u2013\u2014]/g,'-')
+  k=k.replace(/[‘’‚‛]/g,"'")
+     .replace(/[“”„‟]/g,'"')
+     .replace(/[–—]/g,'-')
      .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g,'')
      .replace(/[\r\n\t]/g,'')
      .trim();
@@ -942,14 +1000,12 @@ function setKeyStatus(msg,cls){
   var el=document.getElementById('key-status');
   el.textContent=msg;el.className='key-status'+(cls?' '+cls:'');
 }
-
 // ─── Chips ──────────────────────────────────────────────────────────
 document.querySelectorAll('.chip input').forEach(function(cb){
   cb.addEventListener('change',function(){
     this.closest('.chip').classList.toggle('active',this.checked);
   });
 });
-
 // ─── Status/Rechtsform Slider (links/rechts-Label hervorheben) ────────
 function wireSlider(toggleId,leftId,rightId){
   var t=document.getElementById(toggleId);
@@ -964,7 +1020,6 @@ function wireSlider(toggleId,leftId,rightId){
 }
 wireSlider('inausl-toggle','inausl-left','inausl-right');
 wireSlider('natjur-toggle','natjur-left','natjur-right');
-
 // ─── File upload ────────────────────────────────────────────────────
 document.getElementById('file-input').addEventListener('change',function(e){
   handleFiles(Array.from(e.target.files));
@@ -980,7 +1035,6 @@ document.getElementById('upload-area').addEventListener('drop',function(e){
   e.preventDefault();this.style.borderColor='#ccc';this.style.background='';
   handleFiles(Array.from(e.dataTransfer.files));
 });
-
 function handleFiles(files){
   var allowed=['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'];
   files.forEach(function(f){
@@ -1041,7 +1095,6 @@ function renderFileList(){
 }
 function removeFile(i){storedFiles.splice(i,1);renderFileList();}
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
 // ─── Clear All: alles fuer eine neue Pruefung zuruecksetzen (Key bleibt) ──
 function clearAll(){
   ['rg-frei','auslrecht','klient','empf','historie','zusatz','doctext','dokinfo'].forEach(function(id){
@@ -1063,7 +1116,6 @@ function clearAll(){
   var rw=document.getElementById('result-wrap');rw.style.display='none';rw.innerHTML='';
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
 // ─── Build params ────────────────────────────────────────────────────
 // Fix 1 (BUILD 05.07.2026 Runde 2): atob liefert Latin-1-Rohbytes; UTF-8-
 // Umlaute in TXT-Dateien wurden dadurch zu Mojibake ("Ã¤" statt "ä").
@@ -1077,7 +1129,6 @@ function decodeBase64Text(b64){
   try{return new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch(e){}
   try{return new TextDecoder('windows-1252').decode(bytes);}catch(e){return bin;}
 }
-
 function buildParams(){
   var rgs=Array.from(document.querySelectorAll('.chip input:checked')).map(function(c){return c.value;});
   var rgFrei=document.getElementById('rg-frei').value.trim();
@@ -1100,7 +1151,6 @@ function buildParams(){
     wichtig:document.getElementById('wichtig-toggle').checked
   };
 }
-
 // ─── System prompt ───────────────────────────────────────────────────
 function buildSystemPrompt(p){
   // Fix 2 (BUILD 05.07.2026 Runde 2): Das Modell kennt das heutige Datum nicht
@@ -1113,15 +1163,12 @@ function buildSystemPrompt(p){
   var rsvHinweis=p.rsv
     ?'Der Klient hat eine Rechtsschutzversicherung. Beachte: Bei Forderungsbetreibungen Beratungspauschale und Deckung anfragen (Policy 17.3).'
     :'Der Klient hat KEINE Rechtsschutzversicherung.';
-
   var rechtshinweis=p.rgFrei
     ?'BESONDERER RECHTSHINWEIS: '+p.rgFrei+'. Berücksichtige diesen Hinweis aktiv bei der Prüfung.'
     :'Kein besonderer Rechtshinweis angegeben.';
-
   var auslandHinweis=p.auslrecht
     ?'AUSLÄNDISCHES RECHT: '+p.auslrecht+'. Berücksichtige dieses ausländische Recht aktiv und zusätzlich zum österreichischen Recht bei der Prüfung.'
     :'Kein ausländisches Recht angegeben – prüfe ausschließlich nach österreichischem Recht.';
-
   var dtypeRules='';
   if(p.dtype.indexOf('E-Mail an bestehenden')>=0){
     dtypeRules='DOKUMENTTYP-REGELN (E-Mail an bestehenden Klienten):\n'+
@@ -1157,7 +1204,6 @@ function buildSystemPrompt(p){
       '– Ergebnisoffen: Pros und Contras (Policy 14.8).\n'+
       '– Standalone: vollstaendig ohne Vorkenntnis verstaendlich (Policy 10.7).';
   }
-
   return 'Du bist der TAIYO ReviewAssistant – das interne Qualitaetspruefungstool der Wiener Kanzlei TAIYO Legal – Rechtsanwalts GmbH.\n\n'+
 'KONTEXT:\n'+
 'Heutiges Datum: '+heuteStr+' – verbindlicher Anker fuer alle Fristberechnungen (Modul C) und Ueberfaelligkeits-Pruefungen (z.B. Policy 13.8 Zwischenbericht alle 14 Tage).\n'+
@@ -1174,9 +1220,7 @@ auslandHinweis+'\n'+
 (p.zusatz?'Zusaetzlicher Kontext: '+p.zusatz+'\n':'')+
 (p.dokinfo?'\nZUSAETZLICHE INFORMATIONEN ZUM ZU PRUEFENDEN TEXT/DOKUMENT (vom Mitarbeiter angegeben – aktiv beruecksichtigen): '+p.dokinfo+'\nFalls daraus hervorgeht, dass Aenderungen im Markup/in den nachverfolgten Aenderungen vom ReviewAssistant selbst stammen: behandle diese Aenderungen als bereits geprueft und uebernommen. Werte sie NICHT als Fehler des Mitarbeiters und bewerte das Dokument in seiner ueberarbeiteten Fassung.\n':'')+
 '\n'+dtypeRules+'\n\n'+
-
 'PFLICHTPRUEFUNG – ALLE DREI MODULE IMMER AKTIV:\n\n'+
-
 'MODUL A – POLICY & STIL:\n'+
 'Prüfe ausschliesslich gegen folgende Policy-Punkte:\n'+
 '10.2: Keine Absaetze mit nur einem Satz. ABSATZ-DEFINITION (wichtig gegen Fehlalarme): Ein Absatz ist ein durch eine LEERZEILE abgetrennter Textblock. Mehrere aufeinanderfolgende Saetze OHNE Leerzeile dazwischen bilden EINEN Absatz – unabhaengig von der Satzanzahl und unabhaengig von einem einfachen Zeilenumbruch. Werte einen einfachen Zeilenumbruch NICHT als Absatzgrenze. Flagge 10.2 nur, wenn ein durch Leerzeilen klar abgegrenzter Absatz tatsaechlich nur einen einzigen Satz enthaelt; im Zweifel KEIN 10.2-Befund. Schlage ein Zusammenfuehren von Absaetzen nur vor, wenn wirklich mehrere durch Leerzeilen getrennte Ein-Satz-Absaetze vorliegen. Chronologische Gliederung. Datum IMMER im Format TT.MM.JJJJ – flagge jedes andere Datumsformat im geprueften Dokument (z.B. "1. Maerz 2026", "2026-03-01", "01/03/2026") als Befund und schreibe in eigenen Vorschlaegen stets TT.MM.JJJJ. NUMMERIERUNG (ebenfalls Punkt 10.2): Nummerierte Gliederungen verwenden AUSSCHLIESSLICH arabische Ziffern mit Punkt (1., 2., 3.); Unterpunkte als 1.1, 1.2, 1.3; tiefere Ebenen 1.1.1 usw. JEDE andere Nummerierung der EIGENEN Gliederung des geprueften Dokuments ist ein Befund und wird bei JEDER Dokumentart IMMER geflaggt – zum Beispiel Grossbuchstaben (A., B., C.), Kleinbuchstaben (a), b), c) oder a., b., c.), roemische Ziffern (I., II., III.), Ziffern mit Klammer (1), 2), 3)) oder gemischte Systeme. Buendle mehrere Nummerierungs-Verstoesse desselben Dokuments in EINEM Befund und nenne Beispiele. Dieser Befund faellt NIE dem Top-5-Deckel zum Opfer. KEIN Nummerierungs-Verstoss sind Zitate aus Gesetzen und Entscheidungen (z.B. § 879 Abs 2 Z 1a lit a) sowie die blosse Wiedergabe der Nummerierung eines FREMDEN Dokuments (z.B. Punkt III des gegnerischen Vertrags).\n'+
@@ -1204,11 +1248,11 @@ auslandHinweis+'\n'+
 '– Korrekte deutsche Umlaute (ae/oe/ue/ss ist verboten – schreibe ae→ä, oe→ö, ue→ü, ss→ß).\n'+
 '– § und §§ verwenden (nie "Paragraph").\n'+
 '– Verjährung nur flaggen wenn realistisches Risiko besteht.\n'+
-'– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern. Gravierende Befunde (insbesondere ein Satz mit 30 oder mehr Wörtern) zählen IMMER zu den schlimmsten und werden NIE durch den Top-5-Deckel weggelassen. Ein Befund zu Punkt 10.2 (insbesondere zur Nummerierung) wird ebenfalls NIE durch den Top-5-Deckel weggelassen, auch wenn er nur lässlich ist.\n'+
+'– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern. Gravierende Befunde (insbesondere ein Satz mit 30 oder mehr Wörtern) zählen IMMER zu den schlimmsten und werden NIE durch den Top-5-Deckel weggelassen. Ein Befund zu Punkt 10.2 (insbesondere zur Nummerierung) wird ebenfalls NIE durch den Top-5-Deckel weggelassen, auch wenn er nur lässlich ist. Dasselbe gilt für die Tippfehler-Sammelzeile (siehe die TIPPFEHLER-Regel unten).\n'+
+'– TIPPFEHLER AKTIV ERFASSEN (zu Punkt 10.9): Suche im gesamten geprüften Text aktiv nach Tippfehlern und Rechtschreibfehlern und übergehe sie nicht stillschweigend. Bei EINEM bis DREI Typos: je ein normaler Befund (in der Regel lässlich, sofern nicht sinnstörend). Bei MEHR ALS DREI Typos: fasse ALLE gefundenen Typos in EINER einzigen Sammelzeile zusammen – Spalte 1: die betroffenen Stellen wörtlich, mit Semikolon getrennt; Spalte 2: Sammelbefund, der die Anzahl und das Wort "Tippfehler" nennt (bzw. im englischen Output "typos", japanisch "誤字", koreanisch "오타") (Punkt 10.9 der Policy); Spalte 3: die korrigierten Schreibweisen in derselben Reihenfolge, mit Semikolon getrennt. Diese Sammelzeile zählt als EIN Befund und fällt NIE dem Top-5-Deckel zum Opfer.\n'+
 '– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung. Die Adresse von TAIYO Offices in der Schreibweise "Schwedenpl.5 (Eing. Dominikanerb.21)" – diese abgekürzte Form ist eine Ausnahme von Punkt 10.9 und KEIN Befund. Eine Einleitung mit Wohlbefinden-Wunsch ("We hope you are doing well.", "Wir hoffen, es geht Ihnen gut.") ist als E-Mail-Einleitung grundsätzlich zulässig (Punkt 10.8) – nur im konkreten Einzelfall ausnahmsweise unpassend, sonst nie ein Befund. Eine "jeder/jede/jedes"-Formulierung im gepruefen Dokument (z.B. "jeder Vertragspartner", "jede Frist") ist KEIN Befund und insbesondere KEIN Verstoss gegen Punkt 10.9; "ein/e" ist dort nicht besser als "jeder/jede".\n'+
 '– VERSCHÄRFTE BELEGPFLICHT (Punkt 14.3): Jede Warnung an den Klienten vor Rechtsfolgen (Haftung, Verwaltungsstrafe, gerichtliche Strafe) ist eine "wichtige Aussage" im Sinne Punkt 14.3 und muss zwingend einen Beleg in Klammer haben. Fehlt der Beleg bei einer solchen Warnung: das ist ein gewichtiger Befund, nicht lässlich.\n'+
 '– Achte auf gute Sprache in deinem eigenen Output: öffne nie eine Klammer oder ein Anführungszeichen ohne es auch zu schließen.\n\n'+
-
 'MODUL B – INHALTLICHE VOLLSTAENDIGKEIT [HOECHSTE PRIORITAET – 70% Uebersehenes / 30% Fehler]:\n'+
 'Modul B ist KEINE Zusammenfassung des Vorhandenen. Modul B ist eigenstaendige juristische Recherche.\n'+
 'Frage dich aktiv: Was haette in diesem Dokument stehen muessen, steht aber nicht drin?\n\n'+
@@ -1225,7 +1269,6 @@ auslandHinweis+'\n'+
 'Wenn Rechtsschutzversicherung im Text erwaehnt wird, der Kontext aber sagt KEINE RSV: Das ist ein Modul-B-Befund (Inhaltliche Vollstaendigkeit), NICHT Modul A.\n'+
 'Wenn eine Honorarnote als Anhang erwaehnt oder beigefuegt ist: gehe davon aus, dass Zahlungsfrist und Kontonummer in dieser Honorarnote angegeben sind. Das ist KEIN Befund, auch wenn diese Angaben im Haupttext nicht wiederholt werden.\n'+
 'Wenn im Haupttext eine Kontaktmoeglichkeit (Telefonnummer, E-Mail-Adresse, Anschrift) fehlt: gehe davon aus, dass diese in der Signatur (bei E-Mails) bzw. in der Fusszeile oder im Briefkopf (bei Briefen) enthalten ist. Moniere eine "fehlende Kontaktmoeglichkeit" daher NICHT als echten Mangel. Wenn du sie ueberhaupt erwaehnst, formuliere es ausdruecklich als Annahme – sinngemaess: "Es wird davon ausgegangen, dass die Kontaktmoeglichkeit in der Signatur (bei E-Mails) bzw. in der Fusszeile (bei Briefen) enthalten ist."\n\n'+
-
 'MODUL C – FRISTENSCANNER:\n'+
 'Identifiziere ALLE Termine, Fristen und erforderliche Follow-ups – auch implizite und gesetzliche.\n'+
 'Klassifiziere jeden Termin:\n'+
@@ -1237,13 +1280,11 @@ auslandHinweis+'\n'+
 'DOPPELKALIENDERUNG (Policy 7.3 letzter Satz): Termine fuer die etwas vorbereitet werden muss (z.B. Schriftsatz, Dokument), auch eine Woche vorher kalendieren.\n'+
 'PHYSISCHE TERMINE (Policy 7.3 erster Satz): Wenn ein Termin physisch stattfindet (Gericht, Behoerde, Antragstellung, Besprechung), in der Liste explizit erwaehnen.\n'+
 'ALLE Termine gehoeren in den Kalender ALLER Teammitglieder (Policy 7.8 und 15.2).\n\n'+
-
 'VORSPANN (===VORAB_START=== / ===VORAB_END===) – ganz am Anfang, VOR Modul A. Gib hier NUR in diesen drei Faellen je eine Zeile aus, sonst genau KEIN_BEFUND:\n'+
 '(1) WIEDERHOLTE GRAVIERENDE KATEGORIE: Kommt DIESELBE Kategorie eines gravierenden ([!]) Befundes MEHR ALS DREI MAL im gepruefen Text vor (z.B. mehr als drei Saetze mit je 30 oder mehr Woertern; oder mehr als drei Warnungen vor Rechtsfolgen ohne Beleg; oder mehr als drei unerklaerte Fachbegriffe), gib EINE mit "Vorab:" eingeleitete Zeile aus, die generell auf diese Kategorie hinweist – NICHT die Einzelfaelle aufzaehlen. Beispiel: "Vorab: Der Text enthaelt mehrere Saetze mit 30 oder mehr Woertern – bitte durchgehend auf kurze Saetze (hoechstens 15 Woerter) achten." Sind mehrere Kategorien betroffen, je eine eigene "Vorab:"-Zeile. Die Schwelle ist STRENG: erst ab dem VIERTEN Vorkommen DERSELBEN Kategorie; drei oder weniger loesen keine Zeile aus. Bloss insgesamt viele gravierende Befunde UNTERSCHIEDLICHER Kategorien loesen ebenfalls keine Zeile aus.\n'+
 '(2) VIP-FALL OHNE WICHTIG-MODUS: NUR wenn der Wichtig-Modus NICHT aktiv ist UND die Angaben (insbesondere "Zusaetzliche Informationen zum zu pruefenden Text/Dokument" oder "Zusaetzlicher Kontext") nahelegen, dass es sich um einen besonders wichtigen Fall oder besonders wichtigen Klienten (VIP) handelt, gib EINE Zeile aus, die den Wichtig-Modus empfiehlt. Beispiel: "Hinweis: Die Angaben deuten auf einen besonders wichtigen Fall hin. Fuer eine vertiefte Analyse empfiehlt sich der Wichtig-Modus." Ist der Wichtig-Modus bereits aktiv, gib diese Zeile NIE aus.\n'+
 '(3) GESAMTBEWERTUNG BEI BESONDERS MUEHSAM GESCHRIEBENEM TEXT: Faellt der gepruefte Text stilistisch BESONDERS negativ auf (besonders muehsam geschrieben), gib je zutreffendem Muster EINE Zeile mit einer generellen Bewertung aus – ZUSAETZLICH zu den Einzelbefunden in Modul A; die Einzelstellen werden dort weiterhin geflaggt (Floskeln: Punkt 10.9; Wiederholungen und Zersplitterung: in der Regel Punkt 13.5). Die drei Muster: (a) MEHRERE antiquierte Floskeln (Richtwert: drei oder mehr; z.B. "Wir wuerden Ihnen gerne mitteilen wie folgt:") – Zeile sinngemaess: "Im E-Mail fallen mehrere antiquierte Floskeln auf." (b) MEHRERE unnoetige Wiederholungen (Richtwert: drei oder mehr) – Zeile sinngemaess: "Im E-Mail fallen mehrere unnoetige Wiederholungen auf." (c) THEMEN-ZERSPLITTERUNG: EIN Thema wird an drei oder mehr Stellen behandelt statt an einer Stelle, ODER mehrere Themen werden an jeweils zwei oder mehr Stellen behandelt – Zeile sinngemaess: "Im E-Mail wird das Thema XXX unnoetig zersplittert." Benenne das Thema konkret; bei mehreren zersplitterten Themen entweder eine gemeinsame Zeile oder je Thema eine Zeile. Ersetze "E-Mail" durch die tatsaechliche Dokumentart (z.B. "Im Schriftsatz", "Im Aktenvermerk", "Im Vertrag"). Jeder Satz hoechstens 15 Woerter. STRENGE SCHWELLE: Diese Zeilen NUR bei besonders muehsam geschriebenen Texten – ein nur maessig muehsamer Text (z.B. bloss zwei Floskeln, eine einzelne Wiederholung, ein Thema an nur zwei Stellen) loest KEINE Gesamtbewertung aus.\n'+
 'Trifft keiner der drei Faelle zu: schreibe nach ===VORAB_START=== nur KEIN_BEFUND (in einer eigenen Zeile).\n\n'+
-
 'AUSGABEFORMAT – DREI-SPALTEN-TABELLE:\n'+
 'Gib deinen Output in folgendem Format aus – exakt so, keine Abweichungen:\n\n'+
 '===VORAB_START===\n'+
@@ -1262,7 +1303,7 @@ auslandHinweis+'\n'+
 '[Kurzbeschreibung]|||[Gerichtsfrist/Urgenz Gegner/Urgenz Klient/Urgenz Interessent/Physisch]|||[TT.MM.JJJJ oder Zeitangabe]|||[z.B. auch eine Woche vorher; physisch vor Ort]\n'+
 '===MODUL_C_END===\n\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
-'Maximal 6 Zeilen pro Modul B und C. Fuer Modul A gilt die Gewichtung oben: hoechstens 5 Befunde (die 5 schwersten); gravierende Befunde ([!]) bleiben aber immer erhalten und koennen diese Zahl im Ausnahmefall ueberschreiten; ein Befund zu Punkt 10.2 (Nummerierung) bleibt ebenfalls immer erhalten. Nur die wichtigsten Punkte.\n'+
+'Maximal 6 Zeilen pro Modul B und C. Fuer Modul A gilt die Gewichtung oben: hoechstens 5 Befunde (die 5 schwersten); gravierende Befunde ([!]) bleiben aber immer erhalten und koennen diese Zahl im Ausnahmefall ueberschreiten; ein Befund zu Punkt 10.2 (Nummerierung) bleibt ebenfalls immer erhalten; die Tippfehler-Sammelzeile (mehr als drei Typos) bleibt ebenfalls immer erhalten. Nur die wichtigsten Punkte.\n'+
 'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "Compliant", "Compliant.", "OK", "No issues", "Looks good", "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Akzeptabel", "Unauffaellig", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
 'GRAVITAETS-MARKIERUNG (gravierende Befunde hervorheben):\n'+
 'Stelle einer Zeile die Markierung "[!]" voran (ganz am Zeilenanfang, VOR der ersten Spalte), wenn der Befund ein gravierender, gröberer Fehler ist – niemals bei gewöhnlichen oder lässlichen Befunden. Beispielzeile: "[!]Textausschnitt|||Problem|||Vorschlag". Setze die Markierung grundsätzlich sparsam und nur bei wirklich schwerwiegenden Fällen. AUSNAHME OHNE ERMESSEN: Ein Satz mit 30 oder mehr Wörtern ist AUSNAHMSLOS gravierend und erhält IMMER ein "[!]" – die Anweisung, sparsam zu markieren, gilt hierfür NICHT und darf dieses "[!]" nie verhindern, egal wie viele andere Befunde es gibt. Zähle bei jedem beanstandeten langen Satz die Wörter; ab 30 Wörtern setzt du zwingend ein "[!]".\n'+
@@ -1273,25 +1314,56 @@ auslandHinweis+'\n'+
 'Kein sonstiger einleitender Text. Beginne mit ===VORAB_START===.\n'+
 'Sprache des gesamten Outputs: '+p.lang+'.'+
 (p.lang!=='Deutsch'?'\n\nFREMDSPRACHIGER OUTPUT (Punkt 10.5): Verwende im gesamten fremdsprachigen Output KEINE deutschen Begriffe (z.B. "Klient", "Firmenbuch") im Fliesstext – nutze den dortigen Begriff; ein deutscher Begriff ist nur ausnahmsweise und dann KURSIV (in Klammer) zulaessig. Fuege nach Fachausdruecken den deutschen Originalbegriff (falls vorhanden) kursiv in Klammer hinzu.':'')+
-(p.lang==='English'?'\n\nWICHTIG (Punkt 14.5): Da die Ausgabesprache English ist, ALLE Gesetzeszitate im gesamten Output ins Englische umstellen: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director. Das Gesetzeskuerzel selbst bleibt unveraendert (z.B. ABGB, UGB, AngG). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB". Judikatur-Zitate behalten Gericht/Datum/GZ.':'');
+(p.lang==='English'?'\n\nWICHTIG (Punkt 14.5): Da die Ausgabesprache English ist, ALLE Gesetzeszitate im gesamten Output ins Englische umstellen: § -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director. Das Gesetzeskuerzel selbst bleibt unveraendert (z.B. ABGB, UGB, AngG). Beispiel: "§ 879 Abs 2 Z 1a ABGB" wird zu "Sec 879 para 2 no 1a ABGB". Judikatur-Zitate behalten Gericht/Datum/GZ.':'')+
+buildUserNuancePrompt();
 }
-
+// ─── BUILD 02.08.2026: Nutzer-Erkennung + dezente Profil-Nuancen ─────────────
+// Kompakte, destillierte Mitarbeiter-Basisdaten (Name/Erkennungsmerkmale/
+// Deutschniveau) – BEWUSST NUR dieses Minimum und keine weiteren Profil-
+// inhalte, denn die HTML-Datei ist fuer alle Nutzer einsehbar (Base64 ist
+// reiner Sichtschutz, kein Schutz; der dekodierte Text steht zudem im
+// API-Request). Zweck: Erkennt das Modell aus den Eingaben VOELLIG SICHER,
+// wer den ReviewAssistant gerade bedient, passt es NUR Ton und Einfachheit
+// der an den Mitarbeiter gerichteten Erklaertexte an – nichts Fundamentales,
+// keine Aenderung an Befundauswahl, Gewichtung, Modulen oder Format.
+// Bei Unsicherheit aendert sich exakt NICHTS (Anweisung im Prompt-Block).
+var USER_PROFILES_B64='W3sibiI6IkRyLiBBbGV4YW5kZXIgVC4gU2NoZXV3aW1tZXIiLCJhbHQiOlsiU2NoZXV3aW1tZXIiLCJSQSBEci4gU2NoZXV3aW1tZXIiXSwibSI6ImEuc2NoZXV3aW1tZXJAdGFpeW9sZWdhbC5hdCIsImRlIjoibXV0dGVyc3ByYWNoZSJ9LHsibiI6IlRhZWhvb24gS2ltIiwiYWx0IjpbIlRhZS1Ib29uIEtpbSIsIktvbGxlZ2UgS2ltIl0sIm0iOiJ0LmtpbUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJzZWhyIGhvY2gifSx7Im4iOiJIZWRhIEJhaXNhcm92YSIsImFsdCI6WyJGcmF1IEJhaXNhcm92YSJdLCJtIjoiaC5iYWlzYXJvdmFAdGFpeW9sZWdhbC5hdCIsImRlIjoiaG9jaCJ9LHsibiI6IlRpamFuYSBUcmFpbG92aWMiLCJhbHQiOlsiRnJhdSBUcmFpbG92aWMiXSwibSI6InQudHJhaWxvdmljQHRhaXlvbGVnYWwuYXQiLCJkZSI6Im11dHRlcnNwcmFjaGUifSx7Im4iOiJQaGlsaXBwIEVic2VyIiwiYWx0IjpbIktvbGxlZ2UgRWJzZXIiXSwibSI6InRlYW0yQHRhaXlvbGVnYWwuYXQiLCJkZSI6InNlaHIgaG9jaCJ9LHsibiI6IkhhcnVrYSBPdGFuaSIsImFsdCI6WyJGcmF1IE90YW5pIl0sIm0iOiJoLm90YW5pQHRhaXlvbGVnYWwuYXQiLCJkZSI6ImhvY2gifSx7Im4iOiJFbGVuYSBCdWdyaW0iLCJhbHQiOlsiRnJhdSBCdWdyaW0iXSwibSI6ImUuYnVncmltQHRhaXlvbGVnYWwuYXQiLCJkZSI6ImdlcmluZyJ9LHsibiI6IlNoZXJpZiBFbCBOYWdnYXJpIiwiYWx0IjpbIktvbGxlZ2UgRWwgTmFnZ2FyaSJdLCJtIjoidGVhbTNAdGFpeW9sZWdhbC5hdCIsImRlIjoic2VociBob2NoIn0seyJuIjoiSGlrYXJpIFN1Z2ltb3RvIiwiYWx0IjpbIkZyYXUgU3VnaW1vdG8iXSwibSI6InRlYW00QHRhaXlvbGVnYWwuYXQiLCJkZSI6Im1pdHRlbCJ9LHsibiI6Ik5hdHN1a2kgRWdhbWkiLCJhbHQiOlsiRnJhdSBFZ2FtaSJdLCJtIjoibi5lZ2FtaUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJtaXR0ZWwifSx7Im4iOiJUb3NoaWtvIEhheWFzaGliYXJhIiwiYWx0IjpbIkZyYXUgSGF5YXNoaWJhcmEiXSwibSI6IiIsImRlIjoiZ2VyaW5nIn0seyJuIjoiRmV5emEgT2xndW4iLCJhbHQiOlsiRnJhdSBPbGd1biJdLCJtIjoiIiwiZGUiOiJtaXR0ZWwifSx7Im4iOiJLcmlzdGlhbiBCb2xkaSIsImFsdCI6WyJIZXJyIEJvbGRpIl0sIm0iOiIiLCJkZSI6ImdlcmluZyJ9LHsibiI6IlNha2kgVGFrYWhhc2hpIiwiYWx0IjpbIkZyYXUgVGFrYWhhc2hpIl0sIm0iOiJzLnRha2FoYXNoaUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJzZWhyIGhvY2gifV0=';
+function getUserProfiles(){
+  try{
+    var bin=atob(USER_PROFILES_B64);
+    var bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  }catch(e){return [];}
+}
+function buildUserNuancePrompt(){
+  var profs=getUserProfiles();
+  if(!profs.length)return '';
+  var zeilen=profs.map(function(u){
+    return '- '+u.n+(u.alt&&u.alt.length?' (auch: '+u.alt.join(', ')+')':'')+(u.m?' | E-Mail: '+u.m:'')+' | Deutsch: '+u.de;
+  }).join('\n');
+  return '\n\nNUTZER-ERKENNUNG UND NUANCEN (streng vertraulich; nur Feinabstimmung):\n'+
+  'Mitarbeiterliste von TAIYO Legal (Deutschniveau-Skala: muttersprache / sehr hoch / hoch / mittel / gering):\n'+zeilen+'\n'+
+  'Hinweis zu den Adressen: office@taiyolegal.at ist eine Sammeladresse und verwenden alle Mitarbeiter – sie allein identifiziert NIEMANDEN sicher. team2@/team3@/team4@ sind dagegen persoenliche Adressen der oben genannten Personen.\n'+
+  'SCHRITT 1 – ERKENNUNG: Pruefe NUR anhand der Eingaben (zu pruefender Text, Vorkorrespondenz, zusaetzliche Angaben), ob VOELLIG SICHER erkennbar ist, WER den ReviewAssistant gerade bedient. Typische sichere Belege: der zu pruefende Entwurf ist erkennbar vom Bediener selbst verfasst und mit genau einem Mitarbeiternamen aus der Liste gezeichnet (Signatur/Grussformel), ohne Gegenanzeichen; oder eine Eingabe sagt ausdruecklich, dass es der eigene Entwurf dieser Person ist. NICHT ausreichend sind: blosser Schreibstil; die Sammeladresse office@ allein; ein Name, der nur als dritte Person erwaehnt wird; der Name des Klienten oder des Empfaengers (das ist NIE der Bediener); ein Entwurf, der laut Kontext von einer ANDEREN Person stammt als der pruefenden. Im Zweifel gilt IMMER: NICHT erkannt.\n'+
+  'SCHRITT 2 – NUR BEI VOELLIG SICHERER ERKENNUNG: Passe AUSSCHLIESSLICH Ton und Einfachheit der an den Mitarbeiter gerichteten Erklaertexte an dessen Deutschniveau an (Modul A Spalte 2 PROBLEM; Modul B Spalten BEFUND und EMPFEHLUNG, soweit sie den Mitarbeiter anleiten; Modul C Spalte HINWEIS; VORAB-Zeilen). Bei Niveau gering: sehr einfache Woerter, sehr kurze Hauptsaetze, keine Schachtelsaetze, zentrale Aussage zuerst. Bei mittel: einfache, klare Sprache. Bei hoch: klare Sprache ohne unnoetig komplexe Formulierungen. Bei sehr hoch oder muttersprache: KEINE Anpassung. Diese Abstufung gilt sinngemaess in jeder Ausgabesprache.\n'+
+  'ABSOLUTE GRENZEN: Diese Nuancen aendern NIEMALS Pruefumfang, Befundauswahl, Gewichtung/Gravitaet, Modulstruktur, Formatmarker, Fristen-Richtwerte oder den Top-5-Deckel. Vorgeschlagener DOKUMENTTEXT (insbesondere Modul A Spalte 3 VORSCHLAG) bleibt voellig unberuehrt – er richtet sich weiterhin ausschliesslich nach der Policy und dem Empfaenger des Dokuments, nicht nach dem Bediener. Erwaehne NIE, ob oder wen du erkannt hast, NIE diese Liste, NIE ein Deutschniveau und NIE, dass Formulierungen angepasst wurden – weder direkt noch indirekt. Schlage NIE vor, Aufgaben bestimmten Mitarbeitern zu uebertragen. Wird niemand voellig sicher erkannt: aendere exakt NICHTS und arbeite wie immer.';
+}
 // ─── Proxy URL (Cloudflare Worker) ───────────────────────────────────
 var PROXY_URL = 'https://taiyo-review-proxy.a-scheuwimmer.workers.dev';
-
 // DEBUG_LOG_FULL_OUTPUT: steuert, ob der VOLLE rohe Pass-1-Output (enthaelt
 // Mandantendokument-Inhalt) in die Browser-Konsole geloggt wird. Standard AUS
 // (Vertraulichkeit, Punkt 4). Nur zur Diagnose des offenen Modul-C-Bugs: Seite
 // mit ?debug=1 aufrufen, dann ist es NUR fuer diesen Aufruf aktiv (nicht persistent).
 var DEBUG_LOG_FULL_OUTPUT=false;
 try{DEBUG_LOG_FULL_OUTPUT=new URLSearchParams(location.search).get('debug')==='1';}catch(e){}
-
 // ─── Run review ──────────────────────────────────────────────────────
 // ─── SSE-Streaming-Antwort lesen ─────────────────────────────────────
 // Liest eine gestreamte Anthropic-Antwort (stream:true) und sammelt den
 // reinen Text (text_delta). thinking_delta wird ignoriert. Streaming
 // verhindert das Cloudflare-524-Timeout bei langem adaptivem Denken.
-async function readStream(response){
+async function readStream(response,hooks){
+  hooks=hooks||{};   // BUILD 02.08.2026: optionale Callbacks (onChunk/onThinking/onText) fuer Waechter + Live-Anzeige
   if(!response.ok){
     var errText='';
     try{ errText=await response.text(); }catch(e){ errText=''; }
@@ -1315,6 +1387,7 @@ async function readStream(response){
   while(true){
     var chunk=await reader.read();
     if(chunk.done) break;
+    if(hooks.onChunk){try{hooks.onChunk();}catch(e){}}   // Waechter zuruecksetzen: es kommen Bytes
     buffer+=decoder.decode(chunk.value,{stream:true});
     var nl;
     while((nl=buffer.indexOf('\n'))>=0){
@@ -1326,7 +1399,8 @@ async function readStream(response){
       var evt;
       try{ evt=JSON.parse(payload); }catch(e){ continue; }
       if(evt.type==='content_block_delta'&&evt.delta){
-        if(evt.delta.type==='text_delta'&&typeof evt.delta.text==='string'){ text+=evt.delta.text; }
+        if(evt.delta.type==='text_delta'&&typeof evt.delta.text==='string'){ text+=evt.delta.text; if(hooks.onText){try{hooks.onText(evt.delta.text,text);}catch(e){}} }
+        else if(evt.delta.type==='thinking_delta'){ if(hooks.onThinking){try{hooks.onThinking();}catch(e){}} }
       } else if(evt.type==='message_delta'&&evt.delta&&evt.delta.stop_reason){
         stopReason=evt.delta.stop_reason;
       } else if(evt.type==='error'){
@@ -1336,7 +1410,124 @@ async function readStream(response){
   }
   return {text:text,stopReason:stopReason};
 }
-
+// ─── BUILD 02.08.2026: Waechter + automatischer Wiederholungsversuch ─────────
+// Gegen "Aufhaengen" bei langen Pruefungen: Ein still abgerissener Stream lieferte
+// bisher einfach nie wieder Bytes, und die Pruefung wartete endlos. Da die API
+// waehrend des Denkens laufend Lebenszeichen sendet (ping-/thinking-Events),
+// ist laengere Funkstille ein klares Fehlersignal. callClaude() bricht daher
+// nach WATCHDOG_MS ohne empfangene Bytes via AbortController ab und wiederholt
+// den Aufruf EINMAL automatisch. Wiederholt wird nur bei Waechter-Abbruch,
+// Netzfehlern, HTTP 5xx/529 und "Overloaded" – NIE bei HTTP 4xx (z.B.
+// ungueltiger Key oder zu grosses Dokument, dort waere ein Retry sinnlos).
+// Rein clientseitig; functions/api.js (Worker) bleibt unveraendert.
+var WATCHDOG_MS=90000;
+function isRetryableError(err){
+  var m=(err&&err.message)?err.message:String(err);
+  if(err&&err.taiyoWatchdog)return true;
+  if(/^HTTP 4\d\d/.test(m))return false;
+  if(/^HTTP (5\d\d|529)/.test(m))return true;
+  if(/overloaded/i.test(m))return true;
+  if(/Failed to fetch|NetworkError|load failed|network|abort/i.test(m))return true;
+  return false;
+}
+async function callClaude(body,key,onStatus){
+  var lastErr=null;
+  for(var attempt=1;attempt<=2;attempt++){
+    var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var timer=null;
+    var armWatchdog=function(){
+      if(!ctrl)return;
+      if(timer)clearTimeout(timer);
+      timer=setTimeout(function(){ try{ctrl.abort();}catch(e){} },WATCHDOG_MS);
+    };
+    try{
+      if(onStatus){try{onStatus({phase:'connect',attempt:attempt});}catch(e){}}
+      armWatchdog();
+      var resp=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+        body:JSON.stringify(body),
+        signal:ctrl?ctrl.signal:undefined
+      });
+      armWatchdog();
+      var result=await readStream(resp,{
+        onChunk:function(){armWatchdog();if(onStatus){try{onStatus({phase:'stream',attempt:attempt});}catch(e){}}},
+        onThinking:function(){if(onStatus){try{onStatus({phase:'thinking',attempt:attempt});}catch(e){}}},
+        onText:function(delta,sofar){if(onStatus){try{onStatus({phase:'text',attempt:attempt,delta:delta,sofar:sofar});}catch(e){}}}
+      });
+      if(timer)clearTimeout(timer);
+      return result;
+    }catch(err){
+      if(timer)clearTimeout(timer);
+      if(err&&err.name==='AbortError'){
+        err=new Error('Zeitueberschreitung: '+Math.round(WATCHDOG_MS/1000)+' Sekunden lang keine Daten vom Server empfangen (Verbindung vermutlich abgerissen).');
+        err.taiyoWatchdog=true;
+      }
+      lastErr=err;
+      if(attempt<2&&isRetryableError(err)){
+        if(onStatus){try{onStatus({phase:'retry',attempt:attempt+1});}catch(e){}}
+        await new Promise(function(res){setTimeout(res,1500);});
+        continue;
+      }
+      throw lastErr;
+    }
+  }
+  throw lastErr;
+}
+// ─── BUILD 02.08.2026: Live-Statusanzeige waehrend der Pruefung ──────────────
+// Zeigt waehrend der Wartezeit an, was der ReviewAssistant gerade tut: Pass x
+// von y, Denk-/Schreibphase, gerade entstehendes Modul, Laufzeit, ggf. zweiter
+// Versuch. Reine Wartezeit-Anzeige: Sie verschwindet VOLLSTAENDIG, sobald der
+// fertige Bericht (renderResult) oder eine Fehlermeldung gerendert wird –
+// nichts davon bleibt im Ergebnis stehen.
+var liveTicker=null;
+var liveState=null;
+function stopLiveStatus(){ if(liveTicker){clearInterval(liveTicker);liveTicker=null;} liveState=null; }
+function startPassStatus(passNo,totalPasses,label,writeVerb){
+  var resultWrap=document.getElementById('result-wrap');
+  liveState={passNo:passNo,total:totalPasses,label:label,writeVerb:writeVerb||'Der Bericht wird geschrieben',phase:'connect',attempt:1,module:'',t0:Date.now()};
+  resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px" id="live-pass"></p><p style="margin-top:6px;font-size:12px;color:#a8a8a4" id="live-detail"></p></div></div></div>';
+  if(!liveTicker)liveTicker=setInterval(renderLiveStatus,1000);
+  renderLiveStatus();
+}
+function renderLiveStatus(){
+  if(!liveState)return;
+  var elP=document.getElementById('live-pass');
+  var elD=document.getElementById('live-detail');
+  if(!elP||!elD)return;
+  var secs=Math.floor((Date.now()-liveState.t0)/1000);
+  var mm=Math.floor(secs/60), ss=('0'+(secs%60)).slice(-2);
+  elP.textContent='Prüfung läuft – Pass '+liveState.passNo+' von '+liveState.total+' – '+liveState.label+' ('+mm+':'+ss+')';
+  var d='';
+  if(liveState.phase==='connect')d='Verbindung wird aufgebaut …';
+  else if(liveState.phase==='stream')d='Antwort beginnt …';
+  else if(liveState.phase==='thinking')d='Der ReviewAssistant denkt nach (adaptives Denken) …';
+  else if(liveState.phase==='text')d=liveState.writeVerb+(liveState.module?' – gerade: '+liveState.module:'')+' …';
+  else if(liveState.phase==='retry')d='Verbindung unterbrochen – zweiter Versuch läuft automatisch …';
+  elD.textContent=d+(liveState.attempt>1&&liveState.phase!=='retry'?' (2. Versuch)':'');
+}
+function liveOnStatus(st){
+  if(!liveState||!st)return;
+  var before=liveState.phase+'|'+liveState.module+'|'+liveState.attempt;
+  if(st.attempt)liveState.attempt=st.attempt;
+  if(st.phase==='retry'){liveState.phase='retry';liveState.module='';}
+  else if(st.phase==='thinking'){if(liveState.phase!=='text')liveState.phase='thinking';}
+  else if(st.phase==='text'){
+    liveState.phase='text';
+    // Modul-Erkennung: nur bei Deltas mit '='-Zeichen im letzten Antwortstueck
+    // nachsehen (guenstig; ein leicht verspaetetes Label ist unkritisch).
+    if(st.delta&&st.delta.indexOf('=')>=0&&st.sofar){
+      var tail=st.sofar.slice(-400);
+      if(tail.indexOf('===MODUL_C_START===')>=0)liveState.module='Modul C (Termine und Fristen)';
+      else if(tail.indexOf('===MODUL_B_START===')>=0)liveState.module='Modul B (Inhaltliche Vollständigkeit)';
+      else if(tail.indexOf('===MODUL_A_START===')>=0)liveState.module='Modul A (Policy und Stil)';
+    }
+  }
+  else if(st.phase==='stream'){if(liveState.phase==='connect')liveState.phase='stream';}
+  else if(st.phase==='connect'){if(liveState.phase!=='retry')liveState.phase='connect';}
+  var after=liveState.phase+'|'+liveState.module+'|'+liveState.attempt;
+  if(after!==before)renderLiveStatus();
+}
 async function runReview(){
   var key=getKey();
   if(!key){alert('Bitte zuerst den API Key eingeben und speichern.');return;}
@@ -1348,19 +1539,23 @@ async function runReview(){
   var p=buildParams();
   if(pendingExtractions>0){alert('Eine hochgeladene Datei wird noch gelesen – bitte einen Moment warten und dann erneut auf "Dokument prüfen" klicken.');return;}
   if(!p.docText&&storedFiles.length===0){alert('Bitte Text einfügen oder Datei hochladen.');return;}
-
   var btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.textContent='Prüfung läuft…';
+  // BUILD 02.08.2026 (Review-Nachtrag): Waehrend der Pruefung auch den
+  // Zuruecksetzen-Button sperren. clearAll() haette sonst result-wrap auf
+  // display:none gesetzt und der fertige Bericht waere unsichtbar gelandet.
+  var clearBtn=document.getElementById('clear-btn');
+  if(clearBtn)clearBtn.disabled=true;
   var resultWrap=document.getElementById('result-wrap');
   resultWrap.style.display='block';
-  resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Prüfung läuft – Pass 1 von 2…</p></div></div></div>';
-
-  // Standard: neueste Sonnet-Version (Sonnet 5); Wichtig-Modus: neueste Opus-Version (Opus 4.8).
-  // Bei neuen Modell-Releases muss dieser String manuell aktualisiert werden (kein Evergreen-Alias).
-  var model=p.wichtig?'claude-opus-4-8':'claude-sonnet-5';
+  resultWrap.innerHTML='';   // BUILD 02.08.2026: Anzeige uebernimmt startPassStatus (Live-Status)
+  // Standard: neueste Sonnet-Version (Sonnet 5); Wichtig-Modus: neueste Opus-Version
+  // (Opus 5, seit BUILD 02.08.2026; davor Opus 4.8). Bei neuen Modell-Releases muss
+  // dieser String manuell aktualisiert werden (kein Evergreen-Alias; claude-opus-5 und
+  // claude-sonnet-5 sind laut Modell-Doku fixe Snapshots ohne Datums-Suffix).
+  var model=p.wichtig?'claude-opus-5':'claude-sonnet-5';
   var effort=p.wichtig?'max':'high';
   var sysPrompt=buildSystemPrompt(p);
-
   // Build message content
   var content=[];
   var docTextForTranslation='';   // Fix 5: Klartext fuer Pass-3 (Paste + DOCX/TXT; PDF ausgenommen)
@@ -1388,11 +1583,22 @@ async function runReview(){
     content.push({type:'text',text:'ZU PRUEFENDES DOKUMENT:\n\n'+p.docText});
     docTextForTranslation+=(docTextForTranslation?'\n\n':'')+p.docText;
   }
-
+  // BUILD 02.08.2026: Sprache/Passzahl VOR Pass 1 bestimmen, damit die
+  // Live-Anzeige von Beginn an "Pass x von y" korrekt zeigt. Uebersetzungs-
+  // Regel unveraendert aus BUILD 05.07.2026: Pass 3 laeuft, wenn Dokument-
+  // und Ausgabesprache verschieden sind; deckt zh-Quelle sowie ja/ko-Quelle
+  // -> de/en mit ab; Ausgabesprachen nur de/en/ja/ko (kein zh-Ziel).
+  var docLangGuess=guessLang(docTextForTranslation);          // 'de'|'en'|'ja'|'ko'|'zh'
+  var outMap={'Deutsch':'de','English':'en','日本語':'ja','한국어':'ko'};
+  var outLang=outMap[p.lang]||'de';
+  var outputLangCode=p.lang;
+  var needsTranslation=!!docTextForTranslation && docLangGuess!==outLang;
+  var totalPasses=needsTranslation?3:2;
   try{
     // Pass 1: Review
-    // Sonnet 5 / Opus 4.8: adaptives Denken (thinking.adaptive) statt manueller budget_tokens
-    // (manuelles Denken => 400-Fehler). Aufwand ueber output_config.effort (high bzw. max).
+    // Sonnet 5 / Opus 5: adaptives Denken (thinking.adaptive) statt manueller budget_tokens
+    // (manuelles Denken => 400-Fehler; Opus 5 unterstuetzt laut Doku ausschliesslich
+    // adaptives Denken). Aufwand ueber output_config.effort (high bzw. max).
     // max_tokens grosszuegig, weil adaptives Denken UND Output aus demselben Budget kommen
     // und der neue Tokenizer ~30% mehr Tokens erzeugt – sonst Gefahr, dass Modul C abgeschnitten wird.
     var body1={
@@ -1404,15 +1610,9 @@ async function runReview(){
       system:sysPrompt,
       messages:[{role:'user',content:content}]
     };
-
-    var r1=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify(body1)
-    });
-    var s1=await readStream(r1);
+    startPassStatus(1,totalPasses,'Analyse (Module A, B, C)');
+    var s1=await callClaude(body1,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
     var pass1Text=s1.text;
-
     // DIAGNOSE Modul C: rohen Pass-1-Output und Block-Praesenz protokollieren.
     // In der Browser-Konsole (F12) pruefbar, ob Modul C schon im Pass-1-Output fehlt.
     // VERTRAULICHKEIT (Punkt 4): Der volle Pass-1-Output enthaelt Mandanten-
@@ -1427,10 +1627,8 @@ async function runReview(){
     if(pass1Text.indexOf('===MODUL_C_START===')<0){
       console.warn('WARNUNG: Modul C fehlt bereits im Pass-1-Output. stop_reason='+s1.stopReason+' – bei "max_tokens" wurde der Output abgeschnitten.');
     }
-
     // Pass 2: Policy control – correct columns 2+3
-    resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 2 von 2 – Policy-Kontrolle…</p></div></div></div>';
-
+    startPassStatus(2,totalPasses,'Policy-Kontrolle');
     var pass2Prompt='Du bist Qualitaetskontrolleur fuer den TAIYO ReviewAssistant.\n'+
       'Der folgende Output wurde von einem Erstpruefungsdurchlauf erzeugt und enthaelt die Bloecke: ===VORAB_START/END===, ===MODUL_A_START/END===, ===MODUL_B_START/END===, ===MODUL_C_START/END===.\n\n'+
       'KRITISCHE REGEL – UNBEDINGT BEFOLGEN:\n'+
@@ -1444,7 +1642,8 @@ async function runReview(){
       '– Kein Doppelpunkt am Anfang.\n'+
       '– Keine Abkuerzungen.\n'+
       '– Policy-Referenzen in Klammer: (Punkt 10.9 der Policy).\n'+
-      '– Korrekte deutsche Umlaute.\n\n'+
+      '– Korrekte deutsche Umlaute.\n'+
+      '– Verwendet der Originaltext einer Zeile erkennbar besonders einfache, kurze Erklaersaetze, behalte diese Einfachheit bei – nicht auf komplexere Formulierungen umschreiben.\n\n'+
       'KORREKTURREGELN fuer Modul-A-Spalte 3 (Vorschlag):\n'+
       '– Max 15 Woerter pro Satz.\n'+
       '– Kein Doppelpunkt am Anfang.\n'+
@@ -1453,7 +1652,6 @@ async function runReview(){
       '– Im fremdsprachigen Output keine deutschen Begriffe im Fliesstext (nur kursiv in Klammer); deutschen Originalbegriff nach Fachausdruecken kursiv in Klammer (Punkt 10.5).\n\n'+
       'Gib den vollstaendigen Output zurueck – ALLE Bloecke (VORAB, MODUL_A, MODUL_B, MODUL_C), exakt im gleichen Format, VORAB und MODUL_B und MODUL_C zeichengenau wie im Original. Sprachausgabe fuer Modul A: '+p.lang+'.\n\n'+
       'ZU KORRIGIERENDER OUTPUT:\n'+pass1Text;
-
     // Pass 2 muss den GESAMTEN Output (VORAB + Modul A/B/C) reproduzieren -> ebenfalls grosszuegiges max_tokens.
     var body2={
       model:model,
@@ -1464,34 +1662,21 @@ async function runReview(){
       system:pass2Prompt,
       messages:[{role:'user',content:'Bitte korrigieren.'}]
     };
-
-    var r2=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify(body2)
-    });
-    var s2=await readStream(r2);
+    var s2=await callClaude(body2,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
     var finalText=s2.text;
     var truncated=(s1.stopReason==='max_tokens')||(s2.stopReason==='max_tokens');   // Fix 2: Trunkierung sichtbar machen
-
     // SICHERHEITSNETZ: Modul B und C duerfen durch Pass 2 NIEMALS veraendert oder verloren gehen.
     // Wir ersetzen sie hart durch die Originalbloecke aus Pass 1, unabhaengig davon was Pass 2 geliefert hat.
     finalText=forceRestoreBlock(finalText,pass1Text,'VORAB');
     finalText=forceRestoreBlock(finalText,pass1Text,'MODUL_B');
     finalText=forceRestoreBlock(finalText,pass1Text,'MODUL_C');
-
-    // Pass 3 (nur wenn Ausgabesprache ≠ Dokumentsprache): Übersetzung des geprüften Textes
+    // Pass 3 (nur wenn Ausgabesprache ≠ Dokumentsprache): Übersetzung des geprüften Textes.
+    // needsTranslation/outLang/outputLangCode wurden bereits VOR Pass 1 berechnet
+    // (BUILD 02.08.2026, fuer die korrekte Passzahl in der Live-Anzeige) – die
+    // Uebersetzungs-Regel selbst ist unveraendert.
     var translatedText='';
-    var docLangGuess=guessLang(docTextForTranslation);          // 'de'|'en'|'ja'|'ko'|'zh'
-    var outMap={'Deutsch':'de','English':'en','日本語':'ja','한국어':'ko'};
-    var outLang=outMap[p.lang]||'de';
-    var outputLangCode=p.lang;
-    // Uebersetzung des Originaldokuments, sobald Dokument- und Ausgabesprache
-    // verschieden sind. Deckt jetzt zh-Quelle sowie ja/ko-Quelle -> de/en mit
-    // ab (fruehere Luecken). Ausgabesprachen nur de/en/ja/ko (kein zh-Ziel).
-    var needsTranslation=!!docTextForTranslation && docLangGuess!==outLang;
     if(needsTranslation&&docTextForTranslation){
-      resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px">Pass 3 von 3 – Übersetzung in '+outputLangCode+'…</p></div></div></div>';
+      startPassStatus(3,totalPasses,'Übersetzung in '+outputLangCode,'Die Übersetzung wird geschrieben');
       var transBody={
         model:model,
         max_tokens:p.wichtig?16000:12000,
@@ -1505,12 +1690,7 @@ async function runReview(){
         messages:[{role:'user',content:'ZU ÜBERSETZENDER TEXT:\n\n'+docTextForTranslation}]
       };
       try{
-        var r3=await fetch(PROXY_URL,{
-          method:'POST',
-          headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-          body:JSON.stringify(transBody)
-        });
-        var s3=await readStream(r3);
+        var s3=await callClaude(transBody,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
         translatedText=s3.text;
         if(s3.stopReason==='max_tokens') truncated=true;
       }catch(transErr){
@@ -1520,25 +1700,24 @@ async function runReview(){
         needsTranslation=false;
       }
     }
-
     lastReviewMeta={dtype:p.dtype,lang:p.lang};
     renderResult(finalText,model,p.lang,translatedText,needsTranslation,buildIntro(p));
     if(truncated){
       resultWrap.insertAdjacentHTML('afterbegin','<div style="background:#fdecea;border-left:3px solid #d33;border-radius:4px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#7a1c14;line-height:1.5">Achtung: Die Antwort war möglicherweise unvollständig (Token-Limit erreicht). Einzelne Befunde oder Fristen könnten fehlen. Bitte das Dokument kürzen oder erneut prüfen; im Wichtig-Modus steht mehr Budget zur Verfügung.</div>');
     }
-
   }catch(err){
     var m=err&&err.message?err.message:String(err);
     var hint='';
-    if(/524|timeout|timed out|Failed to fetch|NetworkError|load failed/i.test(m)){
-      hint='<div style="margin-top:8px;font-size:12px;color:#666">Die Verbindung wurde unterbrochen oder hat zu lange gedauert. Bitte erneut versuchen; bei langen Dokumenten kann die Prüfung einige Minuten dauern.</div>';
+    if(/524|timeout|timed out|Zeitueberschreitung|Failed to fetch|NetworkError|load failed|abort/i.test(m)){
+      hint='<div style="margin-top:8px;font-size:12px;color:#666">Die Verbindung wurde unterbrochen oder hat zu lange gedauert. Der ReviewAssistant hat den Versuch bereits einmal automatisch wiederholt. Bitte danach erneut prüfen; bei langen Dokumenten kann die Prüfung einige Minuten dauern.</div>';
     }
     resultWrap.innerHTML='<div class="error-box">Verbindungsfehler: '+escHtml(m)+hint+'</div>';
   }finally{
+    stopLiveStatus();   // BUILD 02.08.2026: Live-Anzeige beenden (Bericht/Fehler ueberschreiben sie ohnehin vollstaendig)
     btn.disabled=false;btn.textContent='Dokument prüfen';
+    if(clearBtn)clearBtn.disabled=false;
   }
 }
-
 // ─── Language detection ───────────────────────────────────────────────
 // ─── Sicherheitsnetz: Block aus Original-Text erzwingen ───────────────
 // Verhindert, dass Pass 2 (Policy-Kontrolle) Modul B oder C versehentlich
@@ -1551,7 +1730,6 @@ function forceRestoreBlock(text,sourceText,modKey){
   var srcEnd=sourceText.indexOf(endTag);
   if(srcStart===-1||srcEnd===-1||srcEnd<=srcStart)return text; // Original hatte den Block selbst nicht – nichts zu tun
   var originalBlock=sourceText.substring(srcStart,srcEnd+endTag.length);
-
   var curStart=text.indexOf(startTag);
   var curEnd=text.indexOf(endTag);
   if(curStart===-1||curEnd===-1||curEnd<=curStart){
@@ -1560,7 +1738,6 @@ function forceRestoreBlock(text,sourceText,modKey){
   }
   return text.substring(0,curStart)+originalBlock+text.substring(curEnd+endTag.length);
 }
-
 function guessLang(text){
   if(!text||text.length<20)return 'de';
   var t=text.substring(0,500);
@@ -1575,7 +1752,6 @@ function guessLang(text){
   if(enWords>deWords)return 'en';
   return 'de';
 }
-
 // ─── Einleitungssatz: was wird geprueft (natuerliche Sprache; deckt Missverstaendnisse auf) ───
 function buildIntro(p){
   var dtMap={
@@ -1603,7 +1779,6 @@ function buildIntro(p){
   s+='. Die Ausgabe erfolgt auf '+langN+'.';
   return s;
 }
-
 // ─── Vorspann (Vorab-Hinweis / VIP-Empfehlung / Gesamtbewertung bei besonders muehsamem Text) – erscheint nach dem Einleitungssatz ──
 function renderVorab(raw){
   var tag='===VORAB_START===';
@@ -1618,7 +1793,6 @@ function renderVorab(raw){
   html+='</div>';
   return html;
 }
-
 // ─── Render result ───────────────────────────────────────────────────
 function renderResult(raw,model,lang,translatedText,showTranslation,intro){
   reviewFindings=[];   // Feedback-Loop: bei jedem neuen Bericht zuruecksetzen
@@ -1626,25 +1800,23 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
   var passLabel=showTranslation?'Drei-Pass':'Zwei-Pass';
   html+='<div class="result-header">Prüfbericht<span class="pass-indicator">'+model+' · '+passLabel+'</span></div>';
   html+='<div class="result-body">';
-
   // Einleitungssatz (Item 3): kurz, was geprueft wird – damit ein
   // Missverstaendnis (z.B. falscher Dokumenttyp) sofort auffaellt.
   if(intro){
     html+='<div style="background:#f0f4fa;border-left:3px solid #1F3865;border-radius:4px;padding:9px 12px;margin-bottom:16px;font-size:12px;color:#444;line-height:1.5">'+escHtml(intro)+'</div>';
   }
-
   // Vorspann (Vorab-Hinweis bei wiederholter gravierender Kategorie / VIP-Empfehlung / Gesamtbewertung bei besonders muehsamem Text) – direkt nach dem Einleitungssatz.
   html+=renderVorab(raw);
-
+  // BUILD 02.08.2026: 2.6/2.4-Hinweis im Spaltenkopf leicht verstaerkt (Farbe,
+  // Gewicht) + Tooltip mit dem Wortlaut beider Policy-Punkte. Zusaetzlich steht
+  // eine Schlusszeile am Berichtsende (siehe unten, id="policy-schluss").
+  var hinweis26='<span style="font-weight:600;font-size:10px;color:#c9a227" title="Punkt 2.6 der Policy: Nie ungeprüft Informationen oder Unterlagen weiterleiten oder übernehmen (Copy\'n\'Paste), insbesondere bei Unklarheiten – die Quelle ist egal. Punkt 2.4: Annahmen sind gefährlich – lieber rückfragen und prüfen.">(siehe aber Punkte 2.6, 2.4 der Policy)</span>';
   html+=renderModule(raw,'MODUL_A','Policy & Stil',
-    ['Textausschnitt','Problem <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag <span style="font-weight:400;font-size:10px;color:#a0b0d0">(siehe aber Punkte 2.6, 2.4 der Policy)</span>'],
+    ['Textausschnitt','Problem <span style="font-weight:400;font-size:10px;color:#a0b0d0">(Punkt der Policy)</span>','Vorschlag '+hinweis26],
     false);
-
   html+=renderModule(raw,'MODUL_B','Inhaltliche Vollständigkeit',
-    ['Bereich','Befund','Empfehlung <span style="font-weight:400;font-size:10px;color:#a0b0d0">(siehe aber Punkte 2.6, 2.4 der Policy)</span>'],false);
-
+    ['Bereich','Befund','Empfehlung '+hinweis26],false);
   html+=renderFristen(raw);
-
   // Übersetzung (Punkt H): wenn Ausgabesprache ≠ Textsprache
   if(showTranslation&&translatedText){
     html+='<div style="margin-bottom:20px">';
@@ -1652,13 +1824,20 @@ function renderResult(raw,model,lang,translatedText,showTranslation,intro){
     html+='<div style="padding:14px 16px;font-size:13px;line-height:1.7;white-space:pre-wrap;color:#222">'+escHtml(translatedText)+'</div>';
     html+='</div>';
   }
-
   html+='<div id="feedback-bar" class="feedback-bar"></div>';
+  // BUILD 02.08.2026: Schlusszeilen zu Punkt 2.6/2.4 und Punkt 3.7 der Policy.
+  // Deterministisch vom Client gerendert (nicht vom Modell) – immer da, nie
+  // Teil der Befunde, bewusst kompakt gehalten (nicht ueberfrachten). Die
+  // 3.7-Zeile wird via updateFeedbackBar hervorgehoben, sobald ALLE Befunde
+  // abgehakt sind.
+  html+='<div id="policy-schluss" style="margin-top:12px;border-left:3px solid #1F3865;background:#f0f4fa;border-radius:4px;padding:9px 12px;font-size:12px;color:#444;line-height:1.6">'+
+    '<div><strong>Vorschläge nie ungeprüft übernehmen.</strong> Kein Copy-and-paste ohne eigene Kontrolle. Keine Annahmen – im Zweifel rückfragen (Punkte 2.6 und 2.4 der Policy).</div>'+
+    '<div id="schluss-37" style="margin-top:3px">Feedback gründlich umsetzen – nicht mit möglichst wenig Aufwand. Danach alles noch einmal Korrektur lesen. Erst dann freigeben lassen (Punkt 3.7 der Policy).</div>'+
+    '</div>';
   html+='</div></div>';
   document.getElementById('result-wrap').innerHTML=html;
   updateFeedbackBar();
 }
-
 // ─── Feedback-Loop (BUILD 05.07.2026 Runde 3) ──────────────────────────────
 // Je Befund drei sich gegenseitig ausschliessende Status: Umgesetzt / Falsch /
 // zur Kenntnis genommen. "Falsch"-Befunde koennen als E-Mail an FEEDBACK_EMAIL
@@ -1670,7 +1849,6 @@ function statusButtonsDiv(fid){
     '<button type="button" id="btn-'+fid+'-kenntnis" class="st-btn kenntnis" onclick="setFindingStatus(\''+fid+'\',\'kenntnis\')">'+FB_LABELS.kenntnis+'</button>'+
     '</div>';
 }
-
 function setFindingStatus(fid,status){
   var f=null;
   for(var i=0;i<reviewFindings.length;i++){ if(reviewFindings[i].fid===fid){ f=reviewFindings[i]; break; } }
@@ -1687,7 +1865,6 @@ function setFindingStatus(fid,status){
   });
   updateFeedbackBar();
 }
-
 function buildFeedbackText(){
   var falsch=reviewFindings.filter(function(f){return f.status==='falsch';});
   var out=[];
@@ -1709,7 +1886,6 @@ function buildFeedbackText(){
   out.push('(Automatisch aus dem ReviewAssistant erzeugt.)');
   return out.join('\n');
 }
-
 function updateFeedbackBar(){
   var bar=document.getElementById('feedback-bar');
   if(!bar)return;
@@ -1725,8 +1901,19 @@ function updateFeedbackBar(){
     h+='<span style="color:#aaa;font-size:11.5px">Als "Falsch" markierte Befunde lassen sich als Feedback-Mail sammeln.</span>';
   }
   bar.innerHTML=h;
+  // BUILD 02.08.2026: 3.7-Schlusszeile hervorheben, sobald ALLE Befunde
+  // bearbeitet sind – als Erinnerung an Korrekturlesen + Freigabe.
+  var s37=document.getElementById('schluss-37');
+  if(s37){
+    if(handled===total&&total>0){
+      s37.innerHTML='<strong>Alle Befunde bearbeitet – jetzt gemäß Punkt 3.7 der Policy: alles noch einmal Korrektur lesen, dann erst freigeben lassen.</strong>';
+      s37.style.color='#1F3865';
+    }else{
+      s37.innerHTML='Feedback gründlich umsetzen – nicht mit möglichst wenig Aufwand. Danach alles noch einmal Korrektur lesen. Erst dann freigeben lassen (Punkt 3.7 der Policy).';
+      s37.style.color='';
+    }
+  }
 }
-
 function sendFeedbackEmail(){
   var body=buildFeedbackText();
   var subject='ReviewAssistant – falsche Befunde ('+new Date().toLocaleDateString('de-AT')+')';
@@ -1739,7 +1926,6 @@ function sendFeedbackEmail(){
   }
   window.location.href=url;
 }
-
 function copyFeedbackText(silent){
   var text=buildFeedbackText();
   function done(){ if(!silent)alert('Die als falsch markierten Befunde wurden in die Zwischenablage kopiert.'); }
@@ -1754,7 +1940,6 @@ function copyFeedbackText(silent){
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(fallback); }
   else { fallback(); }
 }
-
 function renderModule(raw,modKey,modTitle,headers,isFristen){
   var startTag='==='+modKey+'_START===';
   var endTag='==='+modKey+'_END===';
@@ -1762,29 +1947,24 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
   var ei=raw.indexOf(endTag);
   var html='<div style="margin-bottom:20px">';
   html+='<div class="mod-sep">'+modTitle+'</div>';
-
   if(si===-1||ei===-1||ei<=si){
     html+='<div style="padding:10px 10px;font-size:13px;color:#aaa;font-style:italic">Kein Output empfangen.</div>';
     html+='</div>';return html;
   }
-
   var block=raw.substring(si+startTag.length,ei).trim();
   if(block==='KEIN_BEFUND'||block.trim()===''){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Kein Befund.</div>';
     html+='</div>';return html;
   }
-
   var lines=block.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
   // Remove header row
   if(lines.length>0&&(lines[0].indexOf('TEXTAUSSCHNITT')>=0||lines[0].indexOf('BEREICH')>=0||lines[0].indexOf('BEZEICHNUNG')>=0)){
     lines.shift();
   }
-
   if(lines.length===0){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Kein Befund.</div>';
     html+='</div>';return html;
   }
-
   // TOP-5-DECKEL (nur Modul A) - deterministisches Sicherheitsnetz zur
   // Prompt-Regel 'hoechstens 5 Modul-A-Befunde'. Haelt sich das Modell nicht
   // daran, kuerzen wir hier - aber NUR unter den laesslichen Befunden: ALLE
@@ -1809,6 +1989,14 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
       // ein Fehltreffer wuerde eine Zeile ohnehin nur zusaetzlich BEHALTEN,
       // nie faelschlich entfernen.
       var keep=g||(valid&&/10\.2(?![0-9])/.test(cols[1]||''));
+      // BUILD 02.08.2026 (Typo-Sammelzeile): Zeilen, deren Spalte 2 das Wort
+      // Tippfehler/typo (bzw. 誤字/タイプミス/오타 im ja/ko-Output) nennt, ebenfalls
+      // NIE dem Top-5-Deckel opfern - sonst wuerde die Buendelung von mehr als
+      // drei Typos in EINE Zeile nichts retten. Bewusste Design-Entscheidung:
+      // Das Netz schuetzt damit auch einzelne Typo-Zeilen (1-3 Typos); es
+      // wirkt wie das 10.2-Netz nur BEHALTEND, entfernt nie etwas anderes
+      // faelschlich (der Platz geht nur zulasten uebriger laesslicher Zeilen).
+      if(!keep&&valid&&/(tippfehler|typo|誤字|タイプミス|오타)/i.test(cols[1]||''))keep=true;
       return {line:l,grave:g,keep:keep,valid:valid};
     });
     var validCount=0;classified.forEach(function(c){if(c.valid)validCount++;});
@@ -1823,12 +2011,10 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
       }).map(function(c){return c.line;});
     }
   }
-
   html+='<table class="review-table"><thead><tr>';
   headers.forEach(function(h){html+='<th>'+h+'</th>';});
   html+='<th class="status-col">Status</th>';
   html+='</tr></thead><tbody>';
-
   lines.forEach(function(line){
     var grave=false;
     var stripped=line.replace(/^\s*\[!\]\s*/,'');
@@ -1853,11 +2039,9 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
     html+='<td class="status-col">'+statusButtonsDiv(fid)+'</td>';
     html+='</tr>';
   });
-
   html+='</tbody></table></div>';
   return html;
 }
-
 function renderFristen(raw){
   var startTag='===MODUL_C_START===';
   var endTag='===MODUL_C_END===';
@@ -1865,26 +2049,21 @@ function renderFristen(raw){
   var ei=raw.indexOf(endTag);
   var html='<div style="margin-bottom:20px">';
   html+='<div class="mod-sep">Termine & Fristen</div>';
-
   if(si===-1||ei===-1||ei<=si){
     html+='<div style="padding:10px 10px;font-size:13px;color:#aaa;font-style:italic">Kein Output empfangen.</div>';
     html+='</div>';return html;
   }
-
   var block=raw.substring(si+startTag.length,ei).trim();
   if(block==='KEIN_BEFUND'||block.trim()===''){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Keine Termine oder Fristen identifiziert.</div>';
     html+='</div>';return html;
   }
-
   var lines=block.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
   if(lines.length>0&&lines[0].indexOf('BEZEICHNUNG')>=0)lines.shift();
-
   if(lines.length===0){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Keine Termine oder Fristen identifiziert.</div>';
     html+='</div>';return html;
   }
-
   html+='<ul class="fristen-list">';
   lines.forEach(function(line){
     var grave=false;
@@ -1917,7 +2096,6 @@ function renderFristen(raw){
   html+='</div>';
   return html;
 }
-
 // ─── Init ─────────────────────────────────────────────────────────────
 (function(){
   var k;try{k=localStorage.getItem('taiyo_api_key');}catch(e){}
@@ -1933,7 +2111,4 @@ function renderFristen(raw){
   }catch(e){}
 })();
 </script>
-
-
-
 </body></html>
