@@ -47,10 +47,24 @@
     Pass2 24000/32000, Pass3 12000/16000 — weil adaptives Denken UND
     Output aus demselben max_tokens-Budget kommen und der Sonnet-5-
     Tokenizer ~30% mehr Tokens erzeugt (sonst Trunkierungsgefahr).
+    Seit BUILD 23.09.2026 (Freigabe Dr. Scheuwimmer) im Wichtig-Modus:
+    Pass1 96000, Pass2 64000, Pass3 32000 - Opus 5.5 denkt bei 'max'
+    laenger als Opus 5; Anthropic nennt fuer 'max' mindestens 64k als
+    Startwert. Standard unveraendert 32000/24000/12000. Verrechnet wird
+    nur der tatsaechliche Verbrauch.
   - MODELL-KONFIG (seit 01.07.2026, NIE wieder auf budget_tokens/
     manuelles Denken zurueck — das wirft auf Sonnet 5, Opus 4.8 UND
     Opus 5 einen 400-Fehler): Standard = claude-sonnet-5, Wichtig =
-    claude-opus-5 (seit BUILD 02.08.2026; davor claude-opus-4-8).
+    claude-opus-5-5 (seit BUILD 23.09.2026; davor claude-opus-5 seit
+    BUILD 02.08.2026, davor claude-opus-4-8).
+    OPUS 5.5 (seit BUILD 23.09.2026): Denken IMMER an und nicht
+    abschaltbar (thinking:{type:'adaptive'} zulaessig; 'disabled' und
+    'enabled' => 400). effort-Default dort 'medium' (Opus 5: 'high') ->
+    effort daher IMMER explizit setzen; 'max' wird unterstuetzt.
+    Denktext kommt standardmaessig 'omitted' (leerer thinking_delta +
+    signature_delta). Ablehnungen kommen als HTTP 200 mit stop_reason
+    'refusal' + stop_details (siehe BUILD 23.09.2026). Sonnet 5 bleibt
+    laut Doku aktiv (Abkuendigung nicht vor 30.06.2027).
     Aufwand ausschliesslich ueber output_config.effort ('high' Standard,
     'max' Wichtig; beides von Opus 5 unterstuetzt, Default dort 'high').
     Denken ausschliesslich ueber thinking:{type:'adaptive'} (bei Sonnet 5
@@ -94,6 +108,11 @@
     checklisten-konforme api.js am 02.08.2026 an Dr. Scheuwimmer
     uebergeben (Streaming-Passthrough + CORS/OPTIONS); nach deren
     Deploy sind die echten Phasen sichtbar - DAS ist der Funktionstest.
+    Seit BUILD 23.09.2026: readStream erkennt die Denkphase auch am
+    content_block_start (Denktext 'omitted'), liefert stopDetails und
+    wertet einen Rest-Puffer ohne abschliessenden Zeilenumbruch aus.
+    SSE-error-Events vom Typ api_error/overloaded_error werden wie HTTP
+    5xx einmal automatisch wiederholt.
   - API-Key-Problem (Browser-Passwortmanager-Interferenz, "invalid
     x-api-key") — NICHT als final gelöst markieren ohne ausdrückliche
     Bestätigung durch Dr. Scheuwimmer.
@@ -119,13 +138,17 @@
   Upload (PDF/DOCX/TXT) mit Entfernen-Button OHNE Page-Reload.
   --- WICHTIG-MODUS ---
   UI zeigt NUR "Tiefere Analyse, höhere Kosten" — keine Modell-/
-  Einstellungsdetails anzeigen. Intern (seit BUILD 02.08.2026):
-  claude-opus-5 + output_config.effort 'max' + thinking:{type:'adaptive'}
-  (davor seit 01.07.2026 claude-opus-4-8; NICHT mehr budget_tokens —
-  siehe MODELL-KONFIG oben).
+  Einstellungsdetails anzeigen. Intern (seit BUILD 23.09.2026):
+  claude-opus-5-5 + output_config.effort 'max' + thinking:{type:'adaptive'}
+  (davor seit 02.08.2026 claude-opus-5, seit 01.07.2026 claude-opus-4-8;
+  NICHT mehr budget_tokens — siehe MODELL-KONFIG oben).
   --- BEKANNTER OFFENER BUG (Stand 25.06.2026) ---
   Modul C (Gerichtsfrist) fehlte bereits im Pass-1-Output, vor jeglichem
-  Parsing. Diagnose-Logging: Block-Praesenz (MODUL_A/B/C true/false) +
+  Parsing. SEIT BUILD 23.09.2026 SICHTBAR: fehlt ein Abschnitt in Pass 1,
+  zeigt der Bericht "Kein Output empfangen." + roten Hinweis (vorher konnte
+  Pass 2 einen gruenen Haken "Keine Termine oder Fristen identifiziert"
+  erfinden). Die Ursache selbst bleibt offen.
+  Diagnose-Logging: Block-Praesenz (MODUL_A/B/C true/false) +
   stop_reason via console.log/console.warn IMMER aktiv; der VOLLE rohe
   Pass-1-Output nur bei Aufruf mit ?debug=1 (DEBUG_LOG_FULL_OUTPUT,
   Standard AUS, siehe BUILD 05.07.2026). Ursache noch NICHT final
@@ -716,6 +739,162 @@
   Round-Trip). node --check auf dem Gesamt-Script ok. Feldlisten/
   forceRestoreBlock/max_tokens/stream:true(3x)/Feedback-Loop
   unveraendert.
+  --- BUILD 23.09.2026 (Opus 5.5 + Fehlerkorrektur; Freigaben Dr. Scheuwimmer 23.09.2026) ---
+  Grundlage: GitHub-Stand Commit ee0eb5b (= BUILD 02.08.2026 inkl. Nachtrag
+  4). Vorab: Checkliste per grep gegen den Code verifiziert (131 Punkte, alle
+  vorhanden), 105/105 Tests gruen. Pruefung: eigene Code-Pruefung +
+  adversariale Opus-Pruefung (14 Defekte, alle in Chromium nachgestellt) +
+  Postfach Dr. Scheuwimmer ab 02.08.2026 (eine Falsch-Meldung).
+  1. WICHTIG-MODUS AUF OPUS 5.5: claude-opus-5 -> claude-opus-5-5 (laut
+     Modell-Doku fixer Snapshot ohne Datums-Suffix; 'max' unterstuetzt;
+     Denken immer an). Standard bleibt claude-sonnet-5 (Entscheidung
+     Dr. Scheuwimmer: Sonnet 5 ist weiterhin das neueste Sonnet).
+  2. MAX_TOKENS WICHTIG-MODUS ANGEHOBEN (Freigabe Dr. Scheuwimmer): Pass1
+     48000->96000, Pass2 32000->64000, Pass3 16000->32000. Standard
+     unveraendert. effort/thinking/Streaming unveraendert.
+  3. ZWEITE SICHERUNGSSCHICHT NACH PASS 2 (Freigabe Dr. Scheuwimmer):
+     forceRestoreBlock blieb BYTE-GLEICH und wird weiter fuer VORAB/B/C
+     aufgerufen. Danach neu assembleFinalBlocks(): VORAB, Modul B und C
+     AUSSCHLIESSLICH aus Pass 1. Fehlt ein Abschnitt in Pass 1, wird ein von
+     Pass 2 gelieferter (= erfundener; Pass 2 sieht das Dokument nie)
+     Abschnitt verworfen -> "Kein Output empfangen." + roter Hinweis statt
+     falschem gruenen Haken. Modul A: Pass-2-Fassung nur, wenn vollstaendig
+     (START vor END) und mit gleicher Zeilenzahl wie Pass 1; sonst die
+     Pass-1-Fassung + gelber Hinweis. Ein in Pass 2 verlorenes "[!]" wird
+     aus Pass 1 wiederhergestellt (Zuordnung ueber Spalte 1, sonst
+     Position). Abgeschnittener Pass 1: vollstaendige Zeilen eines
+     angefangenen Abschnitts werden gezeigt (letzte, evtl. halbe Zeile
+     verworfen) + roter Hinweis "unvollstaendig"; ohne vollstaendige Zeile
+     gilt der Abschnitt als fehlend. NIE wieder VORAB/B/C aus Pass 2
+     uebernehmen.
+  4. PASS 2 KIPPT DIE PRUEFUNG NICHT MEHR: Fehler oder Ablehnung in Pass 2
+     -> Pass-1-Output + gelber Hinweis (vorher ging die fertige Pruefung
+     verloren, z.B. bei HTTP 429 zwischen Pass 1 und 2).
+  5. ABLEHNUNGEN (stop_reason 'refusal'; Opus 5.5 und Sonnet 5 haben
+     Sicherheitsklassifikatoren): Pass 1 abgelehnt -> Fehlerbox "Prüfung vom
+     Modell abgelehnt" mit Kategorie, kein Pass 2. Pass 3 abgelehnt ->
+     gelber Hinweis. Pass 1 ohne jeden Abschnitt -> Fehlerbox ("Unerwartete
+     Antwort" bzw. "Prüfung abgebrochen (Token-Limit)") statt dreimal "Kein
+     Output empfangen". Unvollstaendig ist jede Antwort mit stop_reason
+     ungleich 'end_turn' (auch null = Stream ohne Abschluss sowie
+     model_context_window_exceeded).
+  6. HINWEISE STATT FALSCHER BANNER: Trunkierung nur der Uebersetzung ->
+     gelber Hinweis (vorher roter Banner "Befunde oder Fristen koennten
+     fehlen"); fehlgeschlagene Uebersetzung -> gelber Hinweis (vorher still).
+     Der bisherige rote Trunkierungstext bleibt fuer Pass 1 erhalten.
+  7. KOPFZEILEN-ERKENNUNG sprachunabhaengig und exakt (isHeaderRow +
+     prepareBlockLines): vorher nur deutsche Kopfzeile per Teilstring ->
+     bei en/ja/ko-Output erschien die uebersetzte Kopfzeile als Befund mit
+     Status-Buttons und belegte im Top-5-Deckel einen Platz; eine echte
+     erste Zeile mit "BEREICH" (z.B. GELTUNGSBEREICH) konnte verschwinden.
+     Zusaetzlich Prompt: Kopfzeilen, Marker und KEIN_BEFUND in jeder
+     Ausgabesprache exakt deutsch.
+  8. FORTSETZUNGSZEILEN: Zeilen ohne '|||' haengen an der vorigen
+     Befundzeile (vorher verworfen, z.B. Aufzaehlungspunkte der Regel
+     AUFZAEHLUNG STATT TEILUNG). Prompt: ein Befund = eine Zeile, Aufzaehlung
+     inline mit " • "; die Anzeige bricht " • " in der Vorschlag-Spalte um.
+     Kopfzeile + KEIN_BEFUND -> "Kein Befund" statt leerer Tabelle.
+  9. DOCX-EXTRAKTION: Feldfunktionen (w:instrText: TOC, PAGEREF, REF ...)
+     entfernt, Feldergebnis bleibt; Textfelder nicht mehr doppelt
+     (mc:Fallback entfernt); geschuetzter Bindestrich -> "-", bedingter
+     Trennstrich entfernt; Formatierungsaenderungen (w:pPrChange usw.)
+     entfernt; &amp; zuletzt dekodiert. NEU buildDocxNumbering(): automatische
+     Word-Nummerierung aus numbering.xml/styles.xml rekonstruiert (direkte
+     und formatvorlagenbasierte Nummerierung inkl. basedOn, Ebenen,
+     Startwerte, lvlOverride/startOverride, isLgl, dezimal/Buchstaben/
+     roemisch/Aufzaehlung, gaengige ja/ko-Formate). Vorher war die
+     Nummerierungsregel (Punkt 10.2, BUILD 09.07.2026) bei DOCX-Uploads
+     wirkungslos. Fehlt numbering.xml oder scheitert das Parsen: Verhalten
+     wie bisher.
+  10. normalizeReviewText: Trennstrich am Zeilenende nur bei Silben-
+      trennung entfernen (Kleinbuchstabe folgt); "Vertrags-/und" ->
+      "Vertrags- und", "E-/Mail" -> "E-Mail" (vorher "Vertragsund"/"EMail"
+      -> falsche Tippfehler-Befunde).
+  11. UPLOAD: "Alles zuruecksetzen" waehrend eines laufenden Einlesens
+      verwirft das spaete Ergebnis (Generationszaehler fileGen; vorher kam
+      die Datei zurueck und ging in die naechste Pruefung). PDF-Grenze jetzt
+      fuer die SUMME aller PDFs: 23 MB roh (Base64 +33 % muss samt Prompt
+      unter 32 MB je Anfrage bleiben); Seitenlimit laut Doku 600.
+  12. API-KEY: Speichern mit leerem Feld loescht den gespeicherten Key
+      (vorher blieb er in localStorage aktiv). Fehlertext nennt jetzt auch
+      einen abgelaufenen Key. Das API-Key-Problem (Passwortmanager) bleibt
+      NICHT als geloest markiert.
+  13. FEHLERTEXTE: neu Ablehnung, Token-Limit vor erstem Befund,
+      unerwartetes Format, Ausgabenlimit (usage limits, HTTP 400/429 - vorher
+      faelschlich "Zu viele Anfragen, kurz warten"), Anfrage zu gross (413);
+      Konsole jetzt platform.claude.com (console.anthropic.com leitet um).
+  14. RUECKMELDUNGEN AUS DEM BETRIEB (Prompt):
+      (a) Falsch-Meldung Herr El Naggari 19.08.2026: Modul B behauptete
+          gravierend, § 35 Abs 1 Z 1 GmbHG enthalte keine Frist - falsch
+          (Achtmonatsfrist; RIS geprueft 23.09.2026). Neu: VORSICHT BEI
+          NORM- UND ZITATKORREKTUREN (Korrektur nur bei sicherer Kenntnis
+          des Wortlauts, sonst Pruefauftrag ohne [!]); Grave-Definition und
+          14.4 verweisen darauf.
+      (b) Aus Dr. Scheuwimmers Mitarbeiter-Feedback (E-Mails 11.08.,
+          03.09., 08.09. und 15.09.2026): 10.9 EINHEITLICHE BEGRIFFE + schiefe
+          Formulierungen; Tippfehler inkl. Zeichensetzung (Kommas); 14.3
+          ZITIERREIHENFOLGE ("§ 8 Abs 1 RAO"); Modul B (7) INNERE WIDERSPRUECHE
+          (Beilagenzahl, Daten, Ueberschrift gegen Rubrum).
+      (c) VORAB-Ausloeser (4) (Freigabe Dr. Scheuwimmer: "stark", sehr
+          ermahnend): mehr als drei Saetze ueber 15 Woerter -> EINE stark
+          ermahnende Zeile mit Anzahl; Zaehlweise wie bisher (Eigennamen =
+          ein Wort, unvermeidbare Laenge zaehlt nicht); Top-5-Deckel in
+          Modul A unveraendert; mit Fall (1) zu EINER Zeile zusammenfassen.
+  15. LIVE-ANZEIGE: Denkphase auch am content_block_start erkannt.
+  16. GEGENPRUEFUNG (zweiter, unabhaengiger Opus-Durchgang ueber das Delta;
+      12 verifizierte Befunde + Kleinigkeiten, alle behoben):
+      (a) DOCX: nachverfolgt geloeschte/verschobene nummerierte Absaetze
+          bekamen ein leeres Label und verschoben die Zaehlung -> Platzhalter
+          <w:taiyoGone/> statt '', kein Label, kein Zaehlschritt.
+      (b) DOCX: selbstschliessende <mc:Fallback/>, <w:instrText/>,
+          <w:delInstrText/> zuerst entfernen (sonst Textverlust bis zum
+          naechsten Schluss-Tag). mc:AlternateContent innerste zuerst
+          aufloesen: Choice mit Text -> nur Choice (Textfeld nicht doppelt);
+          Choice ohne Text -> Fallback (Symbol-Erweiterung w16se, z.B. Haken).
+      (c) DOCX: Nummerierungszaehler je abstractNum wie Word/LibreOffice;
+          eigene Zaehler nur fuer w:num mit lvlOverride.
+      (d) Typo-Sammelzeile: nennt auch bei Kommafehlern das Wort
+          "Tippfehler"; Top-5-Netz schuetzt zusaetzlich "Zeichensetzung"/
+          "punctuation" (wirkt wie bisher nur BEHALTEND).
+      (e) stop_reason null (Stream ohne Abschluss) = Verbindungsabbruch,
+          nicht "Token-Limit"; Hinweise nennen den Abbruchgrund; Wichtig-Modus
+          wird nur empfohlen, wenn er nicht aktiv ist.
+      (f) Kein Widerspruch mehr zwischen rotem "fehlt" und gelbem "Die Prüfung
+          selbst ist vollständig" (Letzteres nur ohne rote Warnung).
+      (g) Fehlt nur das END-Tag und endete die Antwort regulaer (end_turn):
+          Abschnitt gilt als vollstaendig (kein "unvollständig"-Hinweis;
+          ausdrueckliches KEIN_BEFUND wird akzeptiert). "unvollstaendig" nur bei
+          abgeschnittener Antwort.
+      (h) Modul A ohne jede Befundzeile in Pass 1 bleibt unveraendert (die
+          Sicherungsschicht erzeugt NIE selbst ein KEIN_BEFUND); Ausgabe ohne
+          Spaltentrenner wird in A/B/C als Rohtext gezeigt statt verschluckt.
+      (i) Kopfzeilen: Klammer-Zusaetze ("TEXTAUSSCHNITT (woertlich)") werden
+          erkannt; eine reine Grossbuchstaben-Zeile gilt nur mit mindestens
+          einem bekannten Spaltennamen als Kopfzeile (sonst verschwand z.B.
+          "COURT HEARING|||COURT DEADLINE|||..." samt gruenem Haken).
+      (j) Trennstriche: "als/wie" nach Vokal = Silbentrennung ("Materials");
+          GROSS geschriebene Silbentrennung wird wieder zusammengefuegt.
+      (k) "[!]"-Wiederherstellung zweistufig: zuerst alle Zeilen mit gleicher
+          Spalte 1, dann die uebrigen nach Position bzw. naechster freier
+          Zeile; keine Pass-1-Zeile wird doppelt zugeordnet.
+      (l) Prompt: VORAB-(4)-Beispiel ohne "jeden" (Hausregel); Modul B (7)
+          unter eigener Ueberschrift FEHLER IM VORHANDENEN (30 %), nicht 4b.
+      Bewusst NICHT geaendert: Eine mehrzeilige Spalte-1-Zitatstelle (gegen
+      die Ein-Zeilen-Regel) haengt an der vorigen Zeile an; die Fortsetzungs-
+      logik fuer Aufzaehlungen hat Vorrang.
+  Getestet: node --check; test_build.js (105, unveraendert gruen) +
+  test_build_2309.js (118 neue Tests: Modell/Limits je Modus, alle
+  Sicherungsschicht-Szenarien, Ablehnung, Uebersetzung, Kopfzeilen de/en/
+  ja/ko, Fortsetzungszeilen, readStream, Retry, Fehlertexte, DOCX-
+  Nummerierung/Felder/Textfelder/Entities/Tracked Changes/AlternateContent
+  mit synthetischen DOCX, Trennstriche, Key, Uploads, Prompt-Marker, alle
+  Faelle der Gegenpruefung); check_invariants.py (Checkliste grep-
+  verifiziert, 140 Punkte); pw_e2e_2309.js (Chromium-E2E mit gestubbtem
+  SSE-Stream inkl. echtem DOCX-Upload, 10 Faelle, keine JS-Fehler).
+  NICHT geaendert: Standard-Modell, effort, thinking, Streaming, Waechter-
+  Fenster, forceRestoreBlock (byte-gleich), Top-5-Netz, Feldlisten,
+  Profile, Worker (api.js). functions/api.js im Repo ist vom Client
+  ungenutzt (PROXY_URL zeigt auf den Worker taiyo-review-proxy).
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -1009,10 +1188,157 @@ tr.st-kenntnis td,li.st-kenntnis{opacity:.5}
 // ─── Stored files ───────────────────────────────────────────────────
 var storedFiles = []; // [{name, base64, type}] bzw. {name, type:'docx', extractedText}
 var pendingExtractions=0; // Fix 4: laufende Datei-Lesevorgaenge (sofortiges UI-Feedback + Pruef-Sperre)
+var fileGen=0;           // BUILD 23.09.2026: Generationszaehler - "Alles zuruecksetzen" verwirft spaete Leseergebnisse
+var pendingPdfBytes=0;   // BUILD 23.09.2026: Groesse gerade eingelesener PDFs (fuer die Summenpruefung)
+// BUILD 23.09.2026: API-Limit 32 MB je ANFRAGE (inkl. Base64-Aufschlag ~33 % und
+// Prompt). Daher Summe aller PDFs roh hoechstens 23 MB (vorher 30 MB je Datei ->
+// 24-30-MB-PDFs scheiterten erst nach dem Hochladen mit HTTP 413).
+var PDF_MAX_BYTES=23*1024*1024;
+function storedPdfBytes(){
+  var sum=0;
+  storedFiles.forEach(function(f){ if(f.base64&&(f.type==='application/pdf'||/\.pdf$/i.test(f.name)))sum+=Math.floor(f.base64.length*3/4); });
+  return sum;
+}
 var reviewFindings=[];   // Feedback-Loop: je Befund {fid,module,grave,cells,headers,status}
 var lastReviewMeta=null; // {dtype,lang} des letzten Laufs (fuer die Feedback-Mail)
 var FEEDBACK_EMAIL='a.scheuwimmer@taiyolegal.at';   // Ziel der "Falsch"-Feedback-Mail (leicht aenderbar)
 var FB_LABELS={umgesetzt:'Umgesetzt',falsch:'Falsch',kenntnis:'zur Kenntnis genommen'};
+// ─── BUILD 23.09.2026: Automatische Word-Nummerierung rekonstruieren ─────────
+// docxToText sah bisher nur den Absatztext. Automatische Nummerierungen (z.B.
+// "a)", "I.", "1.1") stehen aber nicht im Text, sondern in numbering.xml und
+// werden von Word erst beim Anzeigen erzeugt. Folge: Die Nummerierungsregel
+// (Punkt 10.2, BUILD 09.07.2026) konnte bei DOCX-Uploads nie greifen. Hier
+// werden die Labels aus numbering.xml (+ styles.xml fuer formatvorlagen-
+// basierte Nummerierung, z.B. Ueberschrift 1) nachgebildet: Ebenen, Start-
+// werte, lvlOverride/startOverride, isLgl, gaengige Formate. Unbekannte
+// Formate fallen auf Dezimalzahlen zurueck. Fehlt numbering.xml oder
+// scheitert das Parsen, bleibt alles wie bisher (keine Labels).
+function toRomanNum(v){
+  if(!(v>0)||v>3999)return String(v);
+  var map=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  var out='';
+  for(var i=0;i<map.length;i++){while(v>=map[i][0]){out+=map[i][1];v-=map[i][0];}}
+  return out;
+}
+function fmtDocxNum(v,fmt){
+  var KATA_AIUEO='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+  var KATA_IROHA='イロハニホヘトチリヌルヲワカヨタレソツネナラムウヰノオクヤマケフコエテアサキユメミシヱヒモセスン';
+  var KANJI='〇一二三四五六七八九';
+  switch(fmt){
+    case 'decimalZero': return (v<10?'0':'')+v;
+    case 'lowerLetter': case 'upperLetter': {
+      var ch=String.fromCharCode(97+((v-1)%26));
+      var str=new Array(Math.floor((v-1)/26)+2).join(ch);
+      return fmt==='upperLetter'?str.toUpperCase():str;
+    }
+    case 'lowerRoman': return toRomanNum(v).toLowerCase();
+    case 'upperRoman': return toRomanNum(v);
+    case 'ordinal': return v+'.';
+    case 'decimalFullWidth': case 'decimalFullWidth2':
+      return String(v).replace(/[0-9]/g,function(d){return String.fromCharCode(0xFF10+(+d));});
+    case 'decimalEnclosedCircle': case 'decimalEnclosedCircleChinese':
+      return (v>=1&&v<=20)?String.fromCharCode(0x2460+v-1):String(v);
+    case 'aiueo': case 'aiueoFullWidth': return KATA_AIUEO.charAt((v-1)%KATA_AIUEO.length);
+    case 'iroha': case 'irohaFullWidth': return KATA_IROHA.charAt((v-1)%KATA_IROHA.length);
+    case 'japaneseCounting': case 'chineseCounting': case 'ideographDigital': case 'chineseCountingThousand': case 'japaneseDigitalTenThousand': case 'taiwaneseCounting': case 'koreanCounting':
+      if(v<10)return KANJI.charAt(v);
+      if(v<20)return '十'+(v%10?KANJI.charAt(v%10):'');
+      if(v<100)return KANJI.charAt(Math.floor(v/10))+'十'+(v%10?KANJI.charAt(v%10):'');
+      return String(v);
+    case 'ganada': return '가나다라마바사아자차카타파하'.charAt((v-1)%14);
+    case 'chosung': return 'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ'.charAt((v-1)%14);
+    default: return String(v);
+  }
+}
+function buildDocxNumbering(nx,sx){
+  function attr(x,name){ var mm=new RegExp('<'+name+'\\b[^>]*?\\bw:val="([^"]*)"').exec(x); return mm?mm[1]:null; }
+  // In numbering.xml die Standard-Variante (mc:Fallback) verwenden, nicht w14-Sonderformate.
+  nx=String(nx||'').replace(/<mc:Choice\b[^>]*>[\s\S]*?<\/mc:Choice>/g,'');
+  function parseLvl(lb){
+    return {start:(attr(lb,'w:start')===null?1:+attr(lb,'w:start')),
+      fmt:attr(lb,'w:numFmt')||'decimal',
+      text:attr(lb,'w:lvlText'),
+      isLgl:/<w:isLgl\b(?![^>]*w:val="(0|false|off)")/.test(lb),
+      pStyle:attr(lb,'w:pStyle')};
+  }
+  var abstracts={};
+  nx.replace(/<w:abstractNum\b[^>]*?w:abstractNumId="(\d+)"[^>]*>([\s\S]*?)<\/w:abstractNum>/g,function(m0,id,body){
+    var lv={};
+    body.replace(/<w:lvl\b[^>]*?w:ilvl="(\d+)"[^>]*>([\s\S]*?)<\/w:lvl>/g,function(m1,il,lb){lv[+il]=parseLvl(lb);return '';});
+    abstracts[id]={lvls:lv,link:attr(body,'w:numStyleLink'),styleLink:attr(body,'w:styleLink')};
+    return '';
+  });
+  var nums={};
+  nx.replace(/<w:num\b[^>]*?w:numId="(\d+)"[^>]*>([\s\S]*?)<\/w:num>/g,function(m0,id,body){
+    var ov={};
+    body.replace(/<w:lvlOverride\b[^>]*?w:ilvl="(\d+)"[^>]*>([\s\S]*?)<\/w:lvlOverride>/g,function(m1,il,ob){
+      var o={}; var so=attr(ob,'w:startOverride'); if(so!==null)o.start=+so;
+      var lm=/<w:lvl\b[^>]*>([\s\S]*?)<\/w:lvl>/.exec(ob); if(lm)o.lvl=parseLvl(lm[1]);
+      ov[+il]=o; return '';
+    });
+    nums[id]={abs:attr(body,'w:abstractNumId'),ov:ov};
+    return '';
+  });
+  var styles={};
+  String(sx||'').replace(/<w:style\b([^>]*)>([\s\S]*?)<\/w:style>/g,function(m0,at,body){
+    var idm=/w:styleId="([^"]*)"/.exec(at); if(!idm)return '';
+    var np=/<w:numPr\b[^>]*>([\s\S]*?)<\/w:numPr>/.exec(body);
+    styles[idm[1]]={basedOn:attr(body,'w:basedOn'),numId:np?attr(np[1],'w:numId'):null,ilvl:np?attr(np[1],'w:ilvl'):null};
+    return '';
+  });
+  function styleNum(id){
+    for(var d=0;id&&d<12;d++){ var st=styles[id]; if(!st)return null; if(st.numId!==null)return st; id=st.basedOn; }
+    return null;
+  }
+  function absFor(numId){
+    var num=nums[numId]; if(!num)return null;
+    var ab=abstracts[num.abs]; if(!ab)return null;
+    if(!Object.keys(ab.lvls).length&&ab.link){
+      for(var k in abstracts){ if(abstracts[k].styleLink===ab.link&&Object.keys(abstracts[k].lvls).length)return abstracts[k]; }
+    }
+    return ab;
+  }
+  function lvlOf(numId,il){
+    var num=nums[numId]; if(!num)return null;
+    var o=num.ov[il]||{};
+    var ab=absFor(numId);
+    var lv=o.lvl||(ab?ab.lvls[il]:null);
+    if(!lv)return null;
+    if(o.start!==undefined)lv=Object.assign({},lv,{start:o.start});
+    return lv;
+  }
+  var counters={};
+  function label(ppr){
+    var numId=null,il=null;
+    var np=/<w:numPr\b[^>]*>([\s\S]*?)<\/w:numPr>/.exec(ppr);
+    if(np){numId=attr(np[1],'w:numId');il=attr(np[1],'w:ilvl');}
+    var sid=attr(ppr,'w:pStyle');
+    if(numId===null&&sid){var sn=styleNum(sid);if(sn){numId=sn.numId;if(il===null)il=sn.ilvl;}}
+    if(numId===null||numId==='0'||!nums[numId])return '';
+    if(il===null){
+      il=0;
+      var ab=absFor(numId);
+      if(ab&&sid){for(var k in ab.lvls){if(ab.lvls[k].pStyle===sid){il=+k;break;}}}
+    }
+    il=Math.max(0,Math.min(8,(+il)||0));
+    var lv=lvlOf(numId,il); if(!lv)return '';
+    // (Gegenpruefung) Zaehler wie Word/LibreOffice je abstractNum; eigene Zaehler
+    // nur fuer ein w:num mit lvlOverride (z.B. Neustart per startOverride).
+    var ck=(Object.keys(nums[numId].ov).length?'n'+numId:'a'+nums[numId].abs);
+    var c=counters[ck]||(counters[ck]={});
+    c[il]=(c[il]===undefined)?lv.start:c[il]+1;
+    for(var d=il+1;d<9;d++)delete c[d];
+    if(lv.fmt==='none')return '';
+    if(lv.fmt==='bullet')return '•';
+    if(lv.text===null||lv.text==='')return '';
+    return lv.text.replace(/%([1-9])/g,function(m0,k){
+      var L=(+k)-1, lvL=lvlOf(numId,L);
+      var val=(c[L]===undefined)?(lvL?lvL.start:1):c[L];
+      return fmtDocxNum(val,(lv.isLgl&&L<il)?'decimal':(lvL?lvL.fmt:'decimal'));
+    });
+  }
+  return {label:label};
+}
 // ─── DOCX -> Text (dependency-frei: ZIP-Central-Directory + DecompressionStream) ──
 // Die Anthropic-API akzeptiert als document-Block nur application/pdf. DOCX wird daher
 // clientseitig zu Text extrahiert und als Text-Block gesendet. Getestet gegen echte docx.
@@ -1025,7 +1351,9 @@ async function docxToText(arrayBuffer){
   var cdCount=dv.getUint16(eocd+10,true), cdOffset=dv.getUint32(eocd+16,true);
   var off=cdOffset, dec=new TextDecoder('utf-8');
   // Zieldateien: Haupttext (Pflicht) + Fuss-/Endnoten (optional; Zitate stehen oft in Fussnoten).
-  var wanted={'word/document.xml':null,'word/footnotes.xml':null,'word/endnotes.xml':null};
+  // BUILD 23.09.2026: zusaetzlich numbering.xml + styles.xml (optional) fuer die
+  // Rekonstruktion automatischer Word-Nummerierungen (Punkt 10.2 pruefbar machen).
+  var wanted={'word/document.xml':null,'word/footnotes.xml':null,'word/endnotes.xml':null,'word/numbering.xml':null,'word/styles.xml':null};
   for(var e=0;e<cdCount;e++){
     if(dv.getUint32(off,true)!==0x02014b50) break;
     var method=dv.getUint16(off+10,true);
@@ -1053,20 +1381,73 @@ async function docxToText(arrayBuffer){
     } else { throw new Error('unbekannte Kompressionsmethode '+t.method); }
     return dec.decode(xmlBytes);
   }
-  function xmlToText(xml){
+  function xmlToText(xml,numCtx){
     // Nachverfolgte Loeschungen/Verschiebungen (Quelltext) ENTFERNEN -> angenommene Endfassung.
     // Erst selbstschliessende Marker (z.B. geloeschte Absatzmarke), dann Bloecke mit Inhalt.
-    xml=xml.replace(/<w:del\b[^>]*\/>/g,'').replace(/<w:del\b[^>]*>[\s\S]*?<\/w:del>/g,'');
-    xml=xml.replace(/<w:moveFrom\b[^>]*\/>/g,'').replace(/<w:moveFrom\b[^>]*>[\s\S]*?<\/w:moveFrom>/g,'');
+    // BUILD 23.09.2026 (Gegenpruefung): selbstschliessende Marker (geloeschte bzw.
+    // wegverschobene Absatzmarke) durch einen Platzhalter ersetzen statt ''. Ein in
+    // der Endfassung wegfallender Absatz erhaelt so kein Nummerierungs-Label und
+    // zaehlt nicht mit (sonst "2." ohne Text und verrutschte Nummern). Der
+    // Platzhalter faellt beim Entfernen der Tags ohnehin weg.
+    xml=xml.replace(/<w:del\b[^>]*\/>/g,'<w:taiyoGone/>').replace(/<w:del\b[^>]*>[\s\S]*?<\/w:del>/g,'');
+    xml=xml.replace(/<w:moveFrom\b[^>]*\/>/g,'<w:taiyoGone/>').replace(/<w:moveFrom\b[^>]*>[\s\S]*?<\/w:moveFrom>/g,'');
+    // BUILD 23.09.2026: (1) nachverfolgte FORMAT-Aenderungen (alte Absatz-/Zeichen-
+    // eigenschaften, u.a. alte Nummerierung) entfernen; (2) Feldfunktionen
+    // (w:instrText, z.B. "TOC \o", "PAGEREF _Toc123", "REF _Ref4711") entfernen -
+    // das Feldergebnis bleibt; (3) Textfelder stehen in mc:Choice UND mc:Fallback -
+    // nur einmal zaehlen; (4) geschuetzter Bindestrich -> "-", bedingter
+    // Trennstrich -> nichts. Vorher: Befehlsreste und Doppeltexte als "Typos"/
+    // "Wiederholungen" im Pruefbericht.
+    xml=xml.replace(/<(w:pPrChange|w:rPrChange|w:sectPrChange|w:tblPrChange|w:trPrChange|w:tcPrChange)\b[^>]*\/>/g,'')
+      .replace(/<(w:pPrChange|w:rPrChange|w:sectPrChange|w:tblPrChange|w:trPrChange|w:tcPrChange)\b[^>]*>[\s\S]*?<\/\1>/g,'');
+    // (Gegenpruefung) selbstschliessende Varianten ZUERST entfernen - sonst liest
+    // die Block-Regex bis zum naechsten Schluss-Tag und verschluckt echten Text.
+    xml=xml.replace(/<(w:instrText|w:delInstrText|mc:Fallback|mc:Choice)\b[^>]*\/>/g,'');
+    xml=xml.replace(/<w:instrText\b[^>]*>[\s\S]*?<\/w:instrText>/g,'').replace(/<w:delInstrText\b[^>]*>[\s\S]*?<\/w:delInstrText>/g,'');
+    // (Gegenpruefung) mc:AlternateContent innerste zuerst aufloesen: Hat mc:Choice
+    // Text (z.B. Textfeld), gilt NUR Choice (sonst doppelt); hat Choice keinen Text
+    // (z.B. Symbol-Erweiterung w16se), gilt Fallback (sonst ginge z.B. ein Haken
+    // verloren).
+    for(var acGuard=0;acGuard<8&&xml.indexOf('<mc:AlternateContent')>=0;acGuard++){
+      var acNew=xml.replace(/<mc:AlternateContent\b[^>]*>((?:(?!<mc:AlternateContent\b)[\s\S])*?)<\/mc:AlternateContent>/g,function(m0,inner){
+        var ch=/<mc:Choice\b[^>]*>([\s\S]*?)<\/mc:Choice>/.exec(inner);
+        var fb=/<mc:Fallback\b[^>]*>([\s\S]*?)<\/mc:Fallback>/.exec(inner);
+        if(ch&&/<(w|m):t[\s>]/.test(ch[1]))return ch[1];
+        if(fb)return fb[1];
+        return ch?ch[1]:'';
+      });
+      if(acNew===xml)break;
+      xml=acNew;
+    }
+    xml=xml.replace(/<mc:Fallback\b[^>]*>[\s\S]*?<\/mc:Fallback>/g,'');   // verwaiste Reste
+    xml=xml.replace(/<w:noBreakHyphen\b[^>]*\/?>/g,'-').replace(/<w:softHyphen\b[^>]*\/?>/g,'');
+    // BUILD 23.09.2026: Absatzeigenschaften (w:pPr, enthalten keinen Text) durch das
+    // rekonstruierte Nummerierungs-Label ersetzen (in Dokumentreihenfolge).
+    xml=xml.replace(/<w:pPr\b[^>]*\/>/g,'');
+    xml=xml.replace(/<w:pPr\b[^>]*>([\s\S]*?)<\/w:pPr>/g,function(mm,inner){
+      if(!numCtx||inner.indexOf('<w:taiyoGone/>')>=0)return '';
+      var lab='';
+      try{lab=numCtx.label(inner);}catch(eLab){lab='';}
+      return lab?lab+' ':'';
+    });
     xml=xml.replace(/<w:tab\b[^>]*\/?>/g,'\t').replace(/<w:br\b[^>]*\/?>/g,'\n').replace(/<w:cr\b[^>]*\/?>/g,'\n');
     xml=xml.replace(/<\/w:p>/g,'\u0001');
+    // BUILD 23.09.2026: &amp; ZULETZT dekodieren - sonst wird ein woertliches
+    // "&lt;" im Dokument (XML: "&amp;lt;") doppelt zu "<" dekodiert.
     var text=xml.replace(/<[^>]+>/g,'')
-      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+      .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'")
       .replace(/&#(\d+);/g,function(m,d){return String.fromCharCode(parseInt(d,10));})
-      .replace(/&#x([0-9a-fA-F]+);/g,function(m,h){return String.fromCharCode(parseInt(h,16));});
+      .replace(/&#x([0-9a-fA-F]+);/g,function(m,h){return String.fromCharCode(parseInt(h,16));})
+      .replace(/&amp;/g,'&');
     return text.split('\u0001').map(function(s){return s.replace(/[ \t]+/g,' ').trim();}).filter(function(s){return s.length;});
   }
-  var bodyParas=xmlToText(await entryToXml(wanted['word/document.xml']));
+  // BUILD 23.09.2026: Nummerierungs-Kontext (optional). Fehlt numbering.xml oder
+  // scheitert das Parsen, bleibt alles wie bisher (keine Labels).
+  var numCtx=null;
+  try{
+    if(wanted['word/numbering.xml'])numCtx=buildDocxNumbering(await entryToXml(wanted['word/numbering.xml']),wanted['word/styles.xml']?await entryToXml(wanted['word/styles.xml']):'');
+  }catch(eNum){numCtx=null;}
+  var bodyParas=xmlToText(await entryToXml(wanted['word/document.xml']),numCtx);
   var noteParas=[];
   if(wanted['word/footnotes.xml']) noteParas=noteParas.concat(xmlToText(await entryToXml(wanted['word/footnotes.xml'])));
   if(wanted['word/endnotes.xml']) noteParas=noteParas.concat(xmlToText(await entryToXml(wanted['word/endnotes.xml'])));
@@ -1088,7 +1469,17 @@ function normalizeReviewText(t){
       if(!tr) return;
       if(acc===''){acc=tr;return;}
       if(/^([-–•*]\s|\d+[.)]\s|[a-zA-Z][.)]\s|\([a-zA-Z0-9]+\)\s|§|[IVXLCDM]+[.)]\s)/.test(tr)){ acc+='\n'+tr; }
-      else if(/-$/.test(acc)){ acc=acc.replace(/-$/,'')+tr; }
+      else if(/-$/.test(acc)){
+        // BUILD 23.09.2026: Trennstrich am Zeilenende nur bei Silbentrennung
+        // entfernen ("Gesell-/schaft"). Ergaenzungsstrich ("Vertrags-/und")
+        // und Bindestrich-Woerter ("E-/Mail") bleiben erhalten; vorher entstanden
+        // "Vertragsund"/"EMail" und damit falsche Tippfehler-Befunde.
+        if(/\s[-–]$/.test(acc)) acc+=' '+tr;
+        else if(/^(und|oder|bzw\.?|sowie|bis)\b/i.test(tr)||(/^(als|wie)\b/i.test(tr)&&!/[aeiouyäöü]-$/i.test(acc))) acc+=' '+tr;   // "Materi-/als" bleibt Silbentrennung
+        else if(/^[a-zäöüß]/.test(tr)) acc=acc.replace(/-$/,'')+tr;
+        else if(/[A-ZÄÖÜ]{3}-$/.test(acc)&&/^[A-ZÄÖÜ]{2}/.test(tr)) acc=acc.replace(/-$/,'')+tr;   // "BEURTEI-/LUNG"
+        else acc+=tr;
+      }
       else { acc+=' '+tr; }
     });
     return acc.trim();
@@ -1115,7 +1506,10 @@ function maxSentenceWordCount(t){
 // ─── Key management ─────────────────────────────────────────────────
 function saveKey(){
   var k=document.getElementById('api-key').value.trim();
-  if(!k){setKeyStatus('Kein Key','');return;}
+  // BUILD 23.09.2026: Leeres Feld speichern = gespeicherten Key LOESCHEN. Vorher
+  // blieb der alte (evtl. vom Passwortmanager eingefuegte) Wert in localStorage
+  // aktiv und wurde von getKey() weiter verwendet.
+  if(!k){try{localStorage.removeItem('taiyo_api_key');}catch(e){} setKeyStatus('Kein Key','');return;}
   k=sanitizeKey(k);
   document.getElementById('api-key').value=k;
   try{localStorage.setItem('taiyo_api_key',k);}catch(e){}
@@ -1178,6 +1572,7 @@ document.getElementById('upload-area').addEventListener('drop',function(e){
 });
 function handleFiles(files){
   var allowed=['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'];
+  var gen=fileGen;   // BUILD 23.09.2026: Ergebnisse nach "Alles zuruecksetzen" verwerfen
   files.forEach(function(f){
     if(!allowed.includes(f.type)&&!f.name.match(/\.(pdf|docx|txt|doc)$/i)){
       alert('Nur PDF, DOCX und TXT werden unterstützt.');return;
@@ -1186,30 +1581,38 @@ function handleFiles(files){
     if(isDocx){
       pendingExtractions++;renderFileList();
       var rd=new FileReader();
-      rd.onerror=function(){pendingExtractions--;renderFileList();alert('Datei "'+f.name+'" konnte nicht gelesen werden.');};
+      rd.onerror=function(){if(gen!==fileGen)return;pendingExtractions--;renderFileList();alert('Datei "'+f.name+'" konnte nicht gelesen werden.');};
       rd.onload=function(ev){
+        if(gen!==fileGen)return;
         docxToText(ev.target.result).then(function(txt){
+          if(gen!==fileGen)return;
           pendingExtractions--;
           storedFiles.push({name:f.name,type:'docx',extractedText:txt});
           renderFileList();
         }).catch(function(err){
+          if(gen!==fileGen)return;
           pendingExtractions--;renderFileList();
           alert('DOCX konnte nicht gelesen werden ('+err.message+').\n\nBitte den Text direkt in das Feld einfügen oder die Datei als PDF hochladen.');
         });
       };
       rd.readAsArrayBuffer(f);
     } else {
-      // Fix 6: PDF-Groessencheck VOR dem Einlesen (API-Limit 32 MB / 100 Seiten);
-      // 30 MB Schwelle wegen Base64-Overhead.
-      if((f.type==='application/pdf'||/\.pdf$/i.test(f.name))&&f.size>30*1024*1024){
-        alert('Die PDF-Datei "'+f.name+'" ist groesser als 30 MB und ueberschreitet damit das API-Limit (32 MB, max. 100 Seiten). Bitte die Datei verkleinern oder aufteilen.');return;
+      // Fix 6: PDF-Groessencheck VOR dem Einlesen. BUILD 23.09.2026: Summe aller
+      // PDFs (gespeichert + gerade eingelesen + neu) gegen PDF_MAX_BYTES (23 MB);
+      // Seitenlimit laut Doku 600 (1M-Kontext von Sonnet 5 und Opus 5.5).
+      var isPdf=(f.type==='application/pdf'||/\.pdf$/i.test(f.name));
+      if(isPdf&&storedPdfBytes()+pendingPdfBytes+f.size>PDF_MAX_BYTES){
+        alert('Die PDF-Datei "'+f.name+'" ist zu groß. Alle PDFs zusammen dürfen höchstens 23 MB haben. Grund: Das API-Limit liegt bei 32 MB je Prüfung (samt Umwandlung, höchstens 600 Seiten). Bitte die Datei verkleinern oder aufteilen.');return;
       }
       pendingExtractions++;renderFileList();
+      if(isPdf)pendingPdfBytes+=f.size;
       var reader=new FileReader();
-      reader.onerror=function(){pendingExtractions--;renderFileList();alert('Datei "'+f.name+'" konnte nicht gelesen werden.');};
+      reader.onerror=function(){if(gen!==fileGen)return;pendingExtractions--;if(isPdf)pendingPdfBytes-=f.size;renderFileList();alert('Datei "'+f.name+'" konnte nicht gelesen werden.');};
       reader.onload=function(ev){
+        if(gen!==fileGen)return;
         var b64=ev.target.result.split(',')[1];
         pendingExtractions--;
+        if(isPdf)pendingPdfBytes-=f.size;
         storedFiles.push({name:f.name,base64:b64,type:f.type||'application/octet-stream'});
         renderFileList();
       };
@@ -1253,6 +1656,9 @@ function clearAll(){
     document.getElementById(pfx+'-left').classList.add('active');
     document.getElementById(pfx+'-right').classList.remove('active');
   });
+  // BUILD 23.09.2026: laufende Leseergebnisse verwerfen (sonst tauchte eine noch
+  // eingelesene Datei nach dem Zuruecksetzen wieder auf und ging in die naechste Pruefung).
+  fileGen++;pendingExtractions=0;pendingPdfBytes=0;
   storedFiles=[];renderFileList();
   var rw=document.getElementById('result-wrap');rw.style.display='none';rw.innerHTML='';
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1368,16 +1774,16 @@ auslandHinweis+'\n'+
 '10.5: Fachbegriffe erklaeren oder vermeiden. Keine Abkuerzungen ohne Erklaerung. In fremdsprachigen Texten nach einem Fachausdruck den deutschen Originalbegriff (falls es einen gibt) in Klammer und KURSIV hinzufuegen – z.B. englisch "company register extract (*Firmenbuchauszug*)", "business register excerpt (*GISA-Auszug*)". Flagge fremdsprachige Dokumente, in denen ein solcher Fachausdruck (z.B. Firmenbuchauszug, GISA-Auszug) OHNE den deutschen Originalbegriff in kursiver Klammer vorkommt, als Befund. FORMATIERUNGS-VORBEHALT (Kursivschrift): Eingefuegter Text sowie DOCX-/TXT-Dateien erreichen dich als reiner Text OHNE Formatierung – Kursivschrift ist dort technisch NICHT erkennbar. Moniere in solchen Inhalten NIEMALS, dass ein vorhandener deutscher Begriff nicht kursiv gesetzt sei. FEHLT der deutsche Originalbegriff dagegen zur Gaenze, bleibt das ein Befund. Nur in hochgeladenen PDF-Dateien ist Kursivschrift sichtbar und pruefbar. AUSNAHME – INTERNER AKTENVERMERK: In einem internen Aktenvermerk sind juristische Fachbegriffe (auch juristische Abkuerzungen und lateinische Fachausdruecke) OHNE Erklaerung zulaessig – fehlende Erklaerungen dort NIE als Befund flaggen, weder laesslich noch gravierend. Die uebrigen Regeln dieses Punktes (nicht-juristische Abkuerzungen; kursiver deutscher Originalbegriff in fremdsprachigen Texten) gelten auch im internen Aktenvermerk.\n'+
 '10.7: Dokument muss Standalone sein – vollstaendig verstaendlich ohne Vorkenntnis. Das bedeutet NICHT, dass bereits erörterte Themen wortwörtlich wiederholt werden müssen: eine Kurzzusammenfassung mit Verweis auf das frühere E-Mail (z.B. "wie im E-Mail vom TT.MM.JJJJ") reicht in der Regel aus.\n'+
 '10.8: Bei Klienten-E-Mails: Eroeffnung mit Dank/Bezugnahme. Ende mit Angebot fuer Rueckfragen.\n'+
-'10.9: Max 15 Woerter pro Satz. Eine Aussage pro Satz. Keine Floskeln (z.B. "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen", "Ich erlaube mir"). Leichtverstaendlich. Konjunktiv ist NICHT verboten.\n'+
-'SATZLÄNGE AKTIV PRÜFEN (zu Punkt 10.9): Überschlage bei JEDEM Satz die Wortzahl. Mehr als 15 Wörter = Befund. Etwa 30 oder mehr Wörter = IMMER ein gravierender Befund (Markierung [!] am Zeilenanfang), der NIE weggelassen werden darf – auch nicht durch den Top-5-Deckel und nie als lässlich. Heuristik ohne genaues Zählen: Ein Satz, der über mehr als zwei Zeilen läuft oder mehrere eingeschobene Nebensätze enthält, ist fast immer zu lang. Beispiel für einen klar zu langen, gravierenden Satz (35 Wörter): "Wir möchten Ihnen in diesem Zusammenhang mitteilen, dass die von Ihnen übermittelten Unterlagen nach eingehender Prüfung durch unsere Kanzlei grundsätzlich vollständig erscheinen, wobei jedoch einzelne Punkte noch einer abschließenden Klärung bedürfen, die wir in den kommenden Tagen vornehmen werden." Solche Sätze in Spalte 3 in mehrere kurze Sätze (je höchstens 15 Wörter) zerlegen. AUFZAEHLUNG STATT TEILUNG: Ist ein zu langer Satz im Kern eine Aufzaehlung gleichrangiger Elemente (z.B. mehrere Gesellschaften, Dokumente oder Fristen), schlage in Spalte 3 KEINE Satzteilung vor, sondern eine Aufzaehlung mit Aufzaehlungszeichen: kurzer Einleitungssatz, dann je Element ein eigener Punkt. Beispiel: "I am following up regarding the annual financial statements for A GmbH, B GmbH, and C S.p.A." laesst sich nicht sinnvoll in zwei Saetze teilen – besser Einleitungssatz plus drei Aufzaehlungspunkte. ZAEHLWEISE BEI EIGENNAMEN: Mehrwortige Eigennamen (Firmenwortlaute wie "ES SHARED SERVICE CENTER SOCIETA PER AZIONI, Branch Austria", Behoerden-, Gesetzes- oder Programmnamen) zaehlen bei der Wortzahl sinngemaess als EIN Wort – sowohl bei der 15-Woerter-Grenze als auch bei der 30-Woerter-Grenze. UNVERMEIDBARE LAENGE: Ueberschreitet ein Satz die 15 Woerter nur wegen solcher unvermeidbarer Namen und laesst er sich weder sinnvoll kuerzen noch teilen noch als Aufzaehlung fassen, ist das KEIN Befund. Beispiel fuer einen zulaessigen Satz: "For ES SHARED SERVICE CENTER SOCIETA PER AZIONI, Branch Austria, we will require the annual financial statements of the Italian company."\n'+
+'10.9: Max 15 Woerter pro Satz. Eine Aussage pro Satz. Keine Floskeln (z.B. "Wir moechten uns bedanken", "Wir wollen Ihnen mitteilen", "Ich erlaube mir"). Leichtverstaendlich. Konjunktiv ist NICHT verboten. EINHEITLICHE BEGRIFFE: Denselben Gegenstand und dieselbe Person im ganzen Dokument gleich bezeichnen, auch gleich wie im Betreff (z.B. nicht "Klimagerät" neben "Klimaanlage", nicht "Sacheinlageprüfer" neben "Sacheinlagenprüfer", nicht "des Alleingesellschafters" neben "die Alleingesellschafterin") – ein Befund zu Punkt 10.9. Ebenso grammatikalisch oder logisch schiefe Formulierungen (z.B. "Der Wert der Sacheinlage besitzt einen Verkehrswert" statt "Die Sacheinlage hat einen Verkehrswert").\n'+
+'SATZLÄNGE AKTIV PRÜFEN (zu Punkt 10.9): Überschlage bei JEDEM Satz die Wortzahl. Mehr als 15 Wörter = Befund. Etwa 30 oder mehr Wörter = IMMER ein gravierender Befund (Markierung [!] am Zeilenanfang), der NIE weggelassen werden darf – auch nicht durch den Top-5-Deckel und nie als lässlich. Heuristik ohne genaues Zählen: Ein Satz, der über mehr als zwei Zeilen läuft oder mehrere eingeschobene Nebensätze enthält, ist fast immer zu lang. Beispiel für einen klar zu langen, gravierenden Satz (35 Wörter): "Wir möchten Ihnen in diesem Zusammenhang mitteilen, dass die von Ihnen übermittelten Unterlagen nach eingehender Prüfung durch unsere Kanzlei grundsätzlich vollständig erscheinen, wobei jedoch einzelne Punkte noch einer abschließenden Klärung bedürfen, die wir in den kommenden Tagen vornehmen werden." Solche Sätze in Spalte 3 in mehrere kurze Sätze (je höchstens 15 Wörter) zerlegen. AUFZAEHLUNG STATT TEILUNG: Ist ein zu langer Satz im Kern eine Aufzaehlung gleichrangiger Elemente (z.B. mehrere Gesellschaften, Dokumente oder Fristen), schlage in Spalte 3 KEINE Satzteilung vor, sondern eine Aufzaehlung mit Aufzaehlungszeichen: kurzer Einleitungssatz, dann je Element ein eigener Punkt (alles in derselben Zeile, jeder Punkt mit " • " eingeleitet). Beispiel: "I am following up regarding the annual financial statements for A GmbH, B GmbH, and C S.p.A." laesst sich nicht sinnvoll in zwei Saetze teilen – besser Einleitungssatz plus drei Aufzaehlungspunkte. ZAEHLWEISE BEI EIGENNAMEN: Mehrwortige Eigennamen (Firmenwortlaute wie "ES SHARED SERVICE CENTER SOCIETA PER AZIONI, Branch Austria", Behoerden-, Gesetzes- oder Programmnamen) zaehlen bei der Wortzahl sinngemaess als EIN Wort – sowohl bei der 15-Woerter-Grenze als auch bei der 30-Woerter-Grenze. UNVERMEIDBARE LAENGE: Ueberschreitet ein Satz die 15 Woerter nur wegen solcher unvermeidbarer Namen und laesst er sich weder sinnvoll kuerzen noch teilen noch als Aufzaehlung fassen, ist das KEIN Befund. Beispiel fuer einen zulaessigen Satz: "For ES SHARED SERVICE CENTER SOCIETA PER AZIONI, Branch Austria, we will require the annual financial statements of the Italian company."\n'+
 '13.5: Keine So-What-Aussagen (richtig aber nutzlos fuer den Empfaenger). Keine Wiederholungen. Das Wesentliche in den Vordergrund. SO-WHAT-PRUEFUNG AKTIV DURCHFUEHREN: Gehe JEDE Aussage des geprueften Dokuments durch und frage: Hat diese Aussage fuer den Empfaenger in DIESEM Dokument Relevanz und Aussagegehalt? Eine Aussage, die zwar richtig ist, aber zum Zweck des Dokuments nichts beitraegt oder erkennbar nicht zum Rest passt, ist ein Befund gegen Punkt 13.5 – flagge sie. Prueffrage: Bliebe der Empfaenger mit der Frage \"Und was bedeutet das fuer mich?\" zurueck, ohne dass das Dokument sie beantwortet? Dann flaggen. KEINE So-What-Aussagen sind: Anrede, Dank oder Bezugnahme, Gruss- und Schlussformeln und das Angebot fuer Rueckfragen – diese Elemente verlangt Punkt 10.8.\n'+
 '13.6: Nie "Das habe ich schon erklaert". Wenn eine Wiederholung tatsaechlich erforderlich ist (gemeinsam mit 10.7 zu lesen), gilt: sie soll hoeflich sein, sachlich sein, andere Worte verwenden, wenn moeglich einfacher sein, keine wortwoertliche Wiederholung wenn vermeidbar, keine Vorwuerfe, und einen Verweis auf das fruehere E-Mail in Klammer sofort nach der Aussage. WICHTIG: Sei hier nicht paepstlicher als der Papst. Wenn eine Wiederholung grosso modo diesen Kriterien entspricht, gilt 13.6 als erfuellt – pruefe nicht pedantisch jedes einzelne der sieben Elemente.\n'+
 '13.9: Service-orientiert. Dem Klienten Arbeit abnehmen. Optionen mit Vor-/Nachteilen. Nichts ist unmoeglich – hoechstens zu teuer.\n'+
 '13.10: Umfassend (nie nur einen Aspekt behandeln). Pro-aktiv (Gesetzesaenderungen etc. erkennen). Gruendlich (auch implizit beantwortete Fragen eroertern). Praktisch (konkretes Problem loesen, nicht nur Theorie).\n'+
 '14.1: Nur juristische Argumente. Hierarchie: Hoechstgericht > Literatur/sonstige Judikatur > andere.\n'+
 '14.2: Anwaelte: "Herr/Frau Kollege/in". Schlussformel: "Mit freundlichen kollegialen Gruessen".\n'+
-'14.3: Wichtige Aussagen separat in Klammer belegen – NACH der Aussage, nie als Teil der Aussage. Format: (OGH TT.MM.JJJJ, GZ X Ob Y/Zt) oder (§ X Abs Y ABGB). Belegt eine Fundstelle die Aussage nur MITTELBAR (Umkehrschluss, Analogie, Groessenschluss o.ae.), darf der Beleg NICHT allein stehen: ergaenze eine kurze Erklaerung, z.B. "(folgt im Umkehrschluss aus § X)" oder "(folgt analog aus § Y)". Nur ein direkt belegender Verweis darf allein in der Klammer stehen. Wichtige und fuer den Klienten nachteilige Aussagen werden weiterhin stets nach der Aussage in Klammer belegt.\n'+
-'14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl". In Schriftsaetzen und Legal Opinions KEIN blosser Rechtssatz ohne Leitentscheidung. In E-Mails und Aktenvermerken: blosser Rechtssatz (z.B. RS0069706) ausreichend. Jeden zitierten Rechtssatz/Judikatur pruefen: sagt die Fundstelle wirklich das Behauptete aus?\n'+
+'14.3: Wichtige Aussagen separat in Klammer belegen – NACH der Aussage, nie als Teil der Aussage. Format: (OGH TT.MM.JJJJ, GZ X Ob Y/Zt) oder (§ X Abs Y ABGB). ZITIERREIHENFOLGE bei Normen: Paragraph, Absatz, Ziffer, litera, das Gesetzeskürzel am Ende – z.B. "§ 8 Abs 1 RAO", nicht "gem § 8 RAO Abs 1"; eine abweichende Reihenfolge ist ein Befund. Belegt eine Fundstelle die Aussage nur MITTELBAR (Umkehrschluss, Analogie, Groessenschluss o.ae.), darf der Beleg NICHT allein stehen: ergaenze eine kurze Erklaerung, z.B. "(folgt im Umkehrschluss aus § X)" oder "(folgt analog aus § Y)". Nur ein direkt belegender Verweis darf allein in der Klammer stehen. Wichtige und fuer den Klienten nachteilige Aussagen werden weiterhin stets nach der Aussage in Klammer belegt.\n'+
+'14.4: Judikatur zitieren mit "Gericht vom Datum zu GZ Geschaeftszahl". In Schriftsaetzen und Legal Opinions KEIN blosser Rechtssatz ohne Leitentscheidung. In E-Mails und Aktenvermerken: blosser Rechtssatz (z.B. RS0069706) ausreichend. Jeden zitierten Rechtssatz/Judikatur pruefen: sagt die Fundstelle wirklich das Behauptete aus? Eine Korrektur aber nur bei sicherer Kenntnis des Wortlauts; sonst ein Pruefauftrag (siehe VORSICHT BEI NORM- UND ZITATKORREKTUREN in Modul B).\n'+
 '14.5: NUR bei Ausgabesprache English – Gesetzeszitate ins Englische umstellen (§ -> Sec, Abs -> para, Z -> no, Gesetz -> Act, Gesetzbuch -> Code, f/ff -> et seq., Gewerbeberechtigung -> business license, Geschaeftsfuehrer -> managing director); das Gesetzeskuerzel selbst bleibt (z.B. ABGB). Beispiel: "§ 879 Abs 2 Z 1a ABGB" -> "Sec 879 para 2 no 1a ABGB".\n'+
 '14.9: Ueber Recherchen sofort Aktenvermerk anlegen.\n\n'+
 'WICHTIG fuer Modul A:\n'+
@@ -1390,7 +1796,7 @@ auslandHinweis+'\n'+
 '– § und §§ verwenden (nie "Paragraph").\n'+
 '– Verjährung nur flaggen wenn realistisches Risiko besteht.\n'+
 '– GEWICHTUNG: Lässliche Sünden dürfen kurz behandelt werden oder bei Platzmangel ganz entfallen. Beispiele lässliche Sünden (nicht abschließend): Sätze bis zu 20 Wörtern etwas zu lang; eine nicht ganz gängige aber allgemein bekannte Abkürzung; zwei Aussagen in einem Satz, wenn die Lesbarkeit nicht wesentlich leidet; Typos, die nicht sinnstörend sind oder nicht auffallen; "AGBs" statt korrekt "AGB" als Plural. Wenn du insgesamt mehr als 5 Befunde zu Policy & Stil hast: gewichte nach Gravität und nimm nur die 5 schlimmsten in den Bericht auf. Beispiele schwerer Fehler (nicht abschließend): juristische Fachbegriffe, die Nicht-Juristen gar nicht kennen, ohne Erklärung in Klammer; Sätze mit 30 oder mehr Wörtern. Gravierende Befunde (insbesondere ein Satz mit 30 oder mehr Wörtern) zählen IMMER zu den schlimmsten und werden NIE durch den Top-5-Deckel weggelassen. Ein Befund zu Punkt 10.2 (insbesondere zur Nummerierung) wird ebenfalls NIE durch den Top-5-Deckel weggelassen, auch wenn er nur lässlich ist. Dasselbe gilt für die Tippfehler-Sammelzeile (siehe die TIPPFEHLER-Regel unten).\n'+
-'– TIPPFEHLER AKTIV ERFASSEN (zu Punkt 10.9): Suche im gesamten geprüften Text aktiv nach Tippfehlern und Rechtschreibfehlern und übergehe sie nicht stillschweigend. Bei EINEM bis DREI Typos: je ein normaler Befund (in der Regel lässlich, sofern nicht sinnstörend). Bei MEHR ALS DREI Typos: fasse ALLE gefundenen Typos in EINER einzigen Sammelzeile zusammen – Spalte 1: die betroffenen Stellen wörtlich, mit Semikolon getrennt; Spalte 2: Sammelbefund, der die Anzahl und das Wort "Tippfehler" nennt (bzw. im englischen Output "typos", japanisch "誤字", koreanisch "오타") (Punkt 10.9 der Policy); Spalte 3: die korrigierten Schreibweisen in derselben Reihenfolge, mit Semikolon getrennt. Diese Sammelzeile zählt als EIN Befund und fällt NIE dem Top-5-Deckel zum Opfer.\n'+
+'– TIPPFEHLER AKTIV ERFASSEN (zu Punkt 10.9): Suche im gesamten geprüften Text aktiv nach Tippfehlern, Rechtschreibfehlern und Zeichensetzungsfehlern (insbesondere fehlenden Kommas, z.B. "wir hoffen es geht Ihnen gut" statt "wir hoffen, es geht Ihnen gut") und übergehe sie nicht stillschweigend. Zeichensetzungsfehler zählen dabei wie Typos; auch dann nennt die Sammelzeile in Spalte 2 das Wort "Tippfehler" (z.B. "6 Tippfehler, davon 2 Kommafehler"). Bei EINEM bis DREI Typos: je ein normaler Befund (in der Regel lässlich, sofern nicht sinnstörend). Bei MEHR ALS DREI Typos: fasse ALLE gefundenen Typos in EINER einzigen Sammelzeile zusammen – Spalte 1: die betroffenen Stellen wörtlich, mit Semikolon getrennt; Spalte 2: Sammelbefund, der die Anzahl und das Wort "Tippfehler" nennt (bzw. im englischen Output "typos", japanisch "誤字", koreanisch "오타") (Punkt 10.9 der Policy); Spalte 3: die korrigierten Schreibweisen in derselben Reihenfolge, mit Semikolon getrennt. Diese Sammelzeile zählt als EIN Befund und fällt NIE dem Top-5-Deckel zum Opfer.\n'+
 '– AUSDRÜCKLICH KEIN FEHLER (nie als Befund aufnehmen): "Danke für Ihre Rückmeldung" oder ähnliche Bezugnahme als E-Mail-Einleitung (Punkt 10.8 verlangt genau das). Der Begriff "Akonto" ohne Erklärung, auch nicht dass ein Akonto auf das Gesamthonorar angerechnet wird – außer der Kontext signalisiert ausdrücklich einen bildungsfernen Klienten. Ein Anwalt, der ein Akonto verlangt, muss nicht erklären warum. EIN einziger Engagement Letter pro Klienten gilt als ausreichende vertragliche Grundlage für ALLE Mandate dieses Klienten – nicht nur für das Mandat, in dem er unterzeichnet wurde. Ein fehlendes neues Auftragsschreiben für ein weiteres Mandat desselben Klienten ist daher NIE ein Befund. Ein Fachausdruck, der in naher Vergangenheit bereits ausführlich erklärt wurde – hier reicht eine Kurzwiederholung in Klammer oder ein Verweis auf die frühere Erklärung. Die Adresse von TAIYO Offices in der Schreibweise "Schwedenpl.5 (Eing. Dominikanerb.21)" – diese abgekürzte Form ist eine Ausnahme von Punkt 10.9 und KEIN Befund. Eine Einleitung mit Wohlbefinden-Wunsch ("We hope you are doing well.", "Wir hoffen, es geht Ihnen gut.") ist als E-Mail-Einleitung grundsätzlich zulässig (Punkt 10.8) – nur im konkreten Einzelfall ausnahmsweise unpassend, sonst nie ein Befund. Eine "jeder/jede/jedes"-Formulierung im gepruefen Dokument (z.B. "jeder Vertragspartner", "jede Frist") ist KEIN Befund und insbesondere KEIN Verstoss gegen Punkt 10.9; "ein/e" ist dort nicht besser als "jeder/jede".\n'+
 '– VERSCHÄRFTE BELEGPFLICHT (Punkt 14.3): Jede Warnung an den Klienten vor Rechtsfolgen (Haftung, Verwaltungsstrafe, gerichtliche Strafe) ist eine "wichtige Aussage" im Sinne Punkt 14.3 und muss zwingend einen Beleg in Klammer haben. Fehlt der Beleg bei einer solchen Warnung: das ist ein gewichtiger Befund, nicht lässlich.\n'+
 '– Achte auf gute Sprache in deinem eigenen Output: öffne nie eine Klammer oder ein Anführungszeichen ohne es auch zu schließen.\n\n'+
@@ -1405,7 +1811,10 @@ auslandHinweis+'\n'+
 '(3) Welche Rechtsfragen waeren bei diesem Sachverhalt und Rechtsgebiet relevant gewesen, wurden aber nicht behandelt?\n'+
 '(4) Sind alle einschlaegigen Gesetze und Normen beruecksichtigt? (z.B. bei Fremdenrecht: migration.gv.at, NAG, AuslBG, Abermann; bei Gesellschaftsrecht: GmbHG, UGB, WiEReG; bei Immobilien: MRG, WEG, ABGB; bei Insolvenz: IO; bei Arbeitsrecht: AngG, AVRAG; etc.)\n'+
 '(5) Wurde proaktiv auf Gesetzesaenderungen, Fristen, Risiken hingewiesen? (Policy 13.10 Pro-aktiv)\n'+
-'(6) Wurde eine Fee Warning ausgesprochen, wenn die Kostenschaetzung voraussichtlich ueberschritten wird oder Ausserhalb des Scope of Work gearbeitet wird? (§ 1170a Abs 2 ABGB, Policy Anhang Honorare)\n\n'+
+'(6) Wurde eine Fee Warning ausgesprochen, wenn die Kostenschaetzung voraussichtlich ueberschritten wird oder Ausserhalb des Scope of Work gearbeitet wird? (§ 1170a Abs 2 ABGB, Policy Anhang Honorare)\n'+
+'\nKATEGORIE FEHLER IM VORHANDENEN (gehoert zu den 30 %, nicht zu 4b):\n'+
+'(7) INNERE WIDERSPRUECHE: Pruefe das Dokument auf Widersprueche in sich selbst. Beispiele: Anzahl der Beilagen laut Rubrum oder Deckblatt gegenueber den tatsaechlich aufgezaehlten Beilagen; abweichende Daten, Betraege, Namen oder Geschaeftszahlen; Ueberschrift gegenueber Rubrum; ein Datum im Kopf, das nicht zum Rest passt. Rein sprachlich uneinheitliche Begriffe gehoeren dagegen zu Modul A (Punkt 10.9).\n\n'+
+'VORSICHT BEI NORM- UND ZITATKORREKTUREN: Behaupte NUR dann, eine zitierte Norm oder Entscheidung stuetze eine Aussage nicht oder richtig sei eine andere Fundstelle, wenn du den Wortlaut sicher kennst. Im Zweifel formuliere einen Pruefauftrag statt einer Tatsache – z.B. "Bitte im RIS prüfen, ob § X Abs Y die genannte Frist enthält." – und setze dafuer KEIN [!]. Warnbeispiel (echter Fehlalarm aus dem Betrieb): Die Behauptung, § 35 Abs 1 Z 1 GmbHG enthalte keine Frist, war falsch – dort steht die Achtmonatsfrist fuer die Beschluesse ueber den Jahresabschluss.\n\n'+
 'WICHTIG: "4a" und "4b" sind nur interne Denkkategorien für dich. Schreibe NIEMALS "4a -" oder "4b -" oder aehnliche Praefixe in das Feld BEREICH des Outputs. Verwende dort einen aussagekraeftigen Kurztitel des Befundes selbst (z.B. "Unbeantwortete Frage zu Fristverlaengerung" statt "4a - Unbeantwortete Frage").\n\n'+
 'Wenn Rechtsschutzversicherung im Text erwaehnt wird, der Kontext aber sagt KEINE RSV: Das ist ein Modul-B-Befund (Inhaltliche Vollstaendigkeit), NICHT Modul A.\n'+
 'Wenn eine Honorarnote als Anhang erwaehnt oder beigefuegt ist: gehe davon aus, dass Zahlungsfrist und Kontonummer in dieser Honorarnote angegeben sind. Das ist KEIN Befund, auch wenn diese Angaben im Haupttext nicht wiederholt werden.\n'+
@@ -1421,15 +1830,16 @@ auslandHinweis+'\n'+
 'DOPPELKALIENDERUNG (Policy 7.3 letzter Satz): Termine fuer die etwas vorbereitet werden muss (z.B. Schriftsatz, Dokument), auch eine Woche vorher kalendieren.\n'+
 'PHYSISCHE TERMINE (Policy 7.3 erster Satz): Wenn ein Termin physisch stattfindet (Gericht, Behoerde, Antragstellung, Besprechung), in der Liste explizit erwaehnen.\n'+
 'ALLE Termine gehoeren in den Kalender ALLER Teammitglieder (Policy 7.8 und 15.2).\n\n'+
-'VORSPANN (===VORAB_START=== / ===VORAB_END===) – ganz am Anfang, VOR Modul A. Gib hier NUR in diesen drei Faellen je eine Zeile aus, sonst genau KEIN_BEFUND:\n'+
+'VORSPANN (===VORAB_START=== / ===VORAB_END===) – ganz am Anfang, VOR Modul A. Gib hier NUR in diesen vier Faellen je eine Zeile aus, sonst genau KEIN_BEFUND:\n'+
 '(1) WIEDERHOLTE GRAVIERENDE KATEGORIE: Kommt DIESELBE Kategorie eines gravierenden ([!]) Befundes MEHR ALS DREI MAL im gepruefen Text vor (z.B. mehr als drei Saetze mit je 30 oder mehr Woertern; oder mehr als drei Warnungen vor Rechtsfolgen ohne Beleg; oder mehr als drei unerklaerte Fachbegriffe), gib EINE mit "Vorab:" eingeleitete Zeile aus, die generell auf diese Kategorie hinweist – NICHT die Einzelfaelle aufzaehlen. Beispiel: "Vorab: Der Text enthaelt mehrere Saetze mit 30 oder mehr Woertern – bitte durchgehend auf kurze Saetze (hoechstens 15 Woerter) achten." Sind mehrere Kategorien betroffen, je eine eigene "Vorab:"-Zeile. Die Schwelle ist STRENG: erst ab dem VIERTEN Vorkommen DERSELBEN Kategorie; drei oder weniger loesen keine Zeile aus. Bloss insgesamt viele gravierende Befunde UNTERSCHIEDLICHER Kategorien loesen ebenfalls keine Zeile aus.\n'+
 '(2) VIP-FALL OHNE WICHTIG-MODUS: NUR wenn der Wichtig-Modus NICHT aktiv ist UND die Angaben (insbesondere "Zusaetzliche Informationen zum zu pruefenden Text/Dokument" oder "Zusaetzlicher Kontext") nahelegen, dass es sich um einen besonders wichtigen Fall oder besonders wichtigen Klienten (VIP) handelt, gib EINE Zeile aus, die den Wichtig-Modus empfiehlt. Beispiel: "Hinweis: Die Angaben deuten auf einen besonders wichtigen Fall hin. Fuer eine vertiefte Analyse empfiehlt sich der Wichtig-Modus." Ist der Wichtig-Modus bereits aktiv, gib diese Zeile NIE aus.\n'+
 '(3) GESAMTBEWERTUNG BEI BESONDERS MUEHSAM GESCHRIEBENEM TEXT: Faellt der gepruefte Text stilistisch BESONDERS negativ auf (besonders muehsam geschrieben), gib je zutreffendem Muster EINE Zeile mit einer generellen Bewertung aus – ZUSAETZLICH zu den Einzelbefunden in Modul A; die Einzelstellen werden dort weiterhin geflaggt (Floskeln: Punkt 10.9; Wiederholungen und Zersplitterung: in der Regel Punkt 13.5). Die drei Muster: (a) MEHRERE antiquierte Floskeln (Richtwert: drei oder mehr; z.B. "Wir wuerden Ihnen gerne mitteilen wie folgt:") – Zeile sinngemaess: "Im E-Mail fallen mehrere antiquierte Floskeln auf." (b) MEHRERE unnoetige Wiederholungen (Richtwert: drei oder mehr) – Zeile sinngemaess: "Im E-Mail fallen mehrere unnoetige Wiederholungen auf." (c) THEMEN-ZERSPLITTERUNG: EIN Thema wird an drei oder mehr Stellen behandelt statt an einer Stelle, ODER mehrere Themen werden an jeweils zwei oder mehr Stellen behandelt – Zeile sinngemaess: "Im E-Mail wird das Thema XXX unnoetig zersplittert." Benenne das Thema konkret; bei mehreren zersplitterten Themen entweder eine gemeinsame Zeile oder je Thema eine Zeile. Ersetze "E-Mail" durch die tatsaechliche Dokumentart (z.B. "Im Schriftsatz", "Im Aktenvermerk", "Im Vertrag"). Jeder Satz hoechstens 15 Woerter. STRENGE SCHWELLE: Diese Zeilen NUR bei besonders muehsam geschriebenen Texten – ein nur maessig muehsamer Text (z.B. bloss zwei Floskeln, eine einzelne Wiederholung, ein Thema an nur zwei Stellen) loest KEINE Gesamtbewertung aus.\n'+
-'Trifft keiner der drei Faelle zu: schreibe nach ===VORAB_START=== nur KEIN_BEFUND (in einer eigenen Zeile).\n\n'+
+'(4) VIELE ZU LANGE SAETZE (Punkt 10.9): Enthaelt der gepruefte Text MEHR ALS DREI Saetze mit mehr als 15 Woertern, gib EINE stark ermahnende Zeile aus – ZUSAETZLICH zu den Einzelbefunden in Modul A; der Top-5-Deckel dort bleibt unveraendert. Zaehle die betroffenen Saetze nach der ZAEHLWEISE BEI EIGENNAMEN; Saetze mit UNVERMEIDBARER LAENGE zaehlen nicht mit. Nenne die Anzahl (bei Unsicherheit "mindestens" plus Zahl). Der Ton ist STARK und unmissverstaendlich ermahnend, aber sachlich und nie beleidigend. Beispiel: "Vorab: Im E-Mail sind elf Sätze länger als 15 Wörter. Das ist deutlich zu viel. Unten stehen nur die schwersten Fälle. Bitte ausnahmslos alle Sätze auf höchstens 15 Wörter kürzen (Punkt 10.9 der Policy)." Ersetze "E-Mail" durch die tatsaechliche Dokumentart. Loest wegen Saetzen mit 30 oder mehr Woertern bereits Fall (1) aus, fasse beides in EINER Zeile zusammen. Bei drei oder weniger zu langen Saetzen: KEINE Zeile.\n'+
+'Trifft keiner der vier Faelle zu: schreibe nach ===VORAB_START=== nur KEIN_BEFUND (in einer eigenen Zeile).\n\n'+
 'AUSGABEFORMAT – DREI-SPALTEN-TABELLE:\n'+
 'Gib deinen Output in folgendem Format aus – exakt so, keine Abweichungen:\n\n'+
 '===VORAB_START===\n'+
-'[nur bei Fall (1), (2) und/oder (3) je eine Zeile – sonst KEIN_BEFUND]\n'+
+'[nur bei Fall (1), (2), (3) und/oder (4) je eine Zeile – sonst KEIN_BEFUND]\n'+
 '===VORAB_END===\n\n'+
 '===MODUL_A_START===\n'+
 'TEXTAUSSCHNITT|||PROBLEM|||VORSCHLAG\n'+
@@ -1444,6 +1854,7 @@ auslandHinweis+'\n'+
 '[Kurzbeschreibung]|||[Gerichtsfrist/Urgenz Gegner/Urgenz Klient/Urgenz Interessent/Physisch]|||[TT.MM.JJJJ oder Zeitangabe]|||[z.B. auch eine Woche vorher; physisch vor Ort]\n'+
 '===MODUL_C_END===\n\n'+
 'Wenn ein Modul keine Befunde hat: Schreibe nach dem START-Tag: KEIN_BEFUND\n'+
+'Jeder Befund steht in GENAU EINER Zeile (keine Zeilenumbrueche innerhalb eines Befundes); eine Aufzaehlung in einer Zelle schreibst du in derselben Zeile, jeden Punkt mit " • " eingeleitet. Die Kopfzeilen (TEXTAUSSCHNITT|||PROBLEM|||VORSCHLAG, BEREICH|||BEFUND|||EMPFEHLUNG, BEZEICHNUNG|||TYP|||DATUM/ZEITRAUM|||HINWEIS), alle ===...===-Marker und KEIN_BEFUND bleiben in JEDER Ausgabesprache exakt so (deutsch, Grossbuchstaben).\n'+
 'Maximal 6 Zeilen pro Modul B und C. Fuer Modul A gilt die Gewichtung oben: hoechstens 5 Befunde (die 5 schwersten); gravierende Befunde ([!]) bleiben aber immer erhalten und koennen diese Zahl im Ausnahmefall ueberschreiten; ein Befund zu Punkt 10.2 (Nummerierung) bleibt ebenfalls immer erhalten; die Tippfehler-Sammelzeile (mehr als drei Typos) bleibt ebenfalls immer erhalten. Nur die wichtigsten Punkte.\n'+
 'Gib NIE nutzlose Zeilen aus, die nur bestaetigen, dass etwas in Ordnung ist (z.B. "Compliant", "Compliant.", "OK", "No issues", "Looks good", "This is acceptable", "No finding", "No change needed", "Passt", "In Ordnung", "Akzeptabel", "Unauffaellig", "Keine Aenderung noetig"). Solche Zeilen sind verboten. Ein Modul ohne echte Befunde bekommt ausschliesslich KEIN_BEFUND – sonst nur tatsaechliche Befunde.\n'+
 'EIGENER STIL (gilt fuer JEDEN Text, den du selbst schreibst – ALLE Module, ALLE Spalten und die VORAB-Zeilen): hoechstens 15 Woerter pro Satz; eine Aussage pro Satz; keine Schachtelsaetze; lieber zwei kurze Saetze als ein langer. Das gilt ausdruecklich auch fuer Modul B (Spalten BEFUND und EMPFEHLUNG) und Modul C (Spalte HINWEIS) – der Bericht selbst muss der Policy genuegen, die er prueft. Zitierte Textausschnitte aus dem Dokument (Spalte 1) sind davon ausgenommen.\n'+
@@ -1451,7 +1862,7 @@ auslandHinweis+'\n'+
 'Stelle einer Zeile die Markierung "[!]" voran (ganz am Zeilenanfang, VOR der ersten Spalte), wenn der Befund ein gravierender, gröberer Fehler ist – niemals bei gewöhnlichen oder lässlichen Befunden. Beispielzeile: "[!]Textausschnitt|||Problem|||Vorschlag". Setze die Markierung grundsätzlich sparsam und nur bei wirklich schwerwiegenden Fällen. AUSNAHME OHNE ERMESSEN: Ein Satz mit 30 oder mehr Wörtern ist AUSNAHMSLOS gravierend und erhält IMMER ein "[!]" – die Anweisung, sparsam zu markieren, gilt hierfür NICHT und darf dieses "[!]" nie verhindern, egal wie viele andere Befunde es gibt. Zähle bei jedem beanstandeten langen Satz die Wörter; ab 30 Wörtern setzt du zwingend ein "[!]".\n'+
 'Gravierend in MODUL A (Policy & Stil) ist z.B.: ein Satz mit 30 oder mehr Wörtern (Punkt 10.9); eine so unhöfliche Aussage, dass sie fast beleidigend wirkt (Punkt 10.8); ein juristischer Fachbegriff, den ein Nicht-Jurist nicht kennt, ohne Erklärung in Klammer (Punkt 10.5; gilt NICHT bei einem internen Aktenvermerk); eine Warnung vor Rechtsfolgen ohne den nach Punkt 14.3 zwingenden Beleg.\n'+
 'Gravierend in MODUL B als LÜCKE ist z.B.: der Klient hat mehrfach nach derselben Sache gefragt und immer noch keine Antwort erhalten; eine Frage wurde nur nach einem Gesetz beantwortet, nicht aber nach einem zweiten einschlägigen (z.B. nach dem FBG, aber nicht nach dem GmbHG); eine zwingende einschlägige Norm wurde völlig übersehen (z.B. die Meldepflicht nach dem WiEReG bei einer GmbH-Gründung).\n'+
-'Gravierend in MODUL B als FEHLER ist z.B.: eine Auskunft, die dem Gesetzeswortlaut direkt und eklatant widerspricht (z.B. widerspricht "Die Gesellschaft darf ihre eigenen Gründungskosten uneingeschränkt selbst tragen." direkt dem § 7 GmbHG); ein zitierter Rechtssatz oder eine zitierte Entscheidung, die die behauptete Aussage OFFENSICHTLICH nicht stützt, etwa weil sie das genaue Gegenteil aussagt oder einen völlig anderen Sachverhalt betrifft; bloß mittelbare, schwächere oder unvollständige Stützung ist hierfür NICHT gravierend (Punkt 14.4); eine falsch berechnete Frist, deren Befolgung zum Versäumen einer Gerichtsfrist führt. OHNE AUSNAHME und IMMER gravierend (Markierung [!]) ist jede Auskunft, deren Befolgung gegen Verwaltungsstrafrecht oder Kriminalstrafrecht verstößt oder verwaltungsstrafrechtliche bzw. kriminalstrafrechtliche Rechtsfolgen herbeiführt; das gilt ausnahmslos, nicht bloß als Beispiel.\n'+
+'Gravierend in MODUL B als FEHLER ist z.B.: eine Auskunft, die dem Gesetzeswortlaut direkt und eklatant widerspricht (z.B. widerspricht "Die Gesellschaft darf ihre eigenen Gründungskosten uneingeschränkt selbst tragen." direkt dem § 7 GmbHG); ein zitierter Rechtssatz oder eine zitierte Entscheidung, die die behauptete Aussage OFFENSICHTLICH nicht stützt, etwa weil sie das genaue Gegenteil aussagt oder einen völlig anderen Sachverhalt betrifft; bloß mittelbare, schwächere oder unvollständige Stützung ist hierfür NICHT gravierend (Punkt 14.4); ohne sichere Kenntnis des Wortlauts ist ein solcher Befund nie gravierend (siehe VORSICHT BEI NORM- UND ZITATKORREKTUREN); eine falsch berechnete Frist, deren Befolgung zum Versäumen einer Gerichtsfrist führt. OHNE AUSNAHME und IMMER gravierend (Markierung [!]) ist jede Auskunft, deren Befolgung gegen Verwaltungsstrafrecht oder Kriminalstrafrecht verstößt oder verwaltungsstrafrechtliche bzw. kriminalstrafrechtliche Rechtsfolgen herbeiführt; das gilt ausnahmslos, nicht bloß als Beispiel.\n'+
 'Wichtig: Das "[!]" ist nur eine Markierung – es darf im sichtbaren Text der Spalten NICHT auftauchen, sondern steht ausschließlich ganz am Zeilenanfang.\n\n'+
 'Kein sonstiger einleitender Text. Beginne mit ===VORAB_START===.\n'+
 'Sprache des gesamten Outputs: '+p.lang+'.'+
@@ -1519,13 +1930,38 @@ async function readStream(response,hooks){
     var data=await response.json();
     if(data.error){ throw new Error(data.error.message); }
     var t=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    return {text:t,stopReason:data.stop_reason};
+    return {text:t,stopReason:data.stop_reason,stopDetails:data.stop_details||null};
   }
   var reader=response.body.getReader();
   var decoder=new TextDecoder();
   var buffer='';
   var text='';
   var stopReason=null;
+  var stopDetails=null;   // BUILD 23.09.2026: z.B. {type:'refusal',category:'cyber',explanation:'...'}
+  // BUILD 23.09.2026: Zeilenverarbeitung als Funktion, damit auch ein Rest-Puffer
+  // ohne abschliessenden Zeilenumbruch ausgewertet wird.
+  function handleLine(line){
+    if(line.indexOf('data:')!==0) return;
+    var payload=line.slice(5).trim();
+    if(!payload||payload==='[DONE]') return;
+    var evt;
+    try{ evt=JSON.parse(payload); }catch(e){ return; }
+    if(evt.type==='content_block_delta'&&evt.delta){
+      if(evt.delta.type==='text_delta'&&typeof evt.delta.text==='string'){ text+=evt.delta.text; if(hooks.onText){try{hooks.onText(evt.delta.text,text);}catch(e){}} }
+      else if(evt.delta.type==='thinking_delta'){ if(hooks.onThinking){try{hooks.onThinking();}catch(e){}} }
+    } else if(evt.type==='content_block_start'&&evt.content_block&&(evt.content_block.type==='thinking'||evt.content_block.type==='redacted_thinking')){
+      // BUILD 23.09.2026: Opus 5.5 und Sonnet 5 liefern den Denktext standardmaessig
+      // nicht aus ("omitted") - die Denkphase ist daher schon am Blockstart erkennbar.
+      if(hooks.onThinking){try{hooks.onThinking();}catch(e){}}
+    } else if(evt.type==='message_delta'&&evt.delta&&evt.delta.stop_reason){
+      stopReason=evt.delta.stop_reason;
+      if(evt.delta.stop_details) stopDetails=evt.delta.stop_details;
+    } else if(evt.type==='error'){
+      var se=new Error((evt.error&&evt.error.message)||'API-Streaming-Fehler');
+      if(evt.error&&evt.error.type) se.apiErrorType=evt.error.type;   // BUILD 23.09.2026: fuer isRetryableError
+      throw se;
+    }
+  }
   while(true){
     var chunk=await reader.read();
     if(chunk.done) break;
@@ -1535,22 +1971,12 @@ async function readStream(response,hooks){
     while((nl=buffer.indexOf('\n'))>=0){
       var line=buffer.slice(0,nl);
       buffer=buffer.slice(nl+1);
-      if(line.indexOf('data:')!==0) continue;
-      var payload=line.slice(5).trim();
-      if(!payload||payload==='[DONE]') continue;
-      var evt;
-      try{ evt=JSON.parse(payload); }catch(e){ continue; }
-      if(evt.type==='content_block_delta'&&evt.delta){
-        if(evt.delta.type==='text_delta'&&typeof evt.delta.text==='string'){ text+=evt.delta.text; if(hooks.onText){try{hooks.onText(evt.delta.text,text);}catch(e){}} }
-        else if(evt.delta.type==='thinking_delta'){ if(hooks.onThinking){try{hooks.onThinking();}catch(e){}} }
-      } else if(evt.type==='message_delta'&&evt.delta&&evt.delta.stop_reason){
-        stopReason=evt.delta.stop_reason;
-      } else if(evt.type==='error'){
-        throw new Error((evt.error&&evt.error.message)||'API-Streaming-Fehler');
-      }
+      handleLine(line);
     }
   }
-  return {text:text,stopReason:stopReason};
+  buffer+=decoder.decode();
+  if(buffer.trim()) handleLine(buffer.trim());
+  return {text:text,stopReason:stopReason,stopDetails:stopDetails};
 }
 // ─── BUILD 02.08.2026: Waechter + automatischer Wiederholungsversuch ─────────
 // Gegen "Aufhaengen" bei langen Pruefungen: Ein still abgerissener Stream lieferte
@@ -1579,6 +2005,8 @@ var WATCHDOG_MS=120000;         // zwischen empfangenen Bytes
 function isRetryableError(err){
   var m=(err&&err.message)?err.message:String(err);
   if(err&&err.taiyoWatchdog)return true;
+  // BUILD 23.09.2026: Fehler MITTEN im Stream (SSE-error-Event) wie HTTP 5xx/529 behandeln.
+  if(err&&(err.apiErrorType==='api_error'||err.apiErrorType==='overloaded_error'))return true;
   if(/^HTTP 4\d\d/.test(m))return false;
   if(/^HTTP (5\d\d|529)/.test(m))return true;
   if(/overloaded/i.test(m))return true;
@@ -1592,13 +2020,39 @@ function isRetryableError(err){
 // "Verbindungsfehler" nicht zuordnen. Die technische Originalmeldung bleibt
 // darunter fuer die Diagnose sichtbar.
 function classifyReviewError(m){
+  // BUILD 23.09.2026: Ablehnung durch das Modell (stop_reason 'refusal', HTTP 200).
+  if(/stop_reason refusal/i.test(m)){
+    return {titel:'Prüfung vom Modell abgelehnt',
+      hint:'Das KI-Modell hat die Prüfung aus Sicherheitsgründen abgelehnt. Das kommt selten vor, etwa bei Texten zu Cyberangriffen oder Krankheitserregern. Ein bloßes Wiederholen führt meist zum selben Ergebnis. Bitte Dr. Scheuwimmer informieren.'};
+  }
+  // BUILD 23.09.2026: Token-Limit, bevor ueberhaupt ein Befund geschrieben war.
+  if(/Token-Limit erreicht, bevor/i.test(m)){
+    return {titel:'Prüfung abgebrochen (Token-Limit)',
+      hint:'Die Prüfung erreichte ihr Token-Limit, bevor Ergebnisse vorlagen. Bitte das Dokument kürzen oder den Wichtig-Modus verwenden.'};
+  }
+  // BUILD 23.09.2026: Antwort ohne einen der erwarteten Abschnitte.
+  if(/Unerwartetes Antwortformat/i.test(m)){
+    return {titel:'Unerwartete Antwort',
+      hint:'Die Antwort enthielt keinen der erwarteten Abschnitte. Bitte die Prüfung erneut starten.'};
+  }
   if(/credit balance|billing|purchase credits|credits? to access/i.test(m)){
     return {titel:'Kein Guthaben am Anthropic-API-Konto',
-      hint:'Die Prüfung wurde abgelehnt, weil das Guthaben des API-Kontos aufgebraucht ist. Bitte unter console.anthropic.com (Plans and Billing) Guthaben aufladen. Danach die Prüfung einfach erneut starten.'};
+      hint:'Die Prüfung wurde abgelehnt, weil das Guthaben des API-Kontos aufgebraucht ist. Bitte unter platform.claude.com (Settings, Billing) Guthaben aufladen. Danach die Prüfung einfach erneut starten.'};
+  }
+  // BUILD 23.09.2026: Ausgabenlimit (HTTP 400 "specified API usage limits" bzw.
+  // HTTP 429 "API usage limits ... monthly"). Vorher als "Zu viele Anfragen"
+  // (kurz warten) fehlgedeutet - Warten hilft hier aber nicht.
+  if(/usage limits|spend limit|enforced_spend_limit/i.test(m)){
+    return {titel:'Ausgabenlimit des API-Kontos erreicht',
+      hint:'Das festgelegte Ausgabenlimit des API-Kontos ist erreicht. Warten hilft hier nicht. Bitte das Limit unter platform.claude.com (Settings, Limits) anheben lassen.'};
   }
   if(/invalid x-api-key|authentication|HTTP 401/i.test(m)){
     return {titel:'API-Key wurde nicht akzeptiert',
-      hint:'Bitte den API-Key oben rechts neu eingeben und speichern. Achtung: Browser-Passwortmanager fügen manchmal einen falschen Wert in das Feld ein.'};
+      hint:'Bitte den API-Key oben rechts neu eingeben und speichern. Achtung: Browser-Passwortmanager fügen manchmal einen falschen Wert in das Feld ein. Der Key kann auch abgelaufen oder widerrufen sein. Dann in der Claude Console (platform.claude.com) einen neuen Key erstellen.'};
+  }
+  if(/HTTP 413|request_too_large|Request exceeds the maximum/i.test(m)){
+    return {titel:'Anfrage zu groß',
+      hint:'Die Dateien sind zusammen zu groß (höchstens 32 MB je Prüfung). Bitte PDFs verkleinern oder in Teilen prüfen.'};
   }
   if(/rate.?limit|HTTP 429/i.test(m)){
     return {titel:'Zu viele Anfragen',
@@ -1612,7 +2066,7 @@ function classifyReviewError(m){
     return {titel:'Dokument zu umfangreich',
       hint:'Das geprüfte Dokument ist samt Kontext für eine einzelne Prüfung zu groß. Bitte das Dokument kürzen oder in Teilen prüfen. Ein bloßes Wiederholen hilft hier nicht.'};
   }
-  if(/\b524\b|timeout|timed out|Zeitüberschreitung|Zeitueberschreitung|Failed to fetch|NetworkError|load failed|abort/i.test(m)){
+  if(/\b524\b|timeout|timed out|Zeitüberschreitung|Zeitueberschreitung|Failed to fetch|NetworkError|load failed|abort|Antwort ohne Abschluss/i.test(m)){
     return {titel:'Verbindungsproblem',
       hint:'Es kamen längere Zeit keine Daten vom Server. Mögliche Ursachen: instabile Internetverbindung, ein sehr großes Dokument oder eine momentane Störung. Der ReviewAssistant hat es bereits automatisch ein zweites Mal versucht. Meist genügt es, die Prüfung noch einmal zu starten.'};
   }
@@ -1775,10 +2229,12 @@ async function runReview(){
   resultWrap.style.display='block';
   resultWrap.innerHTML='';   // BUILD 02.08.2026: Anzeige uebernimmt startPassStatus (Live-Status)
   // Standard: neueste Sonnet-Version (Sonnet 5); Wichtig-Modus: neueste Opus-Version
-  // (Opus 5, seit BUILD 02.08.2026; davor Opus 4.8). Bei neuen Modell-Releases muss
-  // dieser String manuell aktualisiert werden (kein Evergreen-Alias; claude-opus-5 und
-  // claude-sonnet-5 sind laut Modell-Doku fixe Snapshots ohne Datums-Suffix).
-  var model=p.wichtig?'claude-opus-5':'claude-sonnet-5';
+  // (Opus 5.5 seit BUILD 23.09.2026; davor Opus 5 seit BUILD 02.08.2026, davor Opus 4.8).
+  // Bei neuen Modell-Releases muss dieser String manuell aktualisiert werden (kein
+  // Evergreen-Alias; claude-opus-5-5 und claude-sonnet-5 sind laut Modell-Doku fixe
+  // Snapshots ohne Datums-Suffix). Opus 5.5: Denken immer an, effort-Default 'medium'
+  // -> effort wird unten IMMER explizit gesetzt ('max' im Wichtig-Modus).
+  var model=p.wichtig?'claude-opus-5-5':'claude-sonnet-5';
   var effort=p.wichtig?'max':'high';
   var sysPrompt=buildSystemPrompt(p);
   // Build message content
@@ -1828,7 +2284,7 @@ async function runReview(){
     // und der neue Tokenizer ~30% mehr Tokens erzeugt – sonst Gefahr, dass Modul C abgeschnitten wird.
     var body1={
       model:model,
-      max_tokens:p.wichtig?48000:32000,
+      max_tokens:p.wichtig?96000:32000,   // BUILD 23.09.2026: Wichtig 48000->96000 (Opus 5.5 denkt bei 'max' laenger; freigegeben)
       output_config:{effort:effort},
       thinking:{type:'adaptive'},
       stream:true,
@@ -1852,6 +2308,19 @@ async function runReview(){
     if(pass1Text.indexOf('===MODUL_C_START===')<0){
       console.warn('WARNUNG: Modul C fehlt bereits im Pass-1-Output. stop_reason='+s1.stopReason+' – bei "max_tokens" wurde der Output abgeschnitten.');
     }
+    // BUILD 23.09.2026: Ablehnung (stop_reason 'refusal', HTTP 200) und Antworten
+    // ohne jeden Abschnitt klar melden - vorher lief Pass 2 auf leerem Text weiter
+    // und der Bericht zeigte gruene Haken bzw. dreimal "Kein Output empfangen".
+    if(s1.stopReason==='refusal'){
+      var sd=s1.stopDetails||{};
+      throw new Error('Ablehnung durch das Modell (stop_reason refusal'+(sd.category?', Kategorie '+sd.category:'')+')'+(sd.explanation?': '+sd.explanation:''));
+    }
+    if(!/===MODUL_[ABC]_START===/.test(pass1Text)){
+      if(s1.stopReason==null) throw new Error('Verbindung abgebrochen: Antwort ohne Abschluss (kein stop_reason).');
+      if(s1.stopReason!=='end_turn') throw new Error('Token-Limit erreicht, bevor Befunde geschrieben wurden (stop_reason '+s1.stopReason+').');
+      throw new Error('Unerwartetes Antwortformat: kein Abschnitt (MODUL_A/B/C) im Pruefergebnis.');
+    }
+    var pass1Cut=(s1.stopReason!=='end_turn');   // BUILD 23.09.2026: unvollstaendig = alles ausser 'end_turn' (auch null)
     // Pass 2: Policy control – correct columns 2+3
     startPassStatus(2,totalPasses,'Die Befunde werden qualitätsgeprüft','kontrolle');
     var pass2Prompt='Du bist Qualitaetskontrolleur fuer den TAIYO ReviewAssistant.\n'+
@@ -1876,36 +2345,55 @@ async function runReview(){
       '– Policy-konformer Verbesserungstext, kein blosser Kommentar.\n'+
       '– Alle Belege nach der Aussage in Klammer. Belegt eine Fundstelle nur mittelbar (Umkehrschluss, Analogie), kurze Erklaerung ergaenzen, z.B. "(folgt im Umkehrschluss aus § X)"; ein direkter Beleg darf allein stehen.\n'+
       '– Im fremdsprachigen Output keine deutschen Begriffe im Fliesstext (nur kursiv in Klammer); deutschen Originalbegriff nach Fachausdruecken kursiv in Klammer (Punkt 10.5).\n\n'+
+      'ZEILEN IN MODUL A: Die Anzahl der Zeilen bleibt exakt gleich – keine Zeile hinzufuegen, entfernen oder zusammenlegen; die Reihenfolge bleibt. Jeder Befund bleibt in genau einer Zeile. Die Kopfzeile bleibt exakt wie im Original.\n\n'+
       'Gib den vollstaendigen Output zurueck – ALLE Bloecke (VORAB, MODUL_A, MODUL_B, MODUL_C), exakt im gleichen Format, VORAB und MODUL_B und MODUL_C zeichengenau wie im Original. Sprachausgabe fuer Modul A: '+p.lang+'.\n\n'+
       'ZU KORRIGIERENDER OUTPUT:\n'+pass1Text;
     // Pass 2 muss den GESAMTEN Output (VORAB + Modul A/B/C) reproduzieren -> ebenfalls grosszuegiges max_tokens.
     var body2={
       model:model,
-      max_tokens:p.wichtig?32000:24000,
+      max_tokens:p.wichtig?64000:24000,   // BUILD 23.09.2026: Wichtig 32000->64000 (freigegeben)
       output_config:{effort:effort},
       thinking:{type:'adaptive'},
       stream:true,
       system:pass2Prompt,
       messages:[{role:'user',content:'Bitte korrigieren.'}]
     };
-    var s2=await callClaude(body2,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
-    var finalText=s2.text;
-    var truncated=(s1.stopReason==='max_tokens')||(s2.stopReason==='max_tokens');   // Fix 2: Trunkierung sichtbar machen
+    // BUILD 23.09.2026: Pass 2 ist reine sprachliche Nachkontrolle von Modul A.
+    // Scheitert er (Fehler oder Ablehnung), gilt der Pass-1-Output - die fertige
+    // Pruefung geht nicht mehr verloren (vorher z.B. bei HTTP 429 nach Pass 1).
+    var s2=null, pass2Problem='';
+    try{
+      s2=await callClaude(body2,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
+      if(s2.stopReason==='refusal')pass2Problem='refusal';
+    }catch(pass2Err){
+      pass2Problem='error';
+      console.warn('Pass 2 fehlgeschlagen – der Pass-1-Output wird verwendet:',pass2Err&&pass2Err.message);
+    }
+    var finalText=(s2&&!pass2Problem)?s2.text:pass1Text;
     // SICHERHEITSNETZ: Modul B und C duerfen durch Pass 2 NIEMALS veraendert oder verloren gehen.
     // Wir ersetzen sie hart durch die Originalbloecke aus Pass 1, unabhaengig davon was Pass 2 geliefert hat.
     finalText=forceRestoreBlock(finalText,pass1Text,'VORAB');
     finalText=forceRestoreBlock(finalText,pass1Text,'MODUL_B');
     finalText=forceRestoreBlock(finalText,pass1Text,'MODUL_C');
+    // BUILD 23.09.2026 (freigegeben von Dr. Scheuwimmer): ZWEITE SICHERUNGSSCHICHT.
+    // forceRestoreBlock bleibt byte-gleich. Hatte aber Pass 1 einen Abschnitt gar
+    // nicht, blieb bisher der von Pass 2 gelieferte (= erfundene; Pass 2 sieht das
+    // Dokument nie) Abschnitt stehen - z.B. "Keine Termine oder Fristen
+    // identifiziert". assembleFinalBlocks nimmt VORAB/B/C daher NUR aus Pass 1 und
+    // Modul A aus Pass 2 nur, wenn vollstaendig und zeilengleich.
+    var asm=assembleFinalBlocks(finalText,pass1Text,pass1Cut);
+    finalText=asm.text;
     // Pass 3 (nur wenn Ausgabesprache ≠ Dokumentsprache): Übersetzung des geprüften Textes.
     // needsTranslation/outLang/outputLangCode wurden bereits VOR Pass 1 berechnet
     // (BUILD 02.08.2026, fuer die korrekte Passzahl in der Live-Anzeige) – die
     // Uebersetzungs-Regel selbst ist unveraendert.
     var translatedText='';
+    var transProblem='', transStop=null;   // BUILD 23.09.2026: eigener Hinweis statt rotem Befund-Banner
     if(needsTranslation&&docTextForTranslation){
       startPassStatus(3,totalPasses,'Der geprüfte Text wird übersetzt ('+outputLangCode+')','uebersetzung');
       var transBody={
         model:model,
-        max_tokens:p.wichtig?16000:12000,
+        max_tokens:p.wichtig?32000:12000,   // BUILD 23.09.2026: Wichtig 16000->32000 (freigegeben)
         output_config:{effort:effort},
         thinking:{type:'adaptive'},
         stream:true,
@@ -1917,20 +2405,47 @@ async function runReview(){
       };
       try{
         var s3=await callClaude(transBody,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
-        translatedText=s3.text;
-        if(s3.stopReason==='max_tokens') truncated=true;
+        if(s3.stopReason==='refusal'){ transProblem='refusal'; translatedText=''; needsTranslation=false; }
+        else{ translatedText=s3.text; transStop=s3.stopReason; if(s3.stopReason!=='end_turn') transProblem='truncated'; }
       }catch(transErr){
         // Uebersetzung ist optional – ein Fehler hier darf die Pruefung nicht abbrechen.
         console.warn('Uebersetzung (Pass 3) fehlgeschlagen:',transErr.message);
         translatedText='';
         needsTranslation=false;
+        transProblem='error';
       }
     }
     lastReviewMeta={dtype:p.dtype,lang:p.lang};
     renderResult(finalText,model,p.lang,translatedText,needsTranslation,buildIntro(p));
-    if(truncated){
-      resultWrap.insertAdjacentHTML('afterbegin','<div style="background:#fdecea;border-left:3px solid #d33;border-radius:4px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#7a1c14;line-height:1.5">Achtung: Die Antwort war möglicherweise unvollständig (Token-Limit erreicht). Einzelne Befunde oder Fristen könnten fehlen. Bitte das Dokument kürzen oder erneut prüfen; im Wichtig-Modus steht mehr Budget zur Verfügung.</div>');
+    // BUILD 23.09.2026: Hinweise statt eines pauschalen Banners. Rot = Pruefung
+    // unvollstaendig (fehlender oder abgebrochener Abschnitt); gelb = Nachkontrolle
+    // bzw. Uebersetzung betroffen, die Pruefung selbst ist vollstaendig.
+    var warns=[], notes=[];
+    var secName={MODUL_A:'Policy & Stil',MODUL_B:'Inhaltliche Vollständigkeit',MODUL_C:'Termine & Fristen'};
+    // (Gegenpruefung) Abbruchgrund benennen - "Token-Limit" nur bei max_tokens;
+    // Wichtig-Modus nur empfehlen, wenn er nicht ohnehin aktiv ist.
+    var cutText=function(sr){ return sr==='max_tokens'?'Token-Limit erreicht':(sr==null?'Verbindung unterbrochen':(sr==='model_context_window_exceeded'?'Dokument zu umfangreich':'vorzeitig beendet')); };
+    var cutAdvice=(s1.stopReason==null)?' Bitte die Prüfung erneut starten.':(' Bitte das Dokument kürzen'+(p.wichtig?' oder in Teilen prüfen.':' oder den Wichtig-Modus verwenden.'));
+    asm.missing.forEach(function(k){
+      warns.push('Achtung: Der Abschnitt „'+secName[k]+'“ fehlt in der Antwort. Dieser Teil wurde nicht geprüft.'+
+        (pass1Cut?' Die Antwort wurde abgebrochen ('+cutText(s1.stopReason)+').'+cutAdvice:' Bitte die Prüfung erneut starten.'));
+    });
+    asm.partial.forEach(function(k){
+      warns.push('Achtung: Der Abschnitt „'+secName[k]+'“ ist unvollständig. Die Antwort wurde abgebrochen ('+cutText(s1.stopReason)+'). Weitere Befunde oder Fristen könnten fehlen.');
+    });
+    if(pass1Cut&&!asm.missing.length&&!asm.partial.length){
+      if(s1.stopReason==='max_tokens'&&!p.wichtig)warns.push('Achtung: Die Antwort war möglicherweise unvollständig (Token-Limit erreicht). Einzelne Befunde oder Fristen könnten fehlen. Bitte das Dokument kürzen oder erneut prüfen; im Wichtig-Modus steht mehr Budget zur Verfügung.');
+      else warns.push('Achtung: Die Antwort war möglicherweise unvollständig ('+cutText(s1.stopReason)+'). Einzelne Befunde oder Fristen könnten fehlen.'+cutAdvice);
     }
+    if(pass2Problem||asm.aFromPass1){
+      notes.push('Hinweis: Die sprachliche Nachkontrolle der Stilbefunde ist ausgefallen. Die Stilbefunde stammen direkt aus der Erstprüfung.');
+    }
+    // (Gegenpruefung) "Die Prüfung selbst ist vollständig." nur, wenn keine rote Warnung besteht.
+    var pruefungOk=warns.length?'':' Die Prüfung selbst ist vollständig.';
+    if(transProblem==='truncated')notes.push('Hinweis: Die Übersetzung ist möglicherweise unvollständig ('+cutText(transStop)+').');
+    else if(transProblem==='refusal')notes.push('Hinweis: Das Modell hat die Übersetzung abgelehnt.'+pruefungOk);
+    else if(transProblem==='error')notes.push('Hinweis: Die Übersetzung ist fehlgeschlagen.'+pruefungOk);
+    if(warns.length||notes.length)resultWrap.insertAdjacentHTML('afterbegin',buildWarningsHtml(warns,notes));
   }catch(err){
     var m=err&&err.message?err.message:String(err);
     // BUILD 02.08.2026 (Nachtrag 2): klassifizierte, verstaendliche Fehlerbox
@@ -1965,6 +2480,140 @@ function forceRestoreBlock(text,sourceText,modKey){
     return text+'\n\n'+originalBlock;
   }
   return text.substring(0,curStart)+originalBlock+text.substring(curEnd+endTag.length);
+}
+// ─── BUILD 23.09.2026: Kopfzeilen-Erkennung (sprachunabhaengig, exakt) ────────
+// Vorher: nur deutsche Kopfzeilen per Teilstring. Folgen: (a) bei en/ja/ko-Output
+// erschien die uebersetzte Kopfzeile als "Befund" mit Status-Buttons und belegte
+// im Top-5-Deckel einen Platz; (b) eine echte erste Zeile mit "BEREICH" (z.B.
+// GELTUNGSBEREICH) konnte verschwinden. Jetzt: ALLE Zellen muessen bekannte
+// Spaltennamen sein ODER durchwegs kurze Grossbuchstaben-Titel.
+var HEADER_WORDS=['textausschnitt','ausschnitt','textstelle','problem','befund','befunde','vorschlag','bereich','empfehlung','bezeichnung','typ','datum/zeitraum','datum','zeitraum','hinweis',
+  'excerpt','text excerpt','quote','passage','text','issue','problem/issue','finding','findings','suggestion','proposal','recommendation','area','topic','field','category','description','designation','item','title','type','date/period','date','period','deadline','note','notes','remark','remarks',
+  '抜粋','テキスト抜粋','本文抜粋','該当箇所','問題','問題点','指摘','指摘事項','提案','修正案','改善案','領域','分野','項目','所見','推奨','推奨事項','勧告','名称','種類','種別','区分','日付','期間','日付/期間','期日','備考','注記','注意',
+  '발췌','텍스트 발췌','본문 발췌','문제','문제점','지적','제안','수정안','영역','분야','항목','소견','권고','권장','명칭','유형','구분','날짜','기간','날짜/기간','기한','비고','참고'];
+function isHeaderRow(line){
+  var raws=String(line||'').replace(/^\s*\[!\]\s*/,'').split('|||').map(function(c){return c.trim();});
+  if(raws.length<2)return false;
+  // (Gegenpruefung) Klammer-Zusaetze wie "TEXTAUSSCHNITT (woertlich)" ignorieren.
+  var cells=raws.map(function(c){
+    return c.replace(/\s*\([^)]*\)/g,'').replace(/^[\s*_#]+|[\s*_:]+$/g,'').replace(/\s*\/\s*/g,'/').toLowerCase();
+  });
+  var known=cells.filter(function(c){return HEADER_WORDS.indexOf(c)>=0;}).length;
+  var allKnown=known>0&&cells.every(function(c){return c===''||HEADER_WORDS.indexOf(c)>=0;});
+  // (Gegenpruefung) Grossbuchstaben-Zeile nur mit mindestens einem bekannten
+  // Spaltennamen - sonst verschwand z.B. "COURT HEARING|||COURT DEADLINE|||..."
+  var allCaps=known>0&&raws.every(function(r){return r.length>0&&r.length<=30&&!/[a-zäöüß]/.test(r)&&/[A-ZÄÖÜ]/.test(r);});
+  return allKnown||allCaps;
+}
+// Gemeinsame Zeilen-Aufbereitung fuer Modul A/B/C: KEIN_BEFUND-Zeilen entfernen,
+// Kopfzeile entfernen, Fortsetzungszeilen ohne '|||' an die vorige Zeile anhaengen
+// (vorher verworfen - z.B. Aufzaehlungspunkte in Spalte 3).
+function prepareBlockLines(block){
+  var lines=String(block||'').split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l!=='KEIN_BEFUND';});
+  if(lines.length>0&&isHeaderRow(lines[0]))lines.shift();
+  var out=[];
+  lines.forEach(function(l){
+    if(l.indexOf('|||')>=0||!out.length)out.push(l);
+    else out[out.length-1]+='\n'+l;
+  });
+  return out;
+}
+// ─── BUILD 23.09.2026: zweite Sicherungsschicht nach Pass 2 (freigegeben) ─────
+// extractBlock liefert einen Abschnitt samt Tags: 'complete' (START vor END),
+// 'partial' (START ohne END - nur bei abgeschnittener Antwort gerettet, letzte
+// evtl. halbe Zeile verworfen) oder 'missing'.
+function extractBlock(text,key,cutOff){
+  var st='==='+key+'_START===', en='==='+key+'_END===';
+  text=String(text||'');
+  var s=text.indexOf(st);
+  if(s<0)return {status:'missing',block:''};
+  var e=text.indexOf(en,s+st.length);
+  if(e>=0){
+    var sIn=text.lastIndexOf(st,e);   // innerster START vor END (bei doppeltem START)
+    return {status:'complete',block:text.substring(sIn,e+en.length)};
+  }
+  var rest=text.substring(s+st.length);
+  var nx=rest.search(/===(VORAB|MODUL_[ABC])_(START|END)===/);
+  if(nx>=0)rest=rest.substring(0,nx);
+  var ls=rest.split('\n');
+  if(cutOff&&nx<0&&ls.length)ls.pop();   // letzte Zeile einer abgeschnittenen Antwort ist evtl. unvollstaendig
+  var body=ls.join('\n').trim();
+  var rows=prepareBlockLines(body).filter(function(l){return l.replace(/^\s*\[!\]\s*/,'').split('|||').length>=2;});
+  // (Gegenpruefung) Fehlt nur das END-Tag, die Antwort endete aber regulaer
+  // ('end_turn'), ist ein ausdrueckliches KEIN_BEFUND ernst zu nehmen.
+  if(!rows.length&&!cutOff&&/^KEIN_BEFUND$/m.test(body))return {status:'complete',block:st+'\nKEIN_BEFUND\n'+en};
+  if(!rows.length)return {status:'missing',block:''};   // ohne vollstaendige Zeile nie ein gruener Haken
+  return {status:'partial',block:st+'\n'+body+'\n'+en};
+}
+function blockRows(block){
+  var inner=String(block||'').replace(/^===[A-Z_]+_START===/,'').replace(/===[A-Z_]+_END===$/,'');
+  return prepareBlockLines(inner).filter(function(l){return l.replace(/^\s*\[!\]\s*/,'').split('|||').length>=2;});
+}
+function normCell(c){return String(c||'').replace(/\[!\]/g,'').replace(/[„“”"‚‘’']/g,'"').replace(/\s+/g,' ').trim();}
+// Setzt den Endtext zusammen: VORAB, Modul B und Modul C NUR aus Pass 1; Modul A
+// aus Pass 2 nur, wenn dort vollstaendig und mit gleicher Zeilenzahl wie in
+// Pass 1 - sonst aus Pass 1. Ein in Pass 2 verlorenes "[!]" wird aus Pass 1
+// wiederhergestellt. Rueckgabe: {text, missing:[...], partial:[...], aFromPass1}.
+function assembleFinalBlocks(pass2Text,pass1Text,pass1Cut){
+  var res={text:'',missing:[],partial:[],aFromPass1:false};
+  var parts=[];
+  var v=extractBlock(pass1Text,'VORAB',pass1Cut);
+  if(v.status!=='missing')parts.push(v.block);
+  var a1=extractBlock(pass1Text,'MODUL_A',pass1Cut);
+  if(a1.status==='missing'){ res.missing.push('MODUL_A'); }
+  else if(a1.status==='partial'&&pass1Cut){ res.partial.push('MODUL_A'); parts.push(a1.block); }
+  else{
+    // (Gegenpruefung) 'partial' ohne Abbruch (nur END-Tag fehlt) gilt als vollstaendig.
+    var a2=extractBlock(pass2Text,'MODUL_A',false);
+    var r1=blockRows(a1.block);
+    var r2=(a2.status==='complete')?blockRows(a2.block):null;
+    if(!r1.length){
+      parts.push(a1.block);   // (Gegenpruefung) nichts nachzupolieren: Pass-1-Fassung unveraendert (nie selbst KEIN_BEFUND erzeugen)
+    }else if(!r2||r2.length!==r1.length){
+      parts.push(a1.block);
+      if(a2.block!==a1.block)res.aFromPass1=true;
+    }else{
+      // "[!]" aus Pass 1 wiederherstellen. Zuordnung zweistufig (Gegenpruefung):
+      // zuerst ALLE Zeilen mit identischer Spalte 1, erst danach die uebrigen nach
+      // Position bzw. naechster freier Zeile - keine Pass-1-Zeile doppelt.
+      var used={}, assign=r2.map(function(){return -1;});
+      r2.forEach(function(l,i){
+        var key=normCell(l.split('|||')[0]);
+        for(var t=0;t<r1.length;t++){ if(!used[t]&&normCell(r1[t].split('|||')[0])===key){assign[i]=t;used[t]=true;break;} }
+      });
+      r2.forEach(function(l,i){
+        if(assign[i]>=0)return;
+        if(i<r1.length&&!used[i]){assign[i]=i;used[i]=true;return;}
+        for(var u=0;u<r1.length;u++){ if(!used[u]){assign[i]=u;used[u]=true;break;} }
+      });
+      var fixed=r2.map(function(l,i){
+        if(/^\s*\[!\]/.test(l))return l;
+        var j=assign[i];
+        return (j>=0&&r1[j]&&/^\s*\[!\]/.test(r1[j]))?'[!]'+l:l;
+      });
+      var head=a2.block.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;})[1]||'';
+      parts.push('===MODUL_A_START===\n'+(isHeaderRow(head)?head+'\n':'')+(fixed.length?fixed.join('\n'):'KEIN_BEFUND')+'\n===MODUL_A_END===');
+    }
+  }
+  ['MODUL_B','MODUL_C'].forEach(function(k){
+    var b=extractBlock(pass1Text,k,pass1Cut);
+    if(b.status==='missing')res.missing.push(k);
+    else{ if(b.status==='partial'&&pass1Cut)res.partial.push(k); parts.push(b.block); }
+  });
+  res.text=parts.join('\n\n');
+  return res;
+}
+function buildWarningsHtml(warns,notes){
+  var h='';
+  if(warns&&warns.length){
+    h+='<div style="background:#fdecea;border-left:3px solid #d33;border-radius:4px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#7a1c14;line-height:1.5">'+
+      warns.map(function(w){return '<div style="margin:2px 0">'+escHtml(w)+'</div>';}).join('')+'</div>';
+  }
+  if(notes&&notes.length){
+    h+='<div style="background:#fff8e6;border-left:3px solid #e0a800;border-radius:4px;padding:9px 12px;margin-bottom:14px;font-size:12.5px;color:#5a4a10;line-height:1.5">'+
+      notes.map(function(w){return '<div style="margin:2px 0">'+escHtml(w)+'</div>';}).join('')+'</div>';
+  }
+  return h;
 }
 function guessLang(text){
   if(!text||text.length<20)return 'de';
@@ -2196,13 +2845,16 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Kein Befund.</div>';
     html+='</div>';return html;
   }
-  var lines=block.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
-  // Remove header row
-  if(lines.length>0&&(lines[0].indexOf('TEXTAUSSCHNITT')>=0||lines[0].indexOf('BEREICH')>=0||lines[0].indexOf('BEZEICHNUNG')>=0)){
-    lines.shift();
-  }
+  // BUILD 23.09.2026: gemeinsame Aufbereitung (Kopfzeile sprachunabhaengig und
+  // exakt, KEIN_BEFUND nach Kopfzeile, Fortsetzungszeilen) - siehe prepareBlockLines.
+  var lines=prepareBlockLines(block);
   if(lines.length===0){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Kein Befund.</div>';
+    html+='</div>';return html;
+  }
+  // BUILD 23.09.2026 (Gegenpruefung): Ausgabe ohne Spaltentrenner nie verschlucken - als Rohtext zeigen.
+  if(!lines.some(function(l){return l.replace(/^\s*\[!\]\s*/,'').split('|||').length>=2;})){
+    html+='<div style="padding:10px 10px;font-size:12.5px;color:#555;white-space:pre-wrap">'+escHtml(lines.join('\n'))+'</div>';
     html+='</div>';return html;
   }
   // TOP-5-DECKEL (nur Modul A) - deterministisches Sicherheitsnetz zur
@@ -2236,7 +2888,8 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
       // Das Netz schuetzt damit auch einzelne Typo-Zeilen (1-3 Typos); es
       // wirkt wie das 10.2-Netz nur BEHALTEND, entfernt nie etwas anderes
       // faelschlich (der Platz geht nur zulasten uebriger laesslicher Zeilen).
-      if(!keep&&valid&&/(tippfehler|typo|誤字|タイプミス|오타)/i.test(cols[1]||''))keep=true;
+      // BUILD 23.09.2026 (Gegenpruefung): auch "Zeichensetzung"/"punctuation" (Kommafehler zaehlen wie Typos).
+      if(!keep&&valid&&/(tippfehler|zeichensetzung|typo|punctuation|誤字|タイプミス|오타)/i.test(cols[1]||''))keep=true;
       return {line:l,grave:g,keep:keep,valid:valid};
     });
     var validCount=0;classified.forEach(function(c){if(c.valid)validCount++;});
@@ -2273,7 +2926,13 @@ function renderModule(raw,modKey,modTitle,headers,isFristen){
     var fid=modKey+'-'+reviewFindings.length;
     reviewFindings.push({fid:fid,module:modTitle,grave:grave,cells:cells,headers:headers,status:''});
     html+='<tr id="row-'+fid+'" data-fid="'+fid+'"'+(grave?' class="grave"':'')+'>';
-    cells.forEach(function(cell){ html+='<td>'+escHtml(cell)+'</td>'; });
+    // BUILD 23.09.2026: Zeilenumbrueche (Fortsetzungszeilen) sichtbar; in der
+    // letzten Spalte (Vorschlag) " • "-Aufzaehlungen je Punkt auf eine eigene Zeile.
+    cells.forEach(function(cell,ci){
+      var ch=escHtml(cell).replace(/\n/g,'<br>');
+      if(ci===cells.length-1&&ci>0)ch=ch.replace(/\s+•\s+/g,'<br>• ');
+      html+='<td>'+ch+'</td>';
+    });
     // Pad if fewer cols than headers
     for(var i=parts.length;i<headers.length;i++)html+='<td></td>';
     html+='<td class="status-col">'+statusButtonsDiv(fid)+'</td>';
@@ -2298,10 +2957,13 @@ function renderFristen(raw){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Keine Termine oder Fristen identifiziert.</div>';
     html+='</div>';return html;
   }
-  var lines=block.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
-  if(lines.length>0&&lines[0].indexOf('BEZEICHNUNG')>=0)lines.shift();
+  var lines=prepareBlockLines(block);   // BUILD 23.09.2026 (siehe renderModule)
   if(lines.length===0){
     html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Keine Termine oder Fristen identifiziert.</div>';
+    html+='</div>';return html;
+  }
+  if(!lines.some(function(l){return l.replace(/^\s*\[!\]\s*/,'').split('|||').length>=2;})){
+    html+='<div style="padding:10px 10px;font-size:12.5px;color:#555;white-space:pre-wrap">'+escHtml(lines.join('\n'))+'</div>';
     html+='</div>';return html;
   }
   html+='<ul class="fristen-list">';
@@ -2328,7 +2990,7 @@ function renderFristen(raw){
     html+='<li id="row-'+fid+'" data-fid="'+fid+'"'+(grave?' style="background:#fff5f5"':'')+'><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
     html+='<span style="flex:1;min-width:0"><strong>'+escHtml(bezeichnung)+'</strong>';
     if(datum)html+=' <span style="color:#888;font-size:12px">→ '+escHtml(datum)+'</span>';
-    if(hinweis)html+='<br><span style="font-size:11px;color:#888;margin-top:2px;display:block">'+escHtml(hinweis)+'</span>';
+    if(hinweis)html+='<br><span style="font-size:11px;color:#888;margin-top:2px;display:block">'+escHtml(hinweis).replace(/\n/g,'<br>')+'</span>';
     html+='</span>'+statusButtonsDiv(fid)+'</li>';
   });
   html+='</ul>';
