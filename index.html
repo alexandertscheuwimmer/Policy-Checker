@@ -140,6 +140,18 @@
     Ansicht sichern — das baut den DOM neu zusammen und wirft führende
     Kommentare (also genau diese Checkliste) weg. Immer: Download-Button
     im Chat, GitHub-Raw-Download, oder view-source: + Strg+S.
+  - Datei NIEMALS aus der Datei-VORSCHAU im Chat kopieren (Strg+A/Strg+C
+    in der Vorschau): Die Vorschau zeigt nur die ersten 256 KiB
+    (262.144 Bytes) und haengt die Zeile "Displaying index.txt." an.
+    Seit BUILD 01.10.2026 ist die Datei groesser als 256 KiB. Vorfall
+    02.10.2026: eine bei "function fall" abgeschnittene Datei ohne
+    </script></body></html> kam nach GitHub -> SyntaxError, keine
+    Funktion definiert, kein Knopf reagierte ("funktioniert gar nicht").
+    Daher IMMER: Download-Knopf -> Datei in index.html umbenennen ->
+    GitHub "Add file / Upload files" (oder aus Editor/Notepad kopieren,
+    nie aus der Vorschau). Kontrolle nach dem Commit: GitHub zeigt
+    Zeilenzahl und Groesse der Datei (Sollwerte in der Build-Notiz);
+    die letzte Zeile der Rohdatei ist </html>.
   --- VOLLSTÄNDIGE FELDLISTE SCHRITT 1 ---
   Dokumenttyp; Ausgabesprache (Deutsch/English/日本語/한국어, OHNE
   deutsche Zusatzbezeichnung); Rechtsgebiet-Chips (Privatrecht/
@@ -1062,10 +1074,9 @@
       Laden ohnehin ueberschrieben).
   16. BEWUSST NICHT GEAENDERT: Standard-max_tokens (Punkt 1), Prompt-
       Caching (KONTEXT steht am Anfang des Systemprompts, Ersparnis
-      gering), Mitarbeiterliste USER_PROFILES_B64 (14 Eintraege; Frau
-      Kahrovic und Herr Murcina fehlen - Daten nicht bestaetigt), Worker
-      (api.js), Waechter-Fenster, Top-5-Netz, Feldlisten, Modul-A-
-      Punkteliste, forceRestoreBlock (byte-gleich).
+      gering), Worker (api.js), Waechter-Fenster, Top-5-Netz, Feldlisten,
+      Modul-A-Punkteliste, forceRestoreBlock (byte-gleich). Die
+      Mitarbeiterliste wurde im Nachtrag 1 ergaenzt (Punkt 18).
   17. GEGENPRUEFUNG des fertigen Builds (zweiter unabhaengiger Opus-
       Durchgang; 7 verifizierte Befunde + Reste der Altbefunde, alle
       behoben; Leitsterne 24/24 bestaetigt; Osterrechnung 1900-2100 und
@@ -1107,6 +1118,29 @@
           "Schritt 2 von 2" (vorher "3 von 3").
       (h) Reste: Modul-B-Vorlage "Kontaktmöglichkeit ... Fußzeile" und
           BEREICH-Beispiel "Fristverlängerung" mit Umlauten.
+  18. NACHTRAG 1 (02.10.2026; Angaben Dr. Scheuwimmer vom selben Tag):
+      Mitarbeiterliste USER_PROFILES_B64 von 14 auf 16 Eintraege
+      ergaenzt - Karima Kahrovic (auch: Frau Kahrovic; E-Mail
+      team1@taiyolegal.at; Deutsch: sehr hoch) und Kai Murcina (auch:
+      Herr Murcina; Deutsch: hoch). Herr Murcina verwendet office@
+      gemeinsam mit Frau Olgun -> nach der Regel aus BUILD 02.08.2026
+      (Review-Nachtrag 8a) KEINE Adresse im Profil, Erkennung nur ueber
+      den Namen. team1@ im Adress-Hinweis des Nuancen-Prompts als
+      persoenliche Adresse ergaenzt (team1@/team2@/team3@/team4@).
+      Vornamen am Postfach Dr. Scheuwimmer verifiziert. Felder, Format
+      und alle Grenzen des Nuancen-Prompts unveraendert. test_build.js
+      (02.08.2026): Erwartung "14 Eintraege" auf 16 angepasst; sonst
+      unveraendert.
+  19. NACHTRAG 2 (02.10.2026; Deployment-Vorfall): Nach dem Einspielen
+      von BUILD 01.10.2026 "funktionierte gar nichts". Ursache: Die
+      Datei war aus der Chat-Vorschau kopiert worden (zeigt nur die
+      ersten 256 KiB + "Displaying index.txt."); auf GitHub lag eine bei
+      "function fall" (in copyFeedbackText) abgeschnittene Datei ohne
+      </script></body></html> (262.167 Bytes statt 273.052). Der
+      Browser meldet einen SyntaxError, keine Funktion existiert. Der
+      kopierte Teil war byte-gleich mit der Lieferung - kein Codefehler.
+      Behoben durch Neu-Einspielen der vollstaendigen Datei per Upload;
+      neue Regel dazu unter TECHNISCH KRITISCH. Keine Code-Aenderung.
   Getestet: node --check; test_build.js (105, unveraendert gruen);
   test_build_2309.js (118 - vier Erwartungen an die neuen Entscheidungen
   angepasst: Modellstring, Pass-2-Prompt nur Modul A, Wiederholung bei
@@ -2219,7 +2253,7 @@ buildUserNuancePrompt()+
 // der an den Mitarbeiter gerichteten Erklaertexte an – nichts Fundamentales,
 // keine Aenderung an Befundauswahl, Gewichtung, Modulen oder Format.
 // Bei Unsicherheit aendert sich exakt NICHTS (Anweisung im Prompt-Block).
-var USER_PROFILES_B64='W3sibiI6IkRyLiBBbGV4YW5kZXIgVC4gU2NoZXV3aW1tZXIiLCJhbHQiOlsiU2NoZXV3aW1tZXIiLCJSQSBEci4gU2NoZXV3aW1tZXIiXSwibSI6ImEuc2NoZXV3aW1tZXJAdGFpeW9sZWdhbC5hdCIsImRlIjoibXV0dGVyc3ByYWNoZSJ9LHsibiI6IlRhZWhvb24gS2ltIiwiYWx0IjpbIlRhZS1Ib29uIEtpbSIsIktvbGxlZ2UgS2ltIl0sIm0iOiJ0LmtpbUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJzZWhyIGhvY2gifSx7Im4iOiJIZWRhIEJhaXNhcm92YSIsImFsdCI6WyJGcmF1IEJhaXNhcm92YSJdLCJtIjoiaC5iYWlzYXJvdmFAdGFpeW9sZWdhbC5hdCIsImRlIjoiaG9jaCJ9LHsibiI6IlRpamFuYSBUcmFpbG92aWMiLCJhbHQiOlsiRnJhdSBUcmFpbG92aWMiXSwibSI6InQudHJhaWxvdmljQHRhaXlvbGVnYWwuYXQiLCJkZSI6Im11dHRlcnNwcmFjaGUifSx7Im4iOiJQaGlsaXBwIEVic2VyIiwiYWx0IjpbIktvbGxlZ2UgRWJzZXIiXSwibSI6InRlYW0yQHRhaXlvbGVnYWwuYXQiLCJkZSI6InNlaHIgaG9jaCJ9LHsibiI6IkhhcnVrYSBPdGFuaSIsImFsdCI6WyJGcmF1IE90YW5pIl0sIm0iOiJoLm90YW5pQHRhaXlvbGVnYWwuYXQiLCJkZSI6ImhvY2gifSx7Im4iOiJFbGVuYSBCdWdyaW0iLCJhbHQiOlsiRnJhdSBCdWdyaW0iXSwibSI6ImUuYnVncmltQHRhaXlvbGVnYWwuYXQiLCJkZSI6ImdlcmluZyJ9LHsibiI6IlNoZXJpZiBFbCBOYWdnYXJpIiwiYWx0IjpbIktvbGxlZ2UgRWwgTmFnZ2FyaSJdLCJtIjoidGVhbTNAdGFpeW9sZWdhbC5hdCIsImRlIjoic2VociBob2NoIn0seyJuIjoiSGlrYXJpIFN1Z2ltb3RvIiwiYWx0IjpbIkZyYXUgU3VnaW1vdG8iXSwibSI6InRlYW00QHRhaXlvbGVnYWwuYXQiLCJkZSI6Im1pdHRlbCJ9LHsibiI6Ik5hdHN1a2kgRWdhbWkiLCJhbHQiOlsiRnJhdSBFZ2FtaSJdLCJtIjoibi5lZ2FtaUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJtaXR0ZWwifSx7Im4iOiJUb3NoaWtvIEhheWFzaGliYXJhIiwiYWx0IjpbIkZyYXUgSGF5YXNoaWJhcmEiXSwibSI6IiIsImRlIjoiZ2VyaW5nIn0seyJuIjoiRmV5emEgT2xndW4iLCJhbHQiOlsiRnJhdSBPbGd1biJdLCJtIjoiIiwiZGUiOiJtaXR0ZWwifSx7Im4iOiJLcmlzdGlhbiBCb2xkaSIsImFsdCI6WyJIZXJyIEJvbGRpIl0sIm0iOiIiLCJkZSI6ImdlcmluZyJ9LHsibiI6IlNha2kgVGFrYWhhc2hpIiwiYWx0IjpbIkZyYXUgVGFrYWhhc2hpIl0sIm0iOiJzLnRha2FoYXNoaUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJzZWhyIGhvY2gifV0=';
+var USER_PROFILES_B64='W3sibiI6IkRyLiBBbGV4YW5kZXIgVC4gU2NoZXV3aW1tZXIiLCJhbHQiOlsiU2NoZXV3aW1tZXIiLCJSQSBEci4gU2NoZXV3aW1tZXIiXSwibSI6ImEuc2NoZXV3aW1tZXJAdGFpeW9sZWdhbC5hdCIsImRlIjoibXV0dGVyc3ByYWNoZSJ9LHsibiI6IlRhZWhvb24gS2ltIiwiYWx0IjpbIlRhZS1Ib29uIEtpbSIsIktvbGxlZ2UgS2ltIl0sIm0iOiJ0LmtpbUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJzZWhyIGhvY2gifSx7Im4iOiJIZWRhIEJhaXNhcm92YSIsImFsdCI6WyJGcmF1IEJhaXNhcm92YSJdLCJtIjoiaC5iYWlzYXJvdmFAdGFpeW9sZWdhbC5hdCIsImRlIjoiaG9jaCJ9LHsibiI6IlRpamFuYSBUcmFpbG92aWMiLCJhbHQiOlsiRnJhdSBUcmFpbG92aWMiXSwibSI6InQudHJhaWxvdmljQHRhaXlvbGVnYWwuYXQiLCJkZSI6Im11dHRlcnNwcmFjaGUifSx7Im4iOiJQaGlsaXBwIEVic2VyIiwiYWx0IjpbIktvbGxlZ2UgRWJzZXIiXSwibSI6InRlYW0yQHRhaXlvbGVnYWwuYXQiLCJkZSI6InNlaHIgaG9jaCJ9LHsibiI6IkhhcnVrYSBPdGFuaSIsImFsdCI6WyJGcmF1IE90YW5pIl0sIm0iOiJoLm90YW5pQHRhaXlvbGVnYWwuYXQiLCJkZSI6ImhvY2gifSx7Im4iOiJFbGVuYSBCdWdyaW0iLCJhbHQiOlsiRnJhdSBCdWdyaW0iXSwibSI6ImUuYnVncmltQHRhaXlvbGVnYWwuYXQiLCJkZSI6ImdlcmluZyJ9LHsibiI6IlNoZXJpZiBFbCBOYWdnYXJpIiwiYWx0IjpbIktvbGxlZ2UgRWwgTmFnZ2FyaSJdLCJtIjoidGVhbTNAdGFpeW9sZWdhbC5hdCIsImRlIjoic2VociBob2NoIn0seyJuIjoiSGlrYXJpIFN1Z2ltb3RvIiwiYWx0IjpbIkZyYXUgU3VnaW1vdG8iXSwibSI6InRlYW00QHRhaXlvbGVnYWwuYXQiLCJkZSI6Im1pdHRlbCJ9LHsibiI6Ik5hdHN1a2kgRWdhbWkiLCJhbHQiOlsiRnJhdSBFZ2FtaSJdLCJtIjoibi5lZ2FtaUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJtaXR0ZWwifSx7Im4iOiJUb3NoaWtvIEhheWFzaGliYXJhIiwiYWx0IjpbIkZyYXUgSGF5YXNoaWJhcmEiXSwibSI6IiIsImRlIjoiZ2VyaW5nIn0seyJuIjoiRmV5emEgT2xndW4iLCJhbHQiOlsiRnJhdSBPbGd1biJdLCJtIjoiIiwiZGUiOiJtaXR0ZWwifSx7Im4iOiJLcmlzdGlhbiBCb2xkaSIsImFsdCI6WyJIZXJyIEJvbGRpIl0sIm0iOiIiLCJkZSI6ImdlcmluZyJ9LHsibiI6IlNha2kgVGFrYWhhc2hpIiwiYWx0IjpbIkZyYXUgVGFrYWhhc2hpIl0sIm0iOiJzLnRha2FoYXNoaUB0YWl5b2xlZ2FsLmF0IiwiZGUiOiJzZWhyIGhvY2gifSx7Im4iOiJLYXJpbWEgS2Focm92aWMiLCJhbHQiOlsiRnJhdSBLYWhyb3ZpYyJdLCJtIjoidGVhbTFAdGFpeW9sZWdhbC5hdCIsImRlIjoic2VociBob2NoIn0seyJuIjoiS2FpIE11cmNpbmEiLCJhbHQiOlsiSGVyciBNdXJjaW5hIl0sIm0iOiIiLCJkZSI6ImhvY2gifV0=';
 function getUserProfiles(){
   try{
     var bin=atob(USER_PROFILES_B64);
@@ -2236,7 +2270,7 @@ function buildUserNuancePrompt(){
   }).join('\n');
   return '\n\nNUTZER-ERKENNUNG UND NUANCEN (streng vertraulich; nur Feinabstimmung):\n'+
   'Mitarbeiterliste von TAIYO Legal (Deutschniveau-Skala: muttersprache / sehr hoch / hoch / mittel / gering):\n'+zeilen+'\n'+
-  'Hinweis zu den Adressen: office@taiyolegal.at ist eine Sammeladresse und verwenden alle Mitarbeiter – sie allein identifiziert NIEMANDEN sicher. team2@/team3@/team4@ sind dagegen persoenliche Adressen der oben genannten Personen.\n'+
+  'Hinweis zu den Adressen: office@taiyolegal.at ist eine Sammeladresse und verwenden alle Mitarbeiter – sie allein identifiziert NIEMANDEN sicher. team1@/team2@/team3@/team4@ sind dagegen persoenliche Adressen der oben genannten Personen.\n'+
   'SCHRITT 1 – ERKENNUNG: Pruefe NUR anhand der Eingaben (zu pruefender Text, Vorkorrespondenz, zusaetzliche Angaben), ob VOELLIG SICHER erkennbar ist, WER den ReviewAssistant gerade bedient. Typische sichere Belege: der zu pruefende Entwurf ist erkennbar vom Bediener selbst verfasst und mit genau einem Mitarbeiternamen aus der Liste gezeichnet (Signatur/Grussformel), ohne Gegenanzeichen; oder eine Eingabe sagt ausdruecklich, dass es der eigene Entwurf dieser Person ist. NICHT ausreichend sind: blosser Schreibstil; die Sammeladresse office@ allein; ein Name, der nur als dritte Person erwaehnt wird; der Name des Klienten oder des Empfaengers (das ist NIE der Bediener); ein Entwurf, der laut Kontext von einer ANDEREN Person stammt als der pruefenden. Im Zweifel gilt IMMER: NICHT erkannt.\n'+
   'SCHRITT 2 – NUR BEI VOELLIG SICHERER ERKENNUNG: Passe AUSSCHLIESSLICH Ton und Einfachheit der an den Mitarbeiter gerichteten Erklaertexte an dessen Deutschniveau an (Modul A Spalte 2 PROBLEM; Modul B Spalten BEFUND und EMPFEHLUNG, soweit sie den Mitarbeiter anleiten; Modul C Spalte HINWEIS; VORAB-Zeilen). Bei Niveau gering: sehr einfache Woerter, sehr kurze Hauptsaetze, keine Schachtelsaetze, zentrale Aussage zuerst. Bei mittel: einfache, klare Sprache. Bei hoch: klare Sprache ohne unnoetig komplexe Formulierungen. Bei sehr hoch oder muttersprache: KEINE Anpassung. Diese Abstufung gilt sinngemaess in jeder Ausgabesprache.\n'+
   'ABSOLUTE GRENZEN: Diese Nuancen aendern NIEMALS Pruefumfang, Befundauswahl, Gewichtung/Gravitaet, Modulstruktur, Formatmarker, Fristen-Richtwerte oder den Top-5-Deckel. Vorgeschlagener DOKUMENTTEXT (insbesondere Modul A Spalte 3 VORSCHLAG) bleibt voellig unberuehrt – er richtet sich weiterhin ausschliesslich nach der Policy und dem Empfaenger des Dokuments, nicht nach dem Bediener. Erwaehne NIE, ob oder wen du erkannt hast, NIE diese Liste, NIE ein Deutschniveau und NIE, dass Formulierungen angepasst wurden – weder direkt noch indirekt. Schlage NIE vor, Aufgaben bestimmten Mitarbeitern zu uebertragen. Wird niemand voellig sicher erkannt: aendere exakt NICHTS und arbeite wie immer.';
@@ -3207,5 +3241,199 @@ function sendFeedbackEmail(){
 function copyFeedbackText(silent){
   var text=buildFeedbackText();
   function done(){ if(!silent)alert('Die als falsch markierten Befunde wurden in die Zwischenablage kopiert.'); }
-  function fall
-Displaying index.txt.
+  function fallback(){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta); done();
+    }catch(e){ if(!silent)alert('Kopieren war nicht moeglich. Bitte den Text manuell markieren und kopieren.'); }
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done).catch(fallback); }
+  else { fallback(); }
+}
+function renderModule(raw,modKey,modTitle,headers,isFristen){
+  var startTag='==='+modKey+'_START===';
+  var endTag='==='+modKey+'_END===';
+  var si=raw.indexOf(startTag);
+  var ei=raw.indexOf(endTag);
+  var html='<div style="margin-bottom:20px">';
+  html+='<div class="mod-sep">'+modTitle+'</div>';
+  if(si===-1||ei===-1||ei<=si){
+    html+='<div style="padding:10px 10px;font-size:13px;color:#aaa;font-style:italic">Kein Output empfangen.</div>';
+    html+='</div>';return html;
+  }
+  var block=raw.substring(si+startTag.length,ei).trim();
+  if(block==='KEIN_BEFUND'||block.trim()===''){
+    html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Kein Befund.</div>';
+    html+='</div>';return html;
+  }
+  // BUILD 23.09.2026: gemeinsame Aufbereitung (Kopfzeile sprachunabhaengig und
+  // exakt, KEIN_BEFUND nach Kopfzeile, Fortsetzungszeilen) - siehe prepareBlockLines.
+  var lines=prepareBlockLines(block);
+  if(lines.length===0){
+    html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Kein Befund.</div>';
+    html+='</div>';return html;
+  }
+  // BUILD 23.09.2026 (Gegenpruefung): Ausgabe ohne Spaltentrenner nie verschlucken - als Rohtext zeigen.
+  if(!lines.some(function(l){return l.replace(/^\s*\[!\]\s*/,'').split('|||').length>=2;})){
+    html+='<div style="padding:10px 10px;font-size:12.5px;color:#555;white-space:pre-wrap">'+escHtml(lines.join('\n'))+'</div>';
+    html+='</div>';return html;
+  }
+  // TOP-5-DECKEL (nur Modul A) - deterministisches Sicherheitsnetz zur
+  // Prompt-Regel 'hoechstens 5 Modul-A-Befunde'. Haelt sich das Modell nicht
+  // daran, kuerzen wir hier - aber NUR unter den laesslichen Befunden: ALLE
+  // gravierenden ([!] bzw. 30+-Woerter-Satz) bleiben erhalten (Variante a),
+  // der Bericht darf also >5 Zeilen haben, wenn es >5 gravierende gibt.
+  // Verworfen werden die spaetesten laesslichen Befunde oberhalb des Budgets
+  // (5 minus Anzahl gravierender). Grave-Erkennung spiegelt exakt die
+  // Render-Schleife unten (fuehrendes [!] bzw. maxSentenceWordCount>=30).
+  // Seit BUILD 09.07.2026 zusaetzlich: Zeilen mit Punkt-10.2-Bezug in Spalte 2
+  // werden ebenfalls nie gekuerzt (Wunsch 3, Nummerierung immer flaggen).
+  if(modKey==='MODUL_A'){
+    var classified=lines.map(function(l){
+      var g=/^\s*\[!\]\s*/.test(l);
+      var cols=l.replace(/^\s*\[!\]\s*/,'').split('|||');
+      var valid=cols.length>=2;
+      if(!g&&valid&&maxSentenceWordCount(cols[0])>=30)g=true;
+      // BUILD 09.07.2026 (Wunsch 3): Punkt-10.2-Befunde (v.a. Nummerierung)
+      // muessen IMMER erhalten bleiben. Erkennung ueber die Policy-Nummer in
+      // Spalte 2 (PROBLEM) - sie steht dort formatbedingt ("Policy-Punkt in
+      // Klammer") und ueberlebt als Ziffernfolge auch en/ja/ko-Output.
+      // (?![0-9]) vermeidet Fehltreffer wie "10.25" oder "...15.10.2026";
+      // ein Fehltreffer wuerde eine Zeile ohnehin nur zusaetzlich BEHALTEN,
+      // nie faelschlich entfernen.
+      var keep=g||(valid&&/10\.2(?![0-9])/.test(cols[1]||''));
+      // BUILD 02.08.2026 (Typo-Sammelzeile): Zeilen, deren Spalte 2 das Wort
+      // Tippfehler/typo (bzw. 誤字/タイプミス/오타 im ja/ko-Output) nennt, ebenfalls
+      // NIE dem Top-5-Deckel opfern - sonst wuerde die Buendelung von mehr als
+      // drei Typos in EINE Zeile nichts retten. Bewusste Design-Entscheidung:
+      // Das Netz schuetzt damit auch einzelne Typo-Zeilen (1-3 Typos); es
+      // wirkt wie das 10.2-Netz nur BEHALTEND, entfernt nie etwas anderes
+      // faelschlich (der Platz geht nur zulasten uebriger laesslicher Zeilen).
+      // BUILD 23.09.2026 (Gegenpruefung): auch "Zeichensetzung"/"punctuation" (Kommafehler zaehlen wie Typos).
+      if(!keep&&valid&&/(tippfehler|zeichensetzung|typo|punctuation|誤字|タイプミス|오타)/i.test(cols[1]||''))keep=true;
+      return {line:l,grave:g,keep:keep,valid:valid};
+    });
+    var validCount=0;classified.forEach(function(c){if(c.valid)validCount++;});
+    if(validCount>5){
+      var keepCount=0;classified.forEach(function(c){if(c.valid&&c.keep)keepCount++;});
+      var venialBudget=Math.max(0,5-keepCount);
+      lines=classified.filter(function(c){
+        if(!c.valid)return true;
+        if(c.keep)return true;
+        if(venialBudget>0){venialBudget--;return true;}
+        return false;
+      }).map(function(c){return c.line;});
+    }
+  }
+  html+='<table class="review-table"><thead><tr>';
+  headers.forEach(function(h){html+='<th>'+h+'</th>';});
+  html+='<th class="status-col">Status</th>';
+  html+='</tr></thead><tbody>';
+  lines.forEach(function(line){
+    var grave=false;
+    var stripped=line.replace(/^\s*\[!\]\s*/,'');
+    if(stripped!==line){grave=true;line=stripped;}
+    var parts=line.split('|||');
+    if(parts.length<2)return;
+    // Sicherheitsnetz: Ein Satz mit 30+ Woertern im Textausschnitt ist immer gravierend (Modul A),
+    // auch wenn das Modell das "[!]" vergessen hat.
+    if(!grave && modKey==='MODUL_A' && maxSentenceWordCount(parts[0])>=30){grave=true;}
+    var cells=parts.map(function(p){
+      var cell=p.trim().replace(/^:\s*/,'');
+      cell=cell.replace(/^4[ab]\s*[-–—]\s*/i,'');
+      return cell.replace(/\[!\]/g,'').trim();
+    });
+    // Feedback-Loop: jeden Befund erfassen (eindeutige fid ueber laufenden Index)
+    var fid=modKey+'-'+reviewFindings.length;
+    reviewFindings.push({fid:fid,module:modTitle,grave:grave,cells:cells,headers:headers,status:''});
+    html+='<tr id="row-'+fid+'" data-fid="'+fid+'"'+(grave?' class="grave"':'')+'>';
+    // BUILD 23.09.2026: Zeilenumbrueche (Fortsetzungszeilen) sichtbar; in der
+    // letzten Spalte (Vorschlag) " • "-Aufzaehlungen je Punkt auf eine eigene Zeile.
+    cells.forEach(function(cell,ci){
+      var ch=escHtml(cell).replace(/\n/g,'<br>');
+      if(ci===cells.length-1&&ci>0)ch=ch.replace(/\s+•\s+/g,'<br>• ');
+      html+='<td>'+ch+'</td>';
+    });
+    // Pad if fewer cols than headers
+    for(var i=parts.length;i<headers.length;i++)html+='<td></td>';
+    html+='<td class="status-col">'+statusButtonsDiv(fid)+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  return html;
+}
+function renderFristen(raw){
+  var startTag='===MODUL_C_START===';
+  var endTag='===MODUL_C_END===';
+  var si=raw.indexOf(startTag);
+  var ei=raw.indexOf(endTag);
+  var html='<div style="margin-bottom:20px">';
+  html+='<div class="mod-sep">Termine & Fristen</div>';
+  if(si===-1||ei===-1||ei<=si){
+    html+='<div style="padding:10px 10px;font-size:13px;color:#aaa;font-style:italic">Kein Output empfangen.</div>';
+    html+='</div>';return html;
+  }
+  var block=raw.substring(si+startTag.length,ei).trim();
+  if(block==='KEIN_BEFUND'||block.trim()===''){
+    html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Keine Termine oder Fristen identifiziert.</div>';
+    html+='</div>';return html;
+  }
+  var lines=prepareBlockLines(block);   // BUILD 23.09.2026 (siehe renderModule)
+  if(lines.length===0){
+    html+='<div style="padding:10px 10px;font-size:13px;color:#2a7a2a">✓ Keine Termine oder Fristen identifiziert.</div>';
+    html+='</div>';return html;
+  }
+  if(!lines.some(function(l){return l.replace(/^\s*\[!\]\s*/,'').split('|||').length>=2;})){
+    html+='<div style="padding:10px 10px;font-size:12.5px;color:#555;white-space:pre-wrap">'+escHtml(lines.join('\n'))+'</div>';
+    html+='</div>';return html;
+  }
+  html+='<ul class="fristen-list">';
+  lines.forEach(function(line){
+    var grave=false;
+    var stripped=line.replace(/^\s*\[!\]\s*/,'');
+    if(stripped!==line){grave=true;line=stripped;}
+    var parts=line.split('|||');
+    if(parts.length<2)return;
+    var bezeichnung=parts[0]?parts[0].trim().replace(/\[!\]/g,''):'';
+    var typ=parts[1]?parts[1].trim().replace(/\[!\]/g,''):'';
+    var datum=parts[2]?parts[2].trim().replace(/\[!\]/g,''):'';
+    var hinweis=parts[3]?parts[3].trim().replace(/\[!\]/g,''):'';
+    var fid='MODUL_C-'+reviewFindings.length;
+    reviewFindings.push({fid:fid,module:'Termine & Fristen',grave:grave,cells:[bezeichnung,typ,datum,hinweis],headers:['Bezeichnung','Typ','Datum/Zeitraum','Hinweis'],status:''});
+    var badgeClass='urgenz-klient';
+    // Fix 5: Badge-Klassifikation auch bei fremdsprachigem Output (en/ja/ko).
+    var tl=typ.toLowerCase();
+    function hasAny(list){for(var hi=0;hi<list.length;hi++){if(tl.indexOf(list[hi])>=0)return true;}return false;}
+    if(hasAny(['gericht','behoerde','frist','court','deadline','authority','裁判','期限','법원','기한']))badgeClass='court';
+    else if(hasAny(['gegner','opponent','counterpart','opposing','相手方','상대방']))badgeClass='urgenz-gegner';
+    else if(hasAny(['interessent','prospect','見込','잠재']))badgeClass='urgenz-interessent';
+    else if(hasAny(['physisch','physical','in person','on-site','vor ort','対面','대면']))badgeClass='physisch';
+    html+='<li id="row-'+fid+'" data-fid="'+fid+'"'+(grave?' style="background:#fff5f5"':'')+'><span class="frist-badge '+badgeClass+'">'+escHtml(typ)+'</span>';
+    html+='<span style="flex:1;min-width:0"><strong>'+escHtml(bezeichnung)+'</strong>';
+    if(datum)html+=' <span style="color:#888;font-size:12px">→ '+escHtml(datum)+'</span>';
+    if(hinweis)html+='<br><span style="font-size:11px;color:#888;margin-top:2px;display:block">'+escHtml(hinweis).replace(/\n/g,'<br>')+'</span>';
+    html+='</span>'+statusButtonsDiv(fid)+'</li>';
+  });
+  html+='</ul>';
+  html+='<div style="padding:6px 10px 0;font-size:11px;color:#aaa">Alle Termine in den Kalender ALLER Teammitglieder eintragen (Policy 7.8 / 15.2).</div>';
+  html+='</div>';
+  return html;
+}
+// ─── Init ─────────────────────────────────────────────────────────────
+(function(){
+  var k;try{k=localStorage.getItem('taiyo_api_key');}catch(e){}
+  if(k){
+    document.getElementById('api-key').value=k;
+    setKeyStatus('✓ Key gespeichert','ok');
+  }
+  // Diagnose: zeigt die aktuelle Origin an. Falls sich diese URL zwischen
+  // Besuchen ändert (z.B. wechselnde Cloudflare-Pages-Vorschau-Adresse),
+  // ist das die Ursache, warum localStorage den Key nicht behält.
+  try{
+    document.getElementById('origin-diag').textContent='Aktuelle Adresse: '+window.location.origin+window.location.pathname;
+  }catch(e){}
+})();
+</script>
+</body></html>
