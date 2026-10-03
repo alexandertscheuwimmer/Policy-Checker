@@ -55,6 +55,45 @@
     und liefert Pass 2 nur noch Modul A (deutlich weniger Token);
     die Werte selbst blieben unveraendert (nie ohne Freigabe
     aendern).
+  - TOKEN-LIMIT-RUECKFALL (seit BUILD 02.10.2026; Freigabe Dr.
+    Scheuwimmer 02.10.2026, Variante "Stufenweiser Rueckfall"; die Werte
+    NIE ohne Freigabe aendern): Endet Pass 1 mit stop_reason 'max_tokens'
+    und ist das Ergebnis nicht vollstaendig, laeuft Pass 1 automatisch
+    noch einmal - hoechstens ZWEI weitere Durchlaeufe (pass1Fallbacks).
+    Der ERSTE Durchlauf bleibt unveraendert (Wichtig 'max'/96000,
+    Standard 'high'/32000). Wichtig-Modus: 2. Durchlauf effort 'xhigh'
+    mit 128000, 3. Durchlauf 'high' mit 128000. Standard-Modus:
+    2. Durchlauf 64000, 3. Durchlauf 128000 (effort bleibt 'high').
+    Modell, thinking:{type:'adaptive'}, Streaming, Systemprompt und
+    Dokument sind in allen Durchlaeufen gleich; 128000 ist das
+    Ausgabe-Maximum beider Modelle. Grund: Bei 'max' begrenzt das Modell
+    seine Denklaenge nicht ("no constraint on thinking length"); einen
+    eigenen Deckel fuer das Denken gibt es nicht ("You don't set a
+    thinking token budget"). Anthropic nennt genau zwei Abhilfen -
+    max_tokens erhoehen oder effort senken (Doku Troubleshooting
+    thinking, Steering thinking) - und raet auf der Seite Prompting
+    Claude Sonnet 5.5 (dort fuer JSON-Antworten), eine Antwort mit
+    'max_tokens' als gescheitert zu behandeln und zu wiederholen (alle
+    abgerufen 02.10.2026). Es zaehlt das vollstaendigere Ergebnis: zuerst
+    pass1State.rank (Umfang des Berichts - je Abschnitt vollstaendig 2,
+    teilweise 1; bei gleichem Umfang schlaegt ein regulaeres Ende einen
+    Abbruch), bei gleichem Rang die Zahl der vollstaendigen Zeilen; sonst
+    bleibt der fruehere Durchlauf. Ein Durchlauf ohne verwertbaren
+    Abschnitt verdraengt nie ein Teilergebnis. Eine Ablehnung (refusal)
+    ist NIE verwertbar, auch nicht mit Teiltext (Anthropic: "treat any
+    partial output as incomplete and discard it"). KEIN weiterer
+    Durchlauf bei Ablehnung, Verbindungsabriss, Kontextfenster, nach
+    einem technischen Fehler eines weiteren Durchlaufs oder wenn trotz
+    'max_tokens' alle drei Abschnitte vollstaendig sind (bewusste
+    Abweichung von "immer wiederholen": nach ===MODUL_C_END=== kann
+    nichts fehlen; die rote Warnung bleibt). Pass 2 und Pass 3 bleiben
+    unveraendert (dort gibt es seit BUILD 23.09.2026 gelbe Hinweise statt
+    eines Abbruchs). Die Anzeige nennt NIE Modell- oder
+    Einstellungsdetails (nur "größeres Budget", im Wichtig-Modus
+    zusaetzlich "etwas geringere Denktiefe"); Token-Zahlen stehen nur in
+    der technischen Meldung der Fehlerbox und in der Konsole.
+    'task_budget' (Beta) NICHT verwenden: Der Worker leitet den noetigen
+    anthropic-beta-Header nicht weiter (api.js vom 02.08.2026).
   - MODELL-KONFIG (seit 01.07.2026, NIE wieder auf budget_tokens/
     manuelles Denken zurueck — das wirft auf Sonnet 5, Opus 4.8 UND
     Opus 5 einen 400-Fehler): Standard = claude-sonnet-5-5 (seit BUILD
@@ -76,7 +115,14 @@
     strukturierter Ausgabe umgesetzt: "Think the problem through
     before you answer." als LETZTE Zeile des Pass-1-Systemprompts
     (bringt bei 'high' laut Anthropic fast die Genauigkeit von
-    'xhigh'); NIE entfernen, NIE nach vorne ziehen.
+    'xhigh'); NIE entfernen, NIE nach vorne ziehen. Seit BUILD
+    02.10.2026 steht die Zeile NUR im Standard-Modus (Sonnet 5.5,
+    'high' - darauf bezog sich die Freigabe vom 29.09.2026; die Doku
+    nennt die Zeile im Abschnitt zu JSON-Antworten von Sonnet 5.5). Im
+    Wichtig-Modus (Opus 5.5, 'max') bewusst NICHT: Anthropic raet bei
+    Opus 5.5 (dort fuer Chat-Anwendungen: "consider removing"),
+    Denk-Aufforderungen zu entfernen - effort ist der Regler; bei 'max'
+    ist die Denklaenge ohnehin unbegrenzt.
     OPUS 5.5 (seit BUILD 23.09.2026): Denken IMMER an und nicht
     abschaltbar (thinking:{type:'adaptive'} zulaessig; 'disabled' und
     'enabled' => 400). effort-Default dort 'medium' (Opus 5: 'high') ->
@@ -96,7 +142,9 @@
     — bei neuem Sonnet/Opus-Release manuell hochziehen (claude-opus-5-5/
     claude-sonnet-5-5 sind laut Doku fixe Snapshots ohne Datums-Suffix;
     max Output beider Modelle 128k, die max_tokens oben liegen weit
-    darunter).
+    darunter). Seit BUILD 02.10.2026 gilt "weit darunter" nur noch fuer
+    den ersten Durchlauf sowie fuer Pass 2 und Pass 3; der Token-Limit-
+    Rueckfall sendet bis zu 128000 und damit genau das Maximum.
   - STREAMING PFLICHT (seit 02.07.2026, NIE wieder abschalten): Alle drei
     API-Aufrufe MUESSEN mit stream:true laufen, der Worker (functions/
     api.js) reicht upstream.body UNGEPUFFERT durch (NICHT await
@@ -133,6 +181,10 @@
     wertet einen Rest-Puffer ohne abschliessenden Zeilenumbruch aus.
     SSE-error-Events vom Typ api_error/overloaded_error werden wie HTTP
     5xx einmal automatisch wiederholt.
+    Seit BUILD 02.10.2026 gibt es VIER Aufrufstellen (Pass 1, weiterer
+    Durchlauf von Pass 1, Pass 2, Pass 3) und bis zu fuenf Aufrufe je
+    Pruefung. "Alle drei API-Aufrufe" oben meint seither ALLE Aufrufe:
+    Jeder laeuft ueber callClaude mit stream:true.
   - API-Key-Problem (Browser-Passwortmanager-Interferenz, "invalid
     x-api-key") — NICHT als final gelöst markieren ohne ausdrückliche
     Bestätigung durch Dr. Scheuwimmer.
@@ -174,6 +226,10 @@
   claude-opus-5-5 + output_config.effort 'max' + thinking:{type:'adaptive'}
   (davor seit 02.08.2026 claude-opus-5, seit 01.07.2026 claude-opus-4-8;
   NICHT mehr budget_tokens — siehe MODELL-KONFIG oben).
+  Seit BUILD 02.10.2026: Erreicht Pass 1 sein Token-Limit, folgen
+  automatisch bis zu zwei weitere Durchlaeufe ('xhigh', dann 'high',
+  je 128000 - siehe TOKEN-LIMIT-RUECKFALL). Auch dann nennt die UI
+  keine Modell-/Einstellungsdetails.
   --- BEKANNTER OFFENER BUG (Stand 25.06.2026) ---
   Modul C (Gerichtsfrist) fehlte bereits im Pass-1-Output, vor jeglichem
   Parsing. SEIT BUILD 23.09.2026 SICHTBAR: fehlt ein Abschnitt in Pass 1,
@@ -1157,6 +1213,155 @@
   fertigen Build erneut gelaufen (alle Befunde behoben).
   Deployment: nur index.html; Worker (taiyo-review-proxy) und
   functions/api.js unveraendert.
+  --- BUILD 02.10.2026 (Token-Limit-Rueckfall; Freigabe Dr. Scheuwimmer 02.10.2026) ---
+  Grundlage: GitHub-Stand = BUILD 01.10.2026 inkl. Nachtrag 2 (275550
+  Bytes, SHA-256 6b008d31..., byte-gleich mit der Lieferung; abgerufen
+  02.10.2026). Vorab: Checkliste per grep verifiziert (162 Punkte),
+  105 + 118 + 131 Tests gruen, Chromium 18/18.
+  Anlass (Meldung Dr. Scheuwimmer 02.10.2026): "Prüfung abgebrochen
+  (Token-Limit) ... stop_reason max_tokens; Wichtig-Modus aktiv". Opus
+  5.5 hat bei effort 'max' alle 96000 Token verbraucht, bevor ein
+  Befund geschrieben war. Kein Programmfehler: Bei 'max' begrenzt das
+  Modell seine Denklaenge nicht; Opus 5.5 denkt bei 'xhigh'/'max'
+  laenger als Opus 5; einen eigenen Deckel fuer das Denken gibt es
+  nicht (Anthropic-Doku Steering thinking, Prompting Claude Opus 5.5;
+  abgerufen 02.10.2026).
+  ENTSCHEIDUNG DR. SCHEUWIMMER (02.10.2026): "Stufenweiser Rueckfall"
+  (zur Wahl standen auch "Nur mehr Budget" und "Knopf statt Automatik").
+  1. TOKEN-LIMIT-RUECKFALL (nur Pass 1): siehe den gleichnamigen Punkt
+     unter TECHNISCH KRITISCH. Neu: pass1Fallbacks() (die freigegebenen
+     Werte), pass1State() (Vollstaendigkeit, Zeilenzahl und Rang eines
+     Durchlaufs), pass1RunsText() und die Schleife in runReview nach
+     dem ersten Aufruf. body1 und der erste Aufruf sind unveraendert.
+     Die Schleife laeuft, solange der LETZTE Durchlauf mit 'max_tokens'
+     endete und nicht alle drei Abschnitte vollstaendig sind. Verwendet
+     wird das vollstaendigere Ergebnis (Rang, bei Gleichstand
+     Zeilenzahl); liegt noch nichts Verwertbares vor, gilt der jeweils
+     letzte Durchlauf (sein stop_reason bestimmt die Fehlermeldung).
+     Fehler in einem weiteren Durchlauf (z.B. HTTP 429): Ein
+     verwertbares Teilergebnis bleibt und die Schleife endet; sonst wird
+     dieser Fehler gemeldet (Zusatz "[aufgetreten im automatischen
+     n. Durchlauf nach einem Token-Limit; <Verlauf>]").
+  2. DENK-ANWEISUNG NUR NOCH IM STANDARD-MODUS: "Think the problem
+     through before you answer." steht seit BUILD 01.10.2026 am Ende des
+     Pass-1-Systemprompts - bisher in BEIDEN Modi. Die Freigabe vom
+     29.09.2026 betraf den Standard-Modus; siehe MODELL-KONFIG. Im
+     Wichtig-Modus entfaellt die Zeile (moeglicher Mitausloeser des
+     Vorfalls; mangels API-Zugriff nicht beweisbar). Die Vorgabe
+     "Beginne mit ===VORAB_START===." bleibt in beiden Modi. Im
+     Standard-Modus ist der Prompt byte-gleich; der Wichtig-Prompt
+     unterscheidet sich vom Standard-Prompt nur in der Moduszeile und
+     im fehlenden Denk-Absatz.
+  3. VERBRAUCHS-PROTOKOLL: readStream liest usage mit (message_start:
+     Eingabe-Token - der dortige Anfangswert output_tokens wird
+     verworfen; letztes message_delta: Ausgabe-Token samt
+     output_tokens_details.thinking_tokens) und gibt es als usage
+     zurueck. Die Konsole nennt je Durchlauf von Pass 1 sowie fuer
+     Pass 2 und Pass 3 stop_reason, Verbrauch und Limit (nur Zahlen,
+     nie Dokumentinhalt; nicht vertraulich, daher immer aktiv). Reisst
+     der Stream ab, steht dort "Ausgabe-Token unbekannt". Damit laesst
+     sich kuenftig belegen, wie nah normale Pruefungen am Limit liegen
+     (offene Frage Standard-max_tokens aus BUILD 01.10.2026).
+  4. LIVE-ANZEIGE UND HINWEISE: Waehrend eines weiteren Durchlaufs
+     zeigt die Kopfzeile "- 2. Durchlauf" bzw. "- 3. Durchlauf" und die
+     Detailzeile den Grund (startPassStatus mit optionalem fuenftem
+     Parameter rerun; ohne ihn unveraendert). Ein Verbindungs-
+     Wiederholungsversuch heisst dort "(Verbindung neu aufgebaut)" statt
+     "(2. Versuch)" - kein zweiter Zaehler. Im Bericht ein gelber
+     Hinweis: "Die Prüfung erreichte zunächst ihr Token-Limit. Der
+     ReviewAssistant hat sie automatisch wiederholt (größeres Budget[,
+     etwas geringere Denktiefe]). [Die Prüfung ist vollständig.]" -
+     der letzte Satz nur ohne rote Warnung; er meint die Pruefung, nicht
+     Nachkontrolle oder Uebersetzung. Brachte die Wiederholung nichts:
+     "Die automatische Wiederholung brachte kein vollständigeres
+     Ergebnis." Scheiterte sie technisch: "... ist an einem technischen
+     Fehler gescheitert. Bitte die Prüfung später erneut starten." (der
+     rote Rat lautet dann ebenfalls "erneut starten"). Keine Modell-/
+     Einstellungsdetails.
+  5. FEHLERTEXTE: Die Fehlerbox "Prüfung abgebrochen (Token-Limit)"
+     erscheint bei stop_reason 'max_tokens' erst nach den weiteren
+     Durchlaeufen und sagt das; ihre technische Meldung nennt Verbrauch
+     und Limit je Durchlauf. Endet der letzte Durchlauf anders
+     (Ablehnung, Verbindungsabriss, Kontextfenster, keine Abschnitte),
+     haengt die technische Meldung den Verlauf an ("[zuvor Token-Limit;
+     ...]") und der Hinweis sagt: "Zuvor erreichte die Prüfung bereits
+     ihr Token-Limit. Ein Neustart kann daher wieder lange dauern."
+     classifyReviewError trennt diesen Zusatz VOR der Zuordnung ab
+     (classifyReviewErrorCore), damit Token-Zahlen wie 524 die
+     Fehlerklasse nicht kippen. Der Rat "den Wichtig-Modus verwenden"
+     entfaellt ueberall: Der Wichtig-Modus denkt laenger und hilft bei
+     einem Token-Limit nicht. In der Regel hat der Standard-Modus an
+     dieser Stelle schon 128000 versucht - ausser bei drei
+     vollstaendigen Abschnitten trotz 'max_tokens' (kein weiterer
+     Durchlauf) und bei einem technisch gescheiterten weiteren Durchlauf
+     (Rat dann "erneut starten"). Ist der Wichtig-Modus aktiv, raet die
+     Fehlerbox, ohne Wichtig-Modus zu pruefen. readStream ignoriert
+     JSON-Zeilen, die kein Objekt sind.
+  6. BEWUSST NICHT GEAENDERT: max_tokens, effort, Modell und thinking
+     des ERSTEN Durchlaufs sowie von Pass 2 und Pass 3; Streaming;
+     Waechter; forceRestoreBlock (byte-gleich, 736 Bytes, SHA-256
+     b5c85279...; seither per Hash geprueft); extractBlock,
+     assembleFinalBlocks, callClaude (byte-gleich); Top-5-Netz;
+     Feldlisten; Profile; Worker (api.js). Kein 'task_budget' (Beta;
+     Worker leitet den Header nicht weiter). Der Wichtig-Modus bleibt
+     bei 'max' - Anthropic raet zwar, 'xhigh' und 'max' nur bei
+     gemessenem Mehrwert zu verwenden; ein dauerhafter Wechsel waere
+     eine eigene Entscheidung Dr. Scheuwimmers. Bekannter Randfall:
+     Bricht die Antwort MITTEN im letzten END-Tag ab, startet ein
+     (unnoetiger) weiterer Durchlauf.
+  7. GEGENPRUEFUNG (unabhaengiger Opus-Durchgang ueber den fertigen
+     Build; neun verifizierte Befunde, alle behoben; alle sieben
+     Aussagen aus der Anthropic-Doku unabhaengig bestaetigt; Normalfall
+     unveraendert: 336 Ablaeufe ohne Token-Limit byte-gleich):
+     (a) mittel: Eine Ablehnung MIT Teiltext in einem weiteren Durchlauf
+         galt als verwertbar und verdraengte ein Teilergebnis; danach
+         kam die Fehlerbox "abgelehnt". Jetzt ist eine Ablehnung nie
+         verwertbar.
+     (b) mittel: Bei gleichem Rang blieb der erste Durchlauf, auch wenn
+         ein spaeterer mehr vollstaendige Zeilen hatte (z.B. 1 statt
+         5 Fristen); der Hinweis "kein vollständigeres Ergebnis" war
+         dann falsch. Jetzt entscheidet bei Gleichstand die Zeilenzahl.
+     (c) niedrig: "Das Ergebnis ist vollständig." stand auch neben einer
+         abgeschnittenen Uebersetzung. Jetzt "Die Prüfung ist
+         vollständig." (meint nur die Pruefung).
+     (d) niedrig: Eine technisch gescheiterte Wiederholung hiess "brachte
+         kein vollständigeres Ergebnis", der Rat "Dokument kürzen".
+         Jetzt eigener Hinweis und Rat "erneut starten".
+     (e) niedrig: "3. Durchlauf" und "(2. Versuch)" standen gleichzeitig
+         in der Live-Anzeige. Jetzt "(Verbindung neu aufgebaut)".
+     (f) formal: Drei Saetze der Checkliste passten nicht mehr zum Code
+         ("max_tokens weit unter 128k", "alle drei API-Aufrufe", "hat
+         dann schon 128000 versucht"). Ergaenzt bzw. praezisiert.
+     (g) niedrig: Bei abgerissenem Stream nannte das Protokoll den
+         Anfangswert aus message_start ("Ausgabe-Token 1"). Der
+         Anfangswert wird verworfen.
+     (h) niedrig: Endete der letzte Durchlauf anders, verschwieg die
+         Fehlerbox das Token-Limit davor. Jetzt mit Verlauf (Punkt 5).
+     (i) niedrig: Test-Luecken (Ablehnung mit Teiltext, Gleichstand,
+         reines Teilergebnis, Byte-Gleichheit von forceRestoreBlock,
+         gesendete Header). Geschlossen; dabei fiel auf, dass die Zahl
+         524 im Verlauf die Fehlerklasse kippen konnte (Punkt 5).
+  Getestet: node --check; test_build.js (105, unveraendert gruen);
+  test_build_2309.js (118; sechs Aufrufe liefern die abgeschnittene
+  Antwort jetzt dreimal, eine Erwartung geaendert: drei Aufrufe statt
+  eines); test_build_0110.js (131; drei Aufrufe ebenso, Erwartungen an
+  Aufrufzahl und Rat-Text angepasst); test_build_0210.js (127 neue
+  Tests: Leiter beider Modi, alle Abbruchgruende, Auswahl inkl.
+  Gleichstand und Ablehnung, Stoerungen in weiteren Durchlaeufen,
+  Uebersetzung, Denk-Anweisung, Verbrauch, Live-Anzeige, Fehlertexte,
+  Kernwerte, gesendete Header); check_invariants.py (184 Punkte);
+  pw_e2e_0210.js (Chromium-E2E, 42 Faelle, keine JS-Fehler);
+  mutationstest_0210.py (44 von 44 Mutationen durch Verhaltenstests
+  erkannt). Pruefskripte der Gegenpruefung gegen den korrigierten Build
+  erneut gelaufen: 8192 + 1680 Kombinationen ohne Verstoss; pass1State
+  300000 Zufallsfaelle deckungsgleich mit der Fehlerbox-Regel;
+  readStream 40000 Zufallsstroeme ohne Regression. Nicht pruefbar ohne
+  API: ob 'xhigh' bzw. 'high' mit 128000 im Anlassfall reicht (effort
+  ist nur "soft guidance") und wie lange drei Durchlaeufe dauern.
+  Deployment: nur index.html; Worker (taiyo-review-proxy) und
+  functions/api.js unveraendert. Einspielen per Upload ("Add file /
+  Upload files"), nie aus der Chat-Vorschau kopieren (siehe TECHNISCH
+  KRITISCH).
 =======================================================================
 -->
 <html lang="de"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -2241,7 +2446,13 @@ buildUserNuancePrompt()+
 // BUILD 01.10.2026: Anthropic-Empfehlung fuer Sonnet 5.5 bei Pruefaufgaben mit strukturierter
 // Ausgabe (bringt bei effort 'high' laut Anthropic fast die Genauigkeit von 'xhigh'). Die
 // Zeile steht bewusst GANZ AM ENDE des Systemprompts (Freigabe Dr. Scheuwimmer 29.09.2026).
-'\n\nThink the problem through before you answer. Das Durchdenken geschieht in deinem internen Denkprozess; die sichtbare Antwort beginnt unmittelbar mit ===VORAB_START=== und enthaelt keine Vorueberlegungen.';
+// BUILD 02.10.2026: NUR im Standard-Modus (Sonnet 5.5, effort 'high' - darauf bezog sich die
+// Freigabe vom 29.09.2026). Im Wichtig-Modus (Opus 5.5, effort 'max') entfaellt die Zeile:
+// Anthropic empfiehlt sie fuer Sonnet 5.5 und raet bei Opus 5.5 (dort fuer Chat-Anwendungen:
+// "consider removing"), Denk-Aufforderungen zu entfernen ("The model decides for itself how
+// much to think, and effort is the main control"); bei 'max' ist die Denklaenge ohnehin
+// nicht begrenzt (Token-Limit-Vorfall vom 02.10.2026).
+(p.wichtig?'':'\n\nThink the problem through before you answer. Das Durchdenken geschieht in deinem internen Denkprozess; die sichtbare Antwort beginnt unmittelbar mit ===VORAB_START=== und enthaelt keine Vorueberlegungen.');
 }
 // ─── BUILD 02.08.2026: Nutzer-Erkennung + dezente Profil-Nuancen ─────────────
 // Kompakte, destillierte Mitarbeiter-Basisdaten (Name/Erkennungsmerkmale/
@@ -2303,7 +2514,7 @@ async function readStream(response,hooks){
     var data=await response.json();
     if(data.error){ throw new Error(data.error.message); }
     var t=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    return {text:t,stopReason:data.stop_reason,stopDetails:data.stop_details||null};
+    return {text:t,stopReason:data.stop_reason,stopDetails:data.stop_details||null,usage:data.usage||null};
   }
   var reader=response.body.getReader();
   var decoder=new TextDecoder();
@@ -2311,6 +2522,7 @@ async function readStream(response,hooks){
   var text='';
   var stopReason=null;
   var stopDetails=null;   // BUILD 23.09.2026: z.B. {type:'refusal',category:'cyber',explanation:'...'}
+  var usage=null;         // BUILD 02.10.2026: Verbrauch (Eingabe-/Ausgabe-Token, davon Denken) - nur Zahlen
   // BUILD 23.09.2026: Zeilenverarbeitung als Funktion, damit auch ein Rest-Puffer
   // ohne abschliessenden Zeilenumbruch ausgewertet wird.
   function handleLine(line){
@@ -2319,6 +2531,14 @@ async function readStream(response,hooks){
     if(!payload||payload==='[DONE]') return;
     var evt;
     try{ evt=JSON.parse(payload); }catch(e){ return; }
+    if(!evt||typeof evt!=='object') return;
+    // BUILD 02.10.2026: Verbrauch mitlesen. message_start nennt die Eingabe-Token; das letzte
+    // message_delta nennt die Ausgabe-Token samt output_tokens_details.thinking_tokens (Anteil
+    // des Denkens; laut Anthropic-Doku nur dort). Nur Zahlen, kein Inhalt. Der Anfangswert
+    // output_tokens aus message_start (meist 1) wird NICHT uebernommen - sonst stuende er bei
+    // einem abgerissenen Stream als "Verbrauch" im Protokoll (Gegenpruefung).
+    if(evt.type==='message_start'&&evt.message&&evt.message.usage&&typeof evt.message.usage==='object'){ usage=Object.assign(usage||{},evt.message.usage); delete usage.output_tokens; }
+    else if(evt.type==='message_delta'&&evt.usage&&typeof evt.usage==='object') usage=Object.assign(usage||{},evt.usage);
     if(evt.type==='content_block_delta'&&evt.delta){
       if(evt.delta.type==='text_delta'&&typeof evt.delta.text==='string'){ text+=evt.delta.text; if(hooks.onText){try{hooks.onText(evt.delta.text,text);}catch(e){}} }
       else if(evt.delta.type==='thinking_delta'){ if(hooks.onThinking){try{hooks.onThinking();}catch(e){}} }
@@ -2349,7 +2569,7 @@ async function readStream(response,hooks){
   }
   buffer+=decoder.decode();
   if(buffer.trim()) handleLine(buffer.trim());
-  return {text:text,stopReason:stopReason,stopDetails:stopDetails};
+  return {text:text,stopReason:stopReason,stopDetails:stopDetails,usage:usage};
 }
 // ─── BUILD 02.08.2026: Waechter + automatischer Wiederholungsversuch ─────────
 // Gegen "Aufhaengen" bei langen Pruefungen: Ein still abgerissener Stream lieferte
@@ -2393,6 +2613,19 @@ function isRetryableError(err){
 // "Verbindungsfehler" nicht zuordnen. Die technische Originalmeldung bleibt
 // darunter fuer die Diagnose sichtbar.
 function classifyReviewError(m){
+  // BUILD 02.10.2026: Ging dem Fehler ein Token-Limit voraus (automatische weitere Durchlaeufe),
+  // haengt runReview den Verlauf an die Meldung ("[zuvor Token-Limit; ...]" bzw. "[aufgetreten
+  // im automatischen n. Durchlauf nach einem Token-Limit; ...]"). Der Zusatz enthaelt Token-
+  // Zahlen und wird daher VOR der Zuordnung abgetrennt - sonst koennte z.B. die Zahl 524 die
+  // Fehlerklasse kippen. Der Hinweis sagt dann dazu, dass ein Neustart auch diese Durchlaeufe
+  // wiederholt (Gegenpruefung).
+  var full=String(m==null?'':m);
+  var core=full.replace(/ \[(?:zuvor Token-Limit|aufgetreten im automatischen \d\. Durchlauf nach einem Token-Limit); [^\]]*\]$/,'');
+  var cls=classifyReviewErrorCore(core);
+  if(core!==full) cls.hint+=' Zuvor erreichte die Prüfung bereits ihr Token-Limit. Ein Neustart kann daher wieder lange dauern.';
+  return cls;
+}
+function classifyReviewErrorCore(m){
   // BUILD 23.09.2026: Ablehnung durch das Modell (stop_reason 'refusal', HTTP 200).
   if(/stop_reason refusal/i.test(m)){
     return {titel:'Prüfung vom Modell abgelehnt',
@@ -2400,9 +2633,11 @@ function classifyReviewError(m){
   }
   // BUILD 23.09.2026: Token-Limit, bevor ueberhaupt ein Befund geschrieben war.
   if(/Token-Limit erreicht, bevor/i.test(m)){
-    // BUILD 01.10.2026 (Gegenpruefung): Wichtig-Modus nur empfehlen, wenn er nicht aktiv ist.
+    // BUILD 02.10.2026: Bei stop_reason 'max_tokens' erscheint diese Meldung erst nach den
+    // automatischen weiteren Durchlaeufen (Token-Limit-Rueckfall). Der Wichtig-Modus wird nicht
+    // mehr empfohlen - er denkt laenger; ist er aktiv, hilft oft die Pruefung ohne Wichtig-Modus.
     return {titel:'Prüfung abgebrochen (Token-Limit)',
-      hint:'Die Prüfung erreichte ihr Token-Limit, bevor Ergebnisse vorlagen. '+(/Wichtig-Modus aktiv/.test(m)?'Bitte das Dokument kürzen oder in Teilen prüfen.':'Bitte das Dokument kürzen oder den Wichtig-Modus verwenden.')};
+      hint:'Die Prüfung erreichte ihr Token-Limit, bevor Ergebnisse vorlagen. '+(/Durchläufe/.test(m)?'Auch die automatischen weiteren Durchläufe halfen nicht. ':'')+(/Wichtig-Modus aktiv/.test(m)?'Bitte das Dokument kürzen, in Teilen prüfen oder ohne Wichtig-Modus prüfen.':'Bitte das Dokument kürzen oder in Teilen prüfen.')};
   }
   // BUILD 23.09.2026: Antwort ohne einen der erwarteten Abschnitte.
   if(/Unerwartetes Antwortformat/i.test(m)){
@@ -2516,9 +2751,11 @@ function stopLiveStatus(){ if(liveTicker){clearInterval(liveTicker);liveTicker=n
 // NACHTRAG 2 (02.08.2026): Texte in Anwendersprache statt "Pass x von y" –
 // die Schritt-Namen sagen, WAS gerade passiert; die Abschnitts-Namen
 // entsprechen den Ueberschriften des spaeteren Berichts.
-function startPassStatus(passNo,totalPasses,phaseName,mode){
+// BUILD 02.10.2026: optionaler fuenfter Parameter rerun (2 oder 3) = automatischer weiterer
+// Durchlauf nach einem Token-Limit; ohne ihn ist die Anzeige unveraendert.
+function startPassStatus(passNo,totalPasses,phaseName,mode,rerun){
   var resultWrap=document.getElementById('result-wrap');
-  liveState={passNo:passNo,total:totalPasses,phaseName:phaseName,mode:mode||'analyse',phase:'connect',attempt:1,module:'',t0:Date.now()};
+  liveState={passNo:passNo,total:totalPasses,phaseName:phaseName,mode:mode||'analyse',phase:'connect',attempt:1,module:'',t0:Date.now(),rerun:rerun||0};
   resultWrap.innerHTML='<div class="result-card"><div class="result-body"><div class="loading"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px" id="live-pass"></p><p style="margin-top:6px;font-size:12px;color:#a8a8a4" id="live-detail"></p></div></div></div>';
   if(!liveTicker)liveTicker=setInterval(renderLiveStatus,1000);
   renderLiveStatus();
@@ -2530,7 +2767,7 @@ function renderLiveStatus(){
   if(!elP||!elD)return;
   var secs=Math.floor((Date.now()-liveState.t0)/1000);
   var mm=Math.floor(secs/60), ss=('0'+(secs%60)).slice(-2);
-  elP.textContent='Prüfung läuft – Schritt '+liveState.passNo+' von '+liveState.total+': '+liveState.phaseName+' ('+mm+':'+ss+')';
+  elP.textContent='Prüfung läuft – Schritt '+liveState.passNo+' von '+liveState.total+': '+liveState.phaseName+(liveState.rerun?' – '+liveState.rerun+'. Durchlauf':'')+' ('+mm+':'+ss+')';
   var d='';
   var mo=liveState.mode;
   // NACHTRAG 3 (02.08.2026): Ehrliche, ZEITBASIERTE Wartetexte, solange (noch)
@@ -2559,8 +2796,12 @@ function renderLiveStatus(){
     else if(mo==='kontrolle')d=liveState.module?'Der Abschnitt "'+liveState.module+'" wird gegengelesen …':'Die Befunde werden gegengelesen und sprachlich geglättet …';
     else d=liveState.module?'Gerade entsteht der Abschnitt "'+liveState.module+'" …':'Die Befunde werden geschrieben …';
   }
-  else if(liveState.phase==='retry')d='Verbindung unterbrochen – zweiter Versuch läuft automatisch …';
-  elD.textContent=d+(liveState.attempt>1&&liveState.phase!=='retry'?' (2. Versuch)':'');
+  // BUILD 02.10.2026: In einem weiteren Durchlauf ("2. Durchlauf") bekommt der Verbindungs-
+  // Wiederholungsversuch einen Text OHNE zweiten Zaehler - sonst stuenden "3. Durchlauf" und
+  // "(2. Versuch)" nebeneinander (Gegenpruefung). Ohne weiteren Durchlauf unveraendert.
+  else if(liveState.phase==='retry')d=liveState.rerun?'Verbindung unterbrochen – sie wird automatisch neu aufgebaut …':'Verbindung unterbrochen – zweiter Versuch läuft automatisch …';
+  // BUILD 02.10.2026: Bei einem automatischen weiteren Durchlauf den Grund nennen.
+  elD.textContent=(liveState.rerun?'Der vorige Durchlauf erreichte sein Token-Limit. Der ReviewAssistant prüft automatisch noch einmal. ':'')+d+(liveState.attempt>1&&liveState.phase!=='retry'?(liveState.rerun?' (Verbindung neu aufgebaut)':' (2. Versuch)'):'');
 }
 function liveOnStatus(st){
   if(!liveState||!st)return;
@@ -2589,6 +2830,52 @@ function liveOnStatus(st){
   else if(st.phase==='connect'){liveState.phase='connect';}
   var after=liveState.phase+'|'+liveState.module+'|'+liveState.attempt;
   if(after!==before)renderLiveStatus();
+}
+// ─── BUILD 02.10.2026: Token-Limit-Rueckfall (Freigabe Dr. Scheuwimmer 02.10.2026) ──────────
+// Anlass: Im Wichtig-Modus (Opus 5.5, effort 'max') verbrauchte Pass 1 alle 96000 Token mit
+// Nachdenken, bevor ein Befund geschrieben war. Bei 'max' begrenzt das Modell seine Denklaenge
+// nicht; einen eigenen Deckel fuer das Denken gibt es nicht. Anthropic nennt zwei Abhilfen:
+// max_tokens erhoehen oder effort senken (Doku "Troubleshooting thinking", abgerufen
+// 02.10.2026). Genau das tun die weiteren Durchlaeufe. Der ERSTE Durchlauf (body1 in
+// runReview) bleibt unveraendert. 128000 ist das Ausgabe-Maximum von Opus 5.5 und Sonnet 5.5.
+// Die Werte sind freigegeben ("Stufenweiser Rueckfall") - NIE ohne Freigabe aendern.
+function pass1Fallbacks(wichtig){
+  return wichtig
+    ? [{effort:'xhigh',max_tokens:128000},{effort:'high',max_tokens:128000}]
+    : [{effort:'high',max_tokens:64000},{effort:'high',max_tokens:128000}];
+}
+// Zustand eines Pass-1-Ergebnisses: wie viele der drei Abschnitte vollstaendig bzw. teilweise
+// vorliegen und wie viele vollstaendige Zeilen sie enthalten. Fehlt bei regulaerem Ende
+// (end_turn) nur das END-Tag, gilt der Abschnitt wie im uebrigen Code als vollstaendig.
+// usable = mindestens ein verwertbarer Abschnitt (dieselbe Regel wie die Fehlerbox "kein
+// Abschnitt" in runReview). rank: zuerst zaehlt, wie viel vom Bericht vorliegt (vollstaendig 2,
+// teilweise 1 je Abschnitt); bei Gleichstand schlaegt ein regulaer beendeter Durchlauf einen
+// abgeschnittenen. Ein Durchlauf ohne verwertbaren Abschnitt (Rang 0 oder 1) verdraengt daher
+// nie ein verwertbares Teilergebnis. Eine Ablehnung (refusal) ist NIE verwertbar - auch nicht
+// mit Teiltext (Anthropic: "treat any partial output as incomplete and discard it").
+function pass1State(s){
+  var cut=!s||s.stopReason!=='end_turn', c=0, pa=0, rows=0;
+  if(!(s&&s.stopReason==='refusal')){
+    ['MODUL_A','MODUL_B','MODUL_C'].forEach(function(k){
+      var b=extractBlock(s?s.text:'',k,cut);
+      if(b.status==='complete'||(b.status==='partial'&&!cut))c++; else if(b.status==='partial')pa++;
+      if(b.status!=='missing')rows+=blockRows(b.block).length;
+    });
+  }
+  return {cut:cut,complete:c,partial:pa,rows:rows,usable:(c+pa)>0,rank:(2*c+pa)*2+(cut?0:1)};
+}
+// Verbrauch als Text (nur Zahlen) fuer die Konsole und die technische Meldung.
+function usageText(u){
+  if(!u||typeof u!=='object')return 'Verbrauch unbekannt';
+  var o=(typeof u.output_tokens==='number')?u.output_tokens:null;
+  var i=(typeof u.input_tokens==='number')?u.input_tokens:null;
+  if(o===null&&i===null)return 'Verbrauch unbekannt';
+  var th=(u.output_tokens_details&&typeof u.output_tokens_details.thinking_tokens==='number')?u.output_tokens_details.thinking_tokens:null;
+  return (o!==null?'Ausgabe-Token '+o+(th!==null?' (davon Denken '+th+')':''):'Ausgabe-Token unbekannt')+(i!==null?', Eingabe-Token '+i:'');
+}
+// Verlauf der Pass-1-Durchlaeufe (Verbrauch und Limit je Durchlauf) fuer die technische Meldung.
+function pass1RunsText(runs){
+  return runs.length+(runs.length===1?' Durchlauf: ':' Durchläufe: ')+runs.map(function(r){return r.n+'. '+(r.res?usageText(r.res.usage):'fehlgeschlagen')+', Limit '+r.max_tokens;}).join(' | ');
 }
 async function runReview(){
   var key=getKey();
@@ -2682,6 +2969,47 @@ async function runReview(){
     };
     startPassStatus(1,totalPasses,'Das Dokument wird geprüft','analyse');
     var s1=await callClaude(body1,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
+    // BUILD 02.10.2026 (Freigabe Dr. Scheuwimmer 02.10.2026, "Stufenweiser Rueckfall"):
+    // TOKEN-LIMIT-RUECKFALL. Endet ein Durchlauf mit stop_reason 'max_tokens' und ist sein
+    // Ergebnis nicht vollstaendig, laeuft Pass 1 automatisch noch einmal mit den Werten aus
+    // pass1Fallbacks() - hoechstens zwei weitere Durchlaeufe. body1 (erster Durchlauf) bleibt
+    // unveraendert; Modell, thinking, Streaming, Systemprompt und Dokument sind in allen
+    // Durchlaeufen gleich. Es zaehlt das vollstaendigere Ergebnis: zuerst der Rang
+    // (pass1State.rank), bei gleichem Rang die Zahl der vollstaendigen Zeilen; sonst bleibt der
+    // fruehere Durchlauf. Solange nichts Verwertbares vorliegt, zaehlt der jeweils letzte
+    // Durchlauf (sein stop_reason bestimmt dann die Fehlermeldung). Andere Abbruchgruende
+    // (Ablehnung, Verbindungsabriss, Kontextfenster) loesen KEINEN weiteren Durchlauf aus.
+    var p1First=s1, p1Last=s1, p1Fb=pass1Fallbacks(p.wichtig), p1FbFailed=false;
+    var p1Runs=[{n:1,max_tokens:body1.max_tokens,res:s1}];
+    console.log('Pass 1 – Durchlauf 1: stop_reason '+s1.stopReason+' | '+usageText(s1.usage)+' | Limit '+body1.max_tokens);
+    for(var fi=0;fi<p1Fb.length&&p1Last.stopReason==='max_tokens'&&pass1State(p1Last).complete<3;fi++){
+      startPassStatus(1,totalPasses,'Das Dokument wird geprüft','analyse',fi+2);
+      var bodyF=Object.assign({},body1,{max_tokens:p1Fb[fi].max_tokens,output_config:{effort:p1Fb[fi].effort}});
+      var sF=null;
+      try{
+        sF=await callClaude(bodyF,key,liveOnStatus);
+      }catch(fbErr){
+        // Fehler im weiteren Durchlauf (z.B. HTTP 429): Ein schon verwertbares Ergebnis bleibt
+        // erhalten (gelber Hinweis nennt den Fehlschlag). Liegt nichts Verwertbares vor, ist
+        // dieser Fehler die Meldung fuer den Anwender - samt Verlauf der Durchlaeufe davor.
+        console.warn('Pass 1 – Durchlauf '+(fi+2)+' fehlgeschlagen:',fbErr&&fbErr.message);
+        if(!pass1State(s1).usable) throw new Error((fbErr&&fbErr.message?fbErr.message:String(fbErr))+' [aufgetreten im automatischen '+(fi+2)+'. Durchlauf nach einem Token-Limit; '+pass1RunsText(p1Runs)+']');
+        p1Runs.push({n:fi+2,max_tokens:p1Fb[fi].max_tokens,res:null});
+        p1FbFailed=true;
+        break;
+      }
+      p1Runs.push({n:fi+2,max_tokens:p1Fb[fi].max_tokens,res:sF});
+      console.log('Pass 1 – Durchlauf '+(fi+2)+': stop_reason '+sF.stopReason+' | '+usageText(sF.usage)+' | Limit '+p1Fb[fi].max_tokens);
+      p1Last=sF;
+      var stA=pass1State(s1), stF=pass1State(sF);
+      if(!stA.usable||stF.rank>stA.rank||(stF.rank===stA.rank&&stF.rows>stA.rows)) s1=sF;
+    }
+    var p1Extra=p1Runs.length-1;      // Zahl der weiteren Durchlaeufe (0 = Normalfall)
+    var p1FromRerun=(s1!==p1First);   // das verwendete Ergebnis stammt aus einem weiteren Durchlauf
+    var p1Diag=pass1RunsText(p1Runs);
+    // Endet der letzte Durchlauf anders als mit einem Token-Limit, nennt die technische Meldung
+    // trotzdem den Verlauf davor (Gegenpruefung) - sonst wuerde ein Neustart blind wiederholt.
+    var p1Hist=p1Extra>0?' [zuvor Token-Limit; '+p1Diag+']':'';
     var pass1Text=s1.text;
     // DIAGNOSE Modul C: rohen Pass-1-Output und Block-Praesenz protokollieren.
     // In der Browser-Konsole (F12) pruefbar, ob Modul C schon im Pass-1-Output fehlt.
@@ -2702,17 +3030,17 @@ async function runReview(){
     // und der Bericht zeigte gruene Haken bzw. dreimal "Kein Output empfangen".
     if(s1.stopReason==='refusal'){
       var sd=s1.stopDetails||{};
-      throw new Error('Ablehnung durch das Modell (stop_reason refusal'+(sd.category?', Kategorie '+sd.category:'')+')'+(sd.explanation?': '+sd.explanation:''));
+      throw new Error('Ablehnung durch das Modell (stop_reason refusal'+(sd.category?', Kategorie '+sd.category:'')+')'+(sd.explanation?': '+sd.explanation:'')+p1Hist);
     }
     var pass1Cut=(s1.stopReason!=='end_turn');   // BUILD 23.09.2026: unvollstaendig = alles ausser 'end_turn' (auch null)
     // BUILD 01.10.2026 (Gegenpruefung): auch eine Antwort, die zwar START-Tags, aber keine einzige
     // vollstaendige Befundzeile (oder KEIN_BEFUND) enthaelt, ist keine Pruefung -> Fehlerbox statt
     // dreimal "Kein Output empfangen" (und kein unnoetiger Pass 2). Hinweis je Modus/Abbruchgrund.
     if(!/===MODUL_[ABC]_START===/.test(pass1Text)||['MODUL_A','MODUL_B','MODUL_C'].every(function(k){return extractBlock(pass1Text,k,pass1Cut).status==='missing';})){
-      if(s1.stopReason==null) throw new Error('Verbindung abgebrochen: Antwort ohne Abschluss (kein stop_reason).');
-      if(s1.stopReason==='model_context_window_exceeded') throw new Error('Dokument zu umfangreich: Kontextfenster ueberschritten, bevor Befunde geschrieben wurden (stop_reason model_context_window_exceeded).');
-      if(s1.stopReason!=='end_turn') throw new Error('Token-Limit erreicht, bevor Befunde geschrieben wurden (stop_reason '+s1.stopReason+(p.wichtig?'; Wichtig-Modus aktiv':'')+').');
-      throw new Error('Unerwartetes Antwortformat: kein Abschnitt (MODUL_A/B/C) im Pruefergebnis.');
+      if(s1.stopReason==null) throw new Error('Verbindung abgebrochen: Antwort ohne Abschluss (kein stop_reason).'+p1Hist);
+      if(s1.stopReason==='model_context_window_exceeded') throw new Error('Dokument zu umfangreich: Kontextfenster ueberschritten, bevor Befunde geschrieben wurden (stop_reason model_context_window_exceeded).'+p1Hist);
+      if(s1.stopReason!=='end_turn') throw new Error('Token-Limit erreicht, bevor Befunde geschrieben wurden (stop_reason '+s1.stopReason+(p.wichtig?'; Wichtig-Modus aktiv':'')+'; '+p1Diag+').');
+      throw new Error('Unerwartetes Antwortformat: kein Abschnitt (MODUL_A/B/C) im Pruefergebnis.'+p1Hist);
     }
     // Pass 2: Policy control – correct columns 2+3
     // BUILD 01.10.2026 (Freigabe Dr. Scheuwimmer 29.09.2026): Pass 2 erhaelt und liefert NUR
@@ -2765,6 +3093,7 @@ async function runReview(){
     // Pruefung geht nicht mehr verloren (vorher z.B. bei HTTP 429 nach Pass 1).
     try{
       s2=await callClaude(body2,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
+      console.log('Pass 2: stop_reason '+s2.stopReason+' | '+usageText(s2.usage)+' | Limit '+body2.max_tokens);   // BUILD 02.10.2026
       if(s2.stopReason==='refusal')pass2Problem='refusal';
     }catch(pass2Err){
       pass2Problem='error';
@@ -2808,6 +3137,7 @@ async function runReview(){
       };
       try{
         var s3=await callClaude(transBody,key,liveOnStatus);   // BUILD 02.08.2026: mit Waechter + Auto-Retry
+        console.log('Pass 3: stop_reason '+s3.stopReason+' | '+usageText(s3.usage)+' | Limit '+transBody.max_tokens);   // BUILD 02.10.2026
         if(s3.stopReason==='refusal'){ transProblem='refusal'; translatedText=''; needsTranslation=false; }
         else{ translatedText=s3.text; transStop=s3.stopReason; if(s3.stopReason!=='end_turn') transProblem='truncated'; }
       }catch(transErr){
@@ -2825,10 +3155,14 @@ async function runReview(){
     // bzw. Uebersetzung betroffen, die Pruefung selbst ist vollstaendig.
     var warns=[], notes=[];
     var secName={MODUL_A:'Policy & Stil',MODUL_B:'Inhaltliche Vollständigkeit',MODUL_C:'Termine & Fristen'};
-    // (Gegenpruefung) Abbruchgrund benennen - "Token-Limit" nur bei max_tokens;
-    // Wichtig-Modus nur empfehlen, wenn er nicht ohnehin aktiv ist.
+    // (Gegenpruefung) Abbruchgrund benennen - "Token-Limit" nur bei max_tokens.
+    // BUILD 02.10.2026: Der Wichtig-Modus wird hier nicht mehr empfohlen - er denkt laenger und
+    // hilft bei einem Token-Limit nicht. In der Regel sind an dieser Stelle die automatischen
+    // weiteren Durchlaeufe schon gelaufen (Ausnahmen: drei vollstaendige Abschnitte trotz
+    // max_tokens; technisch gescheiterter weiterer Durchlauf - dann lautet der Rat
+    // "erneut starten", weil das groessere Budget noch gar nicht versucht wurde).
     var cutText=function(sr){ return sr==='max_tokens'?'Token-Limit erreicht':(sr==null?'Verbindung unterbrochen':(sr==='model_context_window_exceeded'?'Dokument zu umfangreich':'vorzeitig beendet')); };
-    var cutAdvice=(s1.stopReason==null)?' Bitte die Prüfung erneut starten.':(' Bitte das Dokument kürzen'+(p.wichtig?' oder in Teilen prüfen.':' oder den Wichtig-Modus verwenden.'));
+    var cutAdvice=(s1.stopReason==null||p1FbFailed)?' Bitte die Prüfung erneut starten.':' Bitte das Dokument kürzen oder in Teilen prüfen.';
     asm.missing.forEach(function(k){
       warns.push('Achtung: Der Abschnitt „'+secName[k]+'“ fehlt in der Antwort. Dieser Teil wurde nicht geprüft.'+
         (pass1Cut?' Die Antwort wurde abgebrochen ('+cutText(s1.stopReason)+').'+cutAdvice:' Bitte die Prüfung erneut starten.'));
@@ -2837,8 +3171,21 @@ async function runReview(){
       warns.push('Achtung: Der Abschnitt „'+secName[k]+'“ ist unvollständig. Die Antwort wurde abgebrochen ('+cutText(s1.stopReason)+'). Weitere Befunde oder Fristen könnten fehlen.');
     });
     if(pass1Cut&&!asm.missing.length&&!asm.partial.length){
-      if(s1.stopReason==='max_tokens'&&!p.wichtig)warns.push('Achtung: Die Antwort war möglicherweise unvollständig (Token-Limit erreicht). Einzelne Befunde oder Fristen könnten fehlen. Bitte das Dokument kürzen oder erneut prüfen; im Wichtig-Modus steht mehr Budget zur Verfügung.');
+      if(s1.stopReason==='max_tokens')warns.push('Achtung: Die Antwort war möglicherweise unvollständig (Token-Limit erreicht). Einzelne Befunde oder Fristen könnten fehlen.'+cutAdvice);
       else warns.push('Achtung: Die Antwort war möglicherweise unvollständig ('+cutText(s1.stopReason)+'). Einzelne Befunde oder Fristen könnten fehlen.'+cutAdvice);
+    }
+    // BUILD 02.10.2026: Hinweis auf den Token-Limit-Rueckfall. Keine Modell- oder
+    // Einstellungsdetails (Regel WICHTIG-MODUS); im Wichtig-Modus aber ehrlich, dass die
+    // Wiederholung mit etwas geringerer Denktiefe lief. "Die Prüfung ist vollständig." nur ohne
+    // rote Warnung; der Satz meint die Pruefung, nicht Nachkontrolle oder Uebersetzung (dafuer
+    // gibt es eigene Hinweise). Ein technisch gescheiterter weiterer Durchlauf wird benannt.
+    if(p1Extra>0){
+      var p1Note;
+      if(p1FromRerun)p1Note='Hinweis: Die Prüfung erreichte zunächst ihr Token-Limit. Der ReviewAssistant hat sie automatisch wiederholt (größeres Budget'+(p.wichtig?', etwas geringere Denktiefe':'')+').'+(warns.length?'':' Die Prüfung ist vollständig.');
+      else if(p1FbFailed)p1Note='Hinweis: Die Prüfung erreichte ihr Token-Limit. Die automatische Wiederholung ist an einem technischen Fehler gescheitert.';
+      else p1Note='Hinweis: Die Prüfung erreichte ihr Token-Limit. Die automatische Wiederholung brachte kein vollständigeres Ergebnis.';
+      if(p1FbFailed)p1Note+=(p1FromRerun?' Ein weiterer Durchlauf ist an einem technischen Fehler gescheitert.':'')+' Bitte die Prüfung später erneut starten.';
+      notes.push(p1Note);
     }
     if(pass2Problem||asm.aFromPass1){
       notes.push('Hinweis: Die sprachliche Nachkontrolle der Stilbefunde ist ausgefallen. Die Stilbefunde stammen direkt aus der Erstprüfung.');
